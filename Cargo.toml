@@ -1,0 +1,8 @@
+[package]
+name = "pyrust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ymcrust = {git = "https://github.com/Ymclash/ymcrust.git"}
+nom = "7.0"
