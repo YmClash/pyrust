@@ -7,7 +7,7 @@ use std::process::exit;
 
 
 fn main() {
-    let source_code = "LET x = (5 * 5)";
+    let source_code = "LET MUT x = (5 * 5)";
 
 
     let mut lexer = Lexer::new(source_code);
@@ -44,6 +44,7 @@ enum TokenType {
     PRINT,
     INPUT,
     LET,
+    MUT,
     IF,
     THEN,
     ENDIF,
@@ -246,6 +247,7 @@ impl<'a> Lexer<'a> {
                     "PRINT" => TokenType::PRINT,
                     "INPUT" => TokenType::INPUT,
                     "LET" => TokenType::LET,
+                    "MUT" => TokenType::MUT,
                     "IF" => TokenType::IF,
                     "THEN" => TokenType::THEN,
                     "ENDIF" => TokenType::ENDIF,
