@@ -2,12 +2,28 @@ use std::str::Chars;
 use std::iter::Peekable;
 use std::process::exit;
 
+//use nom::character::complete::i64;
+
 
 
 fn main() {
-    let source_code = "5 + (7 *12)  ";
-    let tokens = lex(source_code);
-    println!("{:?}",tokens);
+    let source_code = "LET x = (5 * 5)";
+
+
+    let mut lexer = Lexer::new(source_code);
+    loop {
+        let token = lexer.get_token();
+        println!("{:?}", token.kind);
+        println!("Token text : {}", token.text);
+        if token.kind == TokenType::EOF {
+            break;
+        }
+    }
+
+
+    // let tokens = Lexer(source_code);
+    // println!("{:?}",tokens);
+
 
     println!("Pyrust Compiler ");
     println!("By YmC")
@@ -19,7 +35,7 @@ fn main() {
 enum TokenType {
     EOF,
     NEWLINE,
-    NUMBER(i64),
+    NUMBER,
     IDENT,
     STRING,
     // Keywords.
@@ -49,7 +65,7 @@ enum TokenType {
     GT,
     GTEQ,
 
-// other keywords pour plus tard
+// other keywords for after
     // EOF,
     // NEWLINE,
     //
@@ -84,6 +100,7 @@ struct Token {
     kind: TokenType,
 }
 
+
 impl Token {
     fn new(text: String, kind: TokenType) -> Token {
         Token { text, kind }
@@ -95,88 +112,77 @@ struct Lexer<'a> {
     current_char: Option<char>,
 }
 
-/* notre lexer est composer  de plusieur methods qui vont nous permettre de traiter les differents cas */
- //
-
-impl<'a>Lexer<'a>{
-    fn new(source_code:&'a str)-> Lexer<'a>{
-        let mut lexer = Lexer{
-         source:source_code.chars().peekable(),
-         current_char:None,
+impl<'a> Lexer<'a> {
+    fn new(code_source: &'a str) -> Lexer<'a> {
+        let mut lexer = Lexer {
+            source: code_source.chars().peekable(),
+            current_char: None,
         };
-        lexer.next_char();
+        lexer.next_char(); // Initialiser le premier caractère
         lexer
     }
 
-    fn next_char(&mut self){
+    //methode pour obtenir le prochain caractère
+    fn next_char(&mut self) {
         self.current_char = self.source.next();
     }
-    fn peek(&mut self)->Option<&char>{
+
+
+
+    fn peek(&mut self) -> Option<&char> {
         self.source.peek()
     }
 
-    fn abort(&self,message:&str){
-        println!("Lexing error. {}",message);
+    //methode pour afficher un message d'erreur
+    fn abort(&self, message: &str) {
+        eprintln!("Lexing error: {}", message);
         exit(1);
     }
 
-    fn skip_whitespace(&mut self) {
-        while let Some(c) = self.current_char{
-            if c.is_whitespace() && c !='\n' {
-                self.next_char();
-            } else {
-                break;
-            }
-        }
-    }
-    fn skip_comment(&mut self) {
-        if self.current_char == Some('#'){
-            while self.current_char != Some ('\n'){
-                self.next_char()
+    // cette methode est notre fonction principale pour obtenir les tokens
+    //methode pour obtenir le token suivant
 
-            }
-        }
-    }
-
-    fn get_token(&mut self) {
-        self.skip_comment();
+    fn get_token(&mut self) -> Token {
         self.skip_whitespace();
+        self.skip_comment();
         let token = match self.current_char {
-            Some('+') => Token::new("+".to_string(),TokenType::PLUS),
-            Some('-') => Token::new("-".to_string(),TokenType::MINUS),
-            Some('*') => Token::new("*".to_string(),TokenType::ASTERISK),
-            Some('/') => Token::new("/".to_string(),TokenType::SLASH),
-            Some('(') => Token::new("(".to_string(),TokenType::LPAREN),
-            Some(')') => Token::new(")".to_string(),TokenType::RPAREN),
+            Some('+') => Token::new("+".to_string(), TokenType::PLUS),
+            Some('-') => Token::new("-".to_string(), TokenType::MINUS),
+            Some('*') => Token::new("*".to_string(), TokenType::ASTERISK),
+            Some('/') => Token::new("/".to_string(), TokenType::SLASH),
+            Some('(') => Token::new("(".to_string(), TokenType::LPAREN),
+            Some(')') => Token::new(")".to_string(), TokenType::RPAREN),
             Some('=') => {
-                if self.peek() == Some(&'='){
+                if self.peek() == Some(&'=') {
                     self.next_char();
-                    Token::new("==".to_string(),TokenType::EQEQ)
+                    Token::new("==".to_string(), TokenType::EQEQ)
                 } else {
-                    Token::new("=".to_string(),TokenType::EQ)
+                    Token::new("=".to_string(), TokenType::EQ)
                 }
             }
             Some('>') => {
-                if self.peek() == Some(&'='){
+                if self.peek() == Some(&'=') {
                     self.next_char();
-                    Token::new(">=".to_string(),TokenType::GTEQ)
+                    Token::new(">=".to_string(), TokenType::GTEQ)
                 } else {
-                    Token::new(">".to_string(),TokenType::GT)
+                    Token::new(">".to_string(), TokenType::GT)
                 }
             }
             Some('<') => {
-                if self.peek() == Some(&'='){
+                if self.peek() == Some(&'=') {
                     self.next_char();
-                    Token::new("<=".to_string(),TokenType::LTEQ)
+                    Token::new("<=".to_string(), TokenType::LTEQ)
                 } else {
-                    Token::new("<".to_string(),TokenType::LT)
+                    Token::new("<".to_string(), TokenType::LT)
                 }
             }
             Some('!') => {
-                if self.peek() == Some(&'='){
+                if self.peek() == Some(&'=') {
                     self.next_char();
-                    Token::new("!=".to_string(),TokenType::NOTEQ)
-                } else {self.abort("Expected != after !");
+                    Token::new("!=".to_string(), TokenType::NOTEQ)
+                } else {
+                    self.abort("Expected !=, got !");
+                    Token::new("".to_string(), TokenType::EOF) // Ne sera jamais atteint
                 }
             }
             Some('\"') => {
@@ -195,10 +201,91 @@ impl<'a>Lexer<'a>{
                 self.next_char(); // Consommer le guillemet fermant
                 Token::new(string_content, TokenType::STRING)
             }
-            s
-        }
+            Some(c) if c.is_ascii_digit() => {
+                let mut number_content = String::new();
+                number_content.push(c);
+                while let Some(&c) = self.peek() {
+                    if c.is_ascii_digit() {
+                        number_content.push(c);
+                        self.next_char();
+                    } else {
+                        break;
+                    }
+                }
+                if self.peek() == Some(&'.') {
+                    number_content.push('.');
+                    self.next_char();
+                    if !self.peek().unwrap_or(&' ').is_ascii_digit() {
+                        self.abort("Illegal character in number.");
+                    }
+                    while let Some(&c) = self.peek() {
+                        if c.is_ascii_digit() {
+                            number_content.push(c);
+                            self.next_char();
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                Token::new(number_content, TokenType::NUMBER)
+            }
+            Some(c) if c.is_ascii_alphabetic() => {
+                let mut ident_content = String::new();
+                ident_content.push(c);
+                while let Some(&c) = self.peek() {
+                    if c.is_ascii_alphanumeric() {
+                        ident_content.push(c);
+                        self.next_char();
+                    } else {
+                        break;
+                    }
+                }
+                let token_type = match ident_content.as_str() {
+                    "LABEL" => TokenType::LABEL,
+                    "GOTO" => TokenType::GOTO,
+                    "PRINT" => TokenType::PRINT,
+                    "INPUT" => TokenType::INPUT,
+                    "LET" => TokenType::LET,
+                    "IF" => TokenType::IF,
+                    "THEN" => TokenType::THEN,
+                    "ENDIF" => TokenType::ENDIF,
+                    "WHILE" => TokenType::WHILE,
+                    "REPEAT" => TokenType::REPEAT,
+                    "ENDWHILE" => TokenType::ENDWHILE,
+                    _ => TokenType::IDENT,
+                };
+                Token::new(ident_content, token_type)
+            }
+            Some('\n') => Token::new("\n".to_string(), TokenType::NEWLINE),
+            None => Token::new("".to_string(), TokenType::EOF),
+            Some(c) => {
+                self.abort(&format!("Unknown token: {}", c));
+                Token::new("".to_string(), TokenType::EOF) // Ne sera jamais atteint
+            }
+        };
+        self.next_char();
+        token
     }
 
+    //methode pour ignorer les espaces
+    fn skip_whitespace(&mut self) {
+        while let Some(c) = self.current_char {
+            if c.is_whitespace() && c != '\n' {
+                self.next_char();
+            } else {
+                break;
+            }
+        }
+    }
+    // fonction/methode  pour ignorer les commentaires :
+    // les commentaire commence avec # et se termine avec un retour à la ligne
+    fn skip_comment(&mut self) {
+        if self.current_char == Some('#') {
+            while self.current_char != Some('\n') {
+                self.next_char();
+            }
+        }
+    }
 }
 
 
