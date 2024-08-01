@@ -1,5 +1,5 @@
 use crate::lex::{Lexer, TokenType};
-use ymcrust::{type_of};
+//use ymcrust::{type_of};
 
 mod lex;
 
@@ -9,7 +9,9 @@ fn main() {
                  let add = fn(x, y) {
                      x + y;
                  };
-                 let result = add(five, ten);";
+                 let result = add(five, ten);
+                 # Affichage du resultat
+                 print(\" le result est : \",resulat);";
 
     let mut lexer = Lexer::new(source_code);
    // let token = lexer.get_token().kind;
