@@ -1,0 +1,72 @@
+    EOF,
+    NEWLINE,
+    NUMBER,
+    IDENT,
+    STRING,
+    // Keywords.
+    AND,
+    AS,
+    ASSERT,
+    BREAK,
+    CLASS,
+    CONTINUE,
+    DEF,
+    DEL,
+    DO,  // new keyword
+    ELIF,
+    ELSE,
+    EXCEPT,
+    FINALLY,
+    FN,
+    FOR,
+    FROM,
+    GLOBAL, // maybe instead of global we can use PUB
+    IF,
+    IMPORT, // maybe instead of import we can use USE
+    IN,
+    IS,
+    LAMBDA,
+    LET,
+    LOOP,
+    MUT,
+    //NONLOCAL, // maybe instead of nonlocal we can use PRIV
+    NOT,
+    OR,
+    OPEN,
+    PASS,
+    PRINT,
+    PUB,
+    RAISE,
+    RETURN,
+    STRUCT,
+    TRY,
+    WHILE,
+    WITH,
+    YIELD,
+
+    // Operators.
+    EQ,                     //
+    PLUS,                   // +  // addition
+    MINUS,                  // -  // soustraction
+    ARROW,                  // -> // arrow assignement ??
+    ASTERISK,               // *    // multiplication
+    SLASH,                  // /  // division
+    MOD,
+    POINT,                  // .     // point
+    COLON,                  // :  // 2 point
+    DCOLON,                 // ::  // double colon
+    SEMICOLON,              // ;  // point virgule
+    COMMA,                  // ,  // virgule
+    LPAREN,                 // (        // left parenthesis
+    RPAREN,                 // )
+    LSQUAREBRACET,        // [
+    RSQUAREBRACET,        // ]
+    LCURBRACET,            // {
+    RCURBRACET,            // }
+    EQEQ,                   // ==   // equivalence
+    NOTEQ,                   // !=   // pas egal
+    LT,                     // <   // inferieur
+    LTEQ,                   // <=   // inferieur ou égal
+    SUIVANT,                // =>  // suivant
+    GT,                     // >  // plus grand
+    GTEQ,
