@@ -342,8 +342,10 @@ impl<'a> Lexer<'a> {
             }
         }
     }
+
     // fonction/methode  pour ignorer les commentaires :
     // les commentaire commence avec # et se termine avec un retour à la ligne
+
     pub fn skip_comment(&mut self) {
         if self.current_char == Some('#') {
             while self.current_char != Some('\n') {
