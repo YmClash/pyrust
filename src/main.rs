@@ -9,8 +9,8 @@ fn main() {
     let mut lexer = Lexer::new(source_code);
     loop {
         let token = lexer.get_token();
-        println!("{:?}", token.kind);
-        println!("Token text : {}", token.text);
+        println!("{:?}", token);
+        println!("Token text : {:?}", token);
         if token.kind == TokenType::EOF {
             break;
         }

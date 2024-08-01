@@ -1,8 +1,7 @@
 
-
 #[test]
 fn test_lexer_identifiers() {
-    use pyrust::lex::{Lexer,TokenType,Token};
+    use pyrust::lex::{Lexer, Token, TokenType};
     let input = "let five = 5;
                  let ten = 10;
                  let add = fn(x, y) {
@@ -12,50 +11,74 @@ fn test_lexer_identifiers() {
 
     let mut lexer = Lexer::new(input);
     let tokens = vec![
-        Token::Ident("let".to_string()),
-        Token::Ident("five".to_string()),
-        Token::Assign,
-        Token::Int(5),
-        Token::Semicolon,
-        Token::Ident("let".to_string()),
-        Token::Ident("ten".to_string()),
-        Token::Assign,
-        Token::Int(10),
-        Token::Semicolon,
-        Token::Ident("let".to_string()),
-        Token::Ident("add".to_string()),
-        Token::Assign,
-        Token::Ident("fn".to_string()),
-        Token::LParen,
-        Token::Ident("x".to_string()),
-        Token::Comma,
-        Token::Ident("y".to_string()),
-        Token::RParen,
-        Token::LBrace,
-        Token::Ident("x".to_string()),
-        Token::Plus,
-        Token::Ident("y".to_string()),
-        Token::Semicolon,
-        Token::RBrace,
-        Token::Semicolon,
-        Token::Ident("let".to_string()),
-        Token::Ident("result".to_string()),
-        Token::Assign,
-        Token::Ident("add".to_string()),
-        Token::LParen,
-        Token::Ident("five".to_string()),
-        Token::Comma,
-        Token::Ident("ten".to_string()),
-        Token::RParen,
-        Token::Semicolon,
-        Token::Eof,
+        Token::new("let".to_string(), TokenType::LET),
+        Token::new("five".to_string(), TokenType::IDENT),
+        Token::new("=".to_string(), TokenType::EQ),
+        Token::new("5".to_string(), TokenType::NUMBER),
+        Token::new(";".to_string(), TokenType::SEMICOLON),
+        Token::new("let".to_string(), TokenType::LET),
+        Token::new("ten".to_string(), TokenType::IDENT),
+        Token::new("=".to_string(), TokenType::EQ),
+        Token::new("10".to_string(), TokenType::NUMBER),
+        Token::new(";".to_string(), TokenType::SEMICOLON),
+        Token::new("let".to_string(), TokenType::LET),
+        Token::new("add".to_string(), TokenType::IDENT),
+        Token::new("=".to_string(), TokenType::EQ),
+        Token::new("fn".to_string(), TokenType::FN),
+        Token::new("(".to_string(), TokenType::LPAREN),
+        Token::new("x".to_string(), TokenType::IDENT),
+        Token::new(",".to_string(), TokenType::COMMA),
+        Token::new("y".to_string(), TokenType::IDENT),
+        Token::new(")".to_string(), TokenType::RPAREN),
+        Token::new("{".to_string(), TokenType::LCURBRACET),
+        Token::new("x".to_string(), TokenType::IDENT),
+        Token::new("+".to_string(), TokenType::PLUS),
+        Token::new("y".to_string(), TokenType::IDENT),
+        Token::new(";".to_string(), TokenType::SEMICOLON),
+        Token::new("}".to_string(), TokenType::RCURBRACET),
+        Token::new(";".to_string(), TokenType::SEMICOLON),
+        Token::new("let".to_string(), TokenType::LET),
+        Token::new("result".to_string(), TokenType::IDENT),
+        Token::new("=".to_string(), TokenType::EQ),
+        Token::new("add".to_string(), TokenType::IDENT),
+        Token::new("(".to_string(), TokenType::LPAREN),
+        Token::new("five".to_string(), TokenType::IDENT),
+        Token::new(",".to_string(), TokenType::COMMA),
+        Token::new("ten".to_string(), TokenType::IDENT),
+        Token::new(")".to_string(), TokenType::RPAREN),
+        Token::new(";".to_string(), TokenType::SEMICOLON),
+        Token::new("".to_string(), TokenType::EOF),
     ];
 
     for expected_token in tokens {
-        let token = lexer.next_token();
+        let token = lexer.get_token();
         assert_eq!(token, expected_token);
     }
 }
 
+#[test]
+fn test_lexer_numbers() {
+    use pyrust::lex::{Lexer, Token, TokenType};
+    let input = "123 456 789";
+
+    let mut lexer = Lexer::new(input);
+    let tokens = vec![
+        Token::new("123".to_string(), TokenType::NUMBER),
+        Token::new("456".to_string(), TokenType::NUMBER),
+        Token::new("789".to_string(), TokenType::NUMBER),
+        Token::new("".to_string(), TokenType::EOF),
+    ];
+
+    for expected_token in tokens {
+        let token = lexer.get_token();
+        assert_eq!(token, expected_token);
+    }
+}
+
+
+#[test]
+fn text_numbers() {
+
+}
 
 
