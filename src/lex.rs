@@ -223,11 +223,11 @@ impl<'a> Lexer<'a> {
                     Token::new("".to_string(), TokenType::EOF) // END OF FILE
                 }
             }
-            Some('\"') => {
+            Some('"') => {
                 self.next_char();
                 let mut string_content = String::new();
                 while let Some(&c) = self.peek() {
-                    if c == '\"' {
+                    if c == '"' {
                         break;
                     }
                     if c == '\r' || c == '\n' || c == '\t' || c == '\\' || c == '%' {
