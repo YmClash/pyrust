@@ -1,8 +1,11 @@
 1 - LEXER
 
+
+
 2 - PARSER AST
 
 
 3 - EMITTER
+
 
 4 - COMPILER
