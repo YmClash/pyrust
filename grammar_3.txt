@@ -1,0 +1,52 @@
+program ::= statement*
+
+statement ::= let_statement
+           | if_statement
+           | while_statement
+           | for_statement
+           | function_def
+           | struct_def
+           | impl_block
+           | expression ;
+
+let_statement ::= "let" IDENT ":" type "=" expression
+if_statement ::= "if" expression block ("else" block)?
+while_statement ::= "while" expression block
+for_statement ::= "for" IDENT "in" expression block
+function_def ::= "fn" IDENT "(" parameters ")" "->" return_type? block
+struct_def ::= "struct" IDENT "{" fields "}"
+impl_block ::= "impl" "<" type_parameters? ">" IDENT "{" method_def* "}"
+method_def ::= "fn" IDENT "(" parameters ")" "->" return_type? block
+
+parameters ::= parameter ("," parameter)*
+parameter ::= IDENT ":" type
+
+fields ::= field ("," field)*
+field ::= IDENT ":" type
+
+block ::= "{" statement* "}"
+
+expression ::= literal
+             | IDENT
+             | binary_op
+             | unary_op
+             | function_call
+             | struct_literal
+             | match_expression
+             | borrow_expression
+
+borrow_expression ::= "&" expression // Emprunt
+
+type ::= primitive_type
+       | array_type
+       | function_type
+       | struct_type
+       | tuple_type
+
+primitive_type ::= "i32" | "f64" | "bool" | "str"
+array_type ::= "[" type "]"
+function_type ::= "(" parameters ")" "->" type
+struct_type ::= IDENT
+tuple_type ::= "(" types ")"
+
+literal ::= INTEGER | FLOAT | STRING | BOOLEAN

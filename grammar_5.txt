@@ -1,0 +1,60 @@
+programme ::= déclaration*
+
+déclaration ::= fonction_déf
+              | variable_déf
+              | instruction
+
+fonction_déf ::= "fn" IDENT "(" paramètre* ")" ":" type? bloc
+              | "fn" "<" type_paramètres ">" IDENT "(" paramètre* ")" ":" type? bloc // Types génériques
+
+variable_déf ::= "let" IDENT ":" type "=" expression
+              | "const" IDENT ":" type "=" expression // Constantes
+
+instruction ::= if_instruction
+              | while_instruction
+              | for_instruction
+              | return_instruction
+              | break_instruction
+              |continue_instruction
+              | expression ";"
+              | bloc
+
+if_instruction ::= "if" expression bloc ("elif" expression block)*("else" bloc)?
+
+while_instruction ::= "while" expression bloc
+for_instruction ::= "for" IDENT "in" expression bloc
+return_instruction ::= "return" expression?
+break_instruction ::= "break"
+continue_instruction ::= "continue"
+
+bloc ::= "{" déclaration* "}"
+
+expression ::= littéral
+              | IDENT
+              | opérateur binaire expression expression
+              | opérateur unaire expression
+              | appel_fonction
+              | création_objet
+              | accès_membre
+
+borrow_expression ::= "&" expression
+appel_fonction ::= IDENT "(" argument* ")"
+création_objet ::= IDENT "(" argument* ")"
+accès_membre ::= expression "." IDENT
+
+littéral ::= entier | chaîne | booléen
+entier ::= chiffre+
+chaîne ::= '"' caractère* '"'
+booléen ::= "true" | "false"
+
+opérateur_binaire ::= "+" | "-" | "*" | "/" | "==" | "!=" | "<" | "<=" | ">" | ">=" | "&&" | "||"
+opérateur_unaire ::= "-" | "!"
+
+type ::= "int" | "float" | "bool" | "string" | "array" | "struct" | "function" | autre_type
+
+paramètre ::= IDENT ":" type
+argument ::= expression
+
+IDENT ::= lettre (lettre | chiffre)*
+lettre ::= "a" | "b" | ... | "z" | "A" | "B" | ... | "Z" | "_"
+chiffre ::= "0" | "1" | ... | "9"

@@ -1,0 +1,61 @@
+program ::= declaration*
+
+declaration ::= function_def
+              | variable_def
+              | instruction
+
+function_def ::= "fn" IDENT "(" parameter_list? ")" ":" return_type? block
+              | "fn" "<" type_parameters ">" IDENT "(" parameter_list? ")" ":" return_type? block // Generic functions
+
+variable_def ::= "let" IDENT ":" type "=" expression
+              | "const" IDENT ":" type "=" expression // Constants
+
+instruction ::= if_statement
+              | while_statement
+              | for_statement
+              | return_statement
+              | break_statement
+              | continue_statement
+              | expression ";"
+              | block
+
+if_statement ::= "if" expression block ("else if" expression block)* ("else" block)?
+while_statement ::= "while" expression block
+for_statement ::= "for" IDENT "in" expression block
+return_statement ::= "return" expression?
+break_statement ::= "break"
+continue_statement ::= "continue"
+
+block ::= "{" declaration* "}"
+
+expression ::= literal
+              | IDENT
+              | binary_op expression
+              | unary_op expression
+              | function_call
+              | object_creation
+              | member_access
+              | borrow_expression
+
+borrow_expression ::= "&" expression
+function_call ::= IDENT "(" argument_list? ")"
+object_creation ::= IDENT "(" argument_list? ")"
+member_access ::= expression "." IDENT
+
+literal ::= integer | string | boolean
+integer ::= digit+
+string ::= '"' character* '"'
+boolean ::= "true" | "false"
+
+binary_op ::= "+" | "-" | "*" | "/" | "==" | "!=" | "<" | "<=" | ">" | ">=" | "&&" | "||"
+unary_op ::= "-" | "!"
+
+type ::= "int" | "float" | "bool" | "string" | "array" | "struct" | "function" | custom_type
+
+parameter_list ::= parameter ("," parameter)*
+parameter ::= IDENT ":" type
+argument_list ::= expression ("," expression)*
+
+IDENT ::= letter (letter | digit)*
+letter ::= "a" | "b" | ... | "z" | "A" | "B" | ... | "Z" | "_"
+digit ::= "0" | "1" | ... | "9"

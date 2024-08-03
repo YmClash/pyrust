@@ -1,0 +1,119 @@
+program ::= statement*
+
+statement ::= function_def
+            | struct_def
+            | let_statement
+            | if_statement
+            | while_statement
+            | for_statement
+            | return_statement
+            | expression
+
+function_def ::= "fn" IDENT "(" parameter_list? ")" "->" type? block
+
+struct_def ::= "struct" IDENT "{" struct_field* "}"
+
+let_statement ::= "let" "mut"? IDENT ":" type? "=" expression
+
+if_statement ::= "if" expression block ("elif" expression block)* ("else" block)?
+
+while_statement ::= "while" expression block
+
+for_statement ::= "for" IDENT "in" expression block
+
+return_statement ::= "return" expression?
+
+expression ::= binary_op
+             | unary_op
+             | function_call
+             | IDENT
+             | literal
+             | "(" expression ")"
+
+binary_op ::= expression operator expression
+
+unary_op ::= ("-" | "!") expression
+
+function_call ::= IDENT "(" argument_list? ")"
+
+parameter_list ::= parameter ("," parameter)*
+
+parameter ::= IDENT ":" type
+
+argument_list ::= expression ("," expression)*
+
+struct_field ::= IDENT ":" type
+
+type ::= "i32" | "f64" | "bool" | "str" | IDENT
+
+block ::= "{" statement* "}"
+
+literal ::= NUMBER | STRING | "true" | "false"
+
+operator ::= "+" | "-" | "*" | "/" | "==" | "!=" | "<" | "<=" | ">" | ">=" | "and" | "or"
+
+
+
+/////////////////////////////////////////SECOND GRAMMAR/////////////////////////////////////////
+program ::= statement*
+
+statement ::= let_statement
+           | if_statement
+           | while_statement
+           | for_statement
+           | function_def
+           | struct_def
+           | impl_block
+           | expression ;
+
+let_statement ::= "let" IDENT ":" type "=" expression
+if_statement ::= "if" expression block ("else" block)?
+while_statement ::= "while" expression block
+for_statement ::= "for" IDENT "in" expression block
+function_def ::= "fn" IDENT "(" parameters ")" "->" return_type? block
+struct_def ::= "struct" IDENT "{" fields "}"
+impl_block ::= "impl" "<" type_parameters? ">" IDENT "{" method_def* "}"
+method_def ::= "fn" IDENT "(" parameters ")" "->" return_type? block
+
+parameters ::= parameter ("," parameter)*
+parameter ::= IDENT ":" type
+
+fields ::= field ("," field)*
+field ::= IDENT ":" type
+
+block ::= "{" statement* "}"
+
+expression ::= literal
+             | IDENT
+             | binary_op
+             | unary_op
+             | function_call
+             | struct_literal
+             | match_expression
+
+binary_op ::= expression operator expression
+unary_op ::= operator expression
+function_call ::= IDENT "(" arguments ")"
+struct_literal ::= IDENT "{" fields_init "}"
+match_expression ::= "match" expression "{" match_arm* "}"
+match_arm ::= pattern "=>" expression
+
+pattern ::= literal
+          | IDENT
+          | "_"
+          | "(" pattern ")"
+          | pattern "@" IDENT
+
+type ::= primitive_type
+       | array_type
+       | function_type
+       | struct_type
+       | tuple_type
+
+primitive_type ::= "i32" | "f64" | "bool" | "str"
+array_type ::= "[" type "]"
+function_type ::= "(" parameters ")" "->" type
+struct_type ::= IDENT
+tuple_type ::= "(" types ")"
+
+literal ::= INTEGER | FLOAT | STRING | BOOLEAN

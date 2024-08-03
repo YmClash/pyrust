@@ -1,0 +1,92 @@
+
+Exemple 1 : Fonction simple et appel de fonction
+
+fn greet(name: string): string {
+    let greeting: string = "Hello, " + name + "!";
+    return greeting;
+}
+
+let message: string = greet("Alice");
+print(message);
+
+Exemple 2 : Fonction générique avec typage et condition if
+
+fn max<T: int>(a: T, b: T): T {
+    if a > b {
+        return a;
+    } else {
+        return b;
+    }
+}
+
+let max_value: int = max(10, 20);
+print(max_value);
+
+Exemple 3 : Boucle while et variable mutable
+
+fn countdown(start: int) {
+    let mut current: int = start;
+    while current > 0 {
+        print(current);
+        current = current - 1;
+    }
+    print("Liftoff!");
+}
+
+countdown(5);
+
+///////////////////
+
+Exemple 4 : Déclaration de structure (struct) et utilisation
+
+struct Point {
+    x: int,
+    y: int,
+}
+
+fn new_point(x: int, y: int): Point {
+    let p: Point = Point(x, y);
+    return p;
+}
+
+let p1: Point = new_point(10, 20);
+print("Point:", p1.x, p1.y);
+
+
+Exemple 5 : Boucle for et expression de prêt (borrow expression)
+fn print_numbers(numbers: array<int>) {
+    for num in &numbers {
+        print(num);
+    }
+}
+
+let nums: array<int> = [1, 2, 3, 4, 5];
+print_numbers(nums);
+////////////////////////////
+
+
+Exemple 6 : Fonction avec type de retour implicite
+fn add(a: int, b: int) {
+    return a + b;
+}
+
+let sum = add(3, 7);
+print(sum);
+/////////////////////////////////
+
+Exemple 7 : Constantes et opérateurs logiques
+
+const PI: float = 3.14159;
+
+fn is_even(n: int): bool {
+    return n % 2 == 0;
+}
+
+let num: int = 4;
+let even: bool = is_even(num);
+if even && num > 0 {
+    print("Positive even number");
+} else {
+    print("Not a positive even number");
+}
+////////////////////////////////////

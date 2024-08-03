@@ -1,0 +1,80 @@
+program ::= instruction*
+
+instruction ::= declaration
+              | expression ";"
+
+declaration ::= function_def
+              | variable_def
+              | constant_def
+              | block
+
+function_def ::= "fn" ("<" type_parameters ">")? IDENT "(" parameter_list? ")" ("->" return_type)? block
+
+variable_def ::= "let" IDENT (":" type)? "=" expression
+constant_def ::= "const" IDENT ":" type "=" expression
+
+block ::= "{" instruction* "}"
+
+if_statement ::= "if" expression block ("elif" expression block)* ("else" block)?
+while_statement ::= "while" expression block
+for_statement ::= "for" IDENT "in" expression block
+return_statement ::= "return" expression?
+break_statement ::= "break"
+continue_statement ::= "continue"
+
+expression ::= literal
+              | IDENT
+              | assignment
+              | binary_op expression
+              | unary_op expression
+              | function_call
+              | object_creation
+              | member_access
+              | borrow_expression
+              | "(" expression ")"
+              | expression "[" expression "]"
+
+assignment ::= IDENT "=" expression
+
+borrow_expression ::= "&" expression
+function_call ::= IDENT "(" argument_list? ")"
+object_creation ::= IDENT "(" argument_list? ")"
+member_access ::= expression "." IDENT
+
+lambda_expression ::= "|" parameter_list? "|" (":" return_type)? "->" expression
+
+array_literal ::= "[" (expression ("," expression)*)? "]"
+dict_literal ::= "{" (key_value_pair ("," key_value_pair)*)? "}"
+key_value_pair ::= expression ":" expression
+
+string_comparison ::= string_literal comparison_op string_literal
+
+literal ::= integer | float | string | boolean
+integer ::= digit+
+float ::= digit+ "." digit+
+string ::= '"' character* '"'
+boolean ::= "true" | "false"
+
+binary_op ::= "+" | "-" | "*" | "/" | "==" | "!=" | "<" | "<=" | ">" | ">=" | "&&" | "||"
+unary_op ::= "-" | "!"
+comparison_op ::= "==" | "!=" | "<" | "<=" | ">" | ">="
+
+type ::= "int" | "float" | "bool" | "string" | "array" "<" type ">" | struct_def | function_type | custom_type
+struct_def ::= "struct" IDENT "{" field_list "}"
+field_list ::= (IDENT ":" type ("," IDENT ":" type)*)?
+function_type ::= "(" parameter_list? ")" "->" type
+
+parameter_list ::= parameter ("," parameter)*
+parameter ::= IDENT ":" type
+argument_list ::= expression ("," expression)*
+
+custom_type ::= IDENT
+
+IDENT ::= letter (letter | digit)*
+letter ::= "a" | "b" | ... | "z" | "A" | "B" | ... | "Z" | "_"
+digit ::= "0" | "1" | ... | "9"
+
+comment ::= "//" character* NEWLINE
+          | "/*" (character | NEWLINE)* "*/"
+          | "#" character* NEWLINE
+          | "#{" (character | NEWLINE)* "}#"

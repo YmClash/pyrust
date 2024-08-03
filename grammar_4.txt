@@ -1,0 +1,67 @@
+program ::= module_def*
+
+module_def ::= "mod" IDENT "{" statement* "}"
+use_statement ::= "use" module_path ";"
+module_path ::= IDENT ("." IDENT)*
+
+statement ::= let_statement
+           | if_statement
+           | while_statement
+           | for_statement
+           | function_def
+           | class_def
+           | impl_block
+           | expression ;
+
+let_statement ::= "let" IDENT ":" type "=" expression
+if_statement ::= "if" expression block ("else" block)?
+while_statement ::= "while" expression block
+for_statement ::= "for" IDENT "in" expression block
+function_def ::= "fn" IDENT "<" type_parameters? ">" "(" parameters ")" "->" return_type? block
+class_def ::= "class" IDENT "(" superclass? ")" "{" field_def* method_def* "}"
+impl_block ::= "impl" "<" type_parameters? ">" IDENT "for" type "{" method_def* "}"
+method_def ::= "fn" IDENT "(" parameters ")" "->" return_type? block
+
+parameters ::= parameter ("," parameter)*
+parameter ::= IDENT ":" type
+
+fields ::= field ("," field)*
+field_def ::= "let" IDENT ":" type
+
+block ::= "{" statement* "}"
+
+expression ::= literal
+             | IDENT
+             | binary_op
+             | unary_op
+             | function_call
+             | struct_literal
+             | match_expression
+             | borrow_expression
+             | object_instantiation
+
+borrow_expression ::= "&" expression
+object_instantiation ::= IDENT "(" arguments ")"
+
+type ::= primitive_type
+       | array_type
+       | function_type
+       | struct_type
+       | tuple_type
+       | reference_type
+
+primitive_type ::= "i32" | "f64" | "bool" | "str"
+array_type ::= "[" type "]"
+function_type ::= "(" parameters ")" "->" type
+struct_type ::= IDENT
+tuple_type ::= "(" types ")"
+reference_type ::= "&" type
+
+literal ::= INTEGER | FLOAT | STRING | BOOLEAN
+
+// Traits
+trait_def ::= "trait" IDENT "{" trait_method* "}"
+trait_method ::= "fn" IDENT "(" parameters ")" "->" return_type
+
+// Génériques
+type_parameters ::= IDENT ("," IDENT)*

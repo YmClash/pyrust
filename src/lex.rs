@@ -256,7 +256,7 @@ impl<'a> Lexer<'a> {
                     if !self.peek().unwrap_or(&' ').is_ascii_digit() {
                         self.abort("Illegal character in number.");
                     }
-                    while let Some(&c) = self.peek() {
+                    while let Some(&c ) = self.peek() {
                         if c.is_ascii_digit() {
                             number_content.push(c);
                             self.next_char();
