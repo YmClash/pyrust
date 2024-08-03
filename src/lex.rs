@@ -25,18 +25,20 @@ pub enum TokenType {
     ASSERT,
     BREAK,
     CLASS,
+    CONST,
     CONTINUE,
-    DEF,
+    DEF, // Keyword for  pour la definition des de methode , il agirait comme une fonction ,cela peux etre un maniere de separe fn et def
     DEL,
     DO,  // new keyword
     ELIF,
     ELSE,
+    ENUM,
     EXCEPT,
     FINALLY,
     FN,
     FOR,
     FROM,
-    GLOBAL, // maybe instead of global we can use PUB
+    //GLOBAL, // maybe instead of global we can use PUB
     IF,
     IMPORT, // maybe instead of import we can use USE
     IN,
@@ -44,6 +46,7 @@ pub enum TokenType {
     LAMBDA,
     LET,
     LOOP,
+    MATCH,
     MUT,
     //NONLOCAL, // maybe instead of nonlocal we can use PRIV
     NOT,
@@ -51,9 +54,11 @@ pub enum TokenType {
     OPEN,
     PASS,
     PRINT,
+    PRIV, // maybe instead of priv we can use NONLOCAL
     PUB,
     RAISE,
     RETURN,
+    SELF, // new keyword
     STRUCT,
     TRY,
     WHILE,
@@ -61,12 +66,17 @@ pub enum TokenType {
     YIELD,
 
     // Operators.
-    EQ,                     //
+    AMPERSAND,              // &  // et
+    EQ,                     //  =  // assignement
     PLUS,                   // +  // addition
+    PLUSEQ,                 // += // addition assignement
     MINUS,                  // -  // soustraction
+    MINUSEQ,                // -= // soustraction assignement
     ARROW,                  // -> // arrow assignement ??
     ASTERISK,               // *    // multiplication
+    ASTERISKEQ,               // *= /  multiplication assignement
     SLASH,                  // /  // division
+    SLASHEQ,                // /=  // division assignement
     MOD,
     POINT,                  // .     // point
     COLON,                  // :  // 2 point
@@ -157,17 +167,43 @@ impl<'a> Lexer<'a> {
         self.skip_whitespace();
         self.skip_comment();
         let token = match self.current_char {
-            Some('+') => Token::new("+".to_string(), TokenType::PLUS),
+            Some('&') => Token::new("&".to_string(), TokenType::AMPERSAND),
+            Some('+') => {
+                if self.peek() == Some(&'=') {
+                    self.next_char();
+                    Token::new("+=".to_string(), TokenType::PLUSEQ)
+                } else {
+                    Token::new("+".to_string(), TokenType::PLUS)
+                }
+            }
             Some('-') => {
                 if self.peek() == Some(&'>') {
                     self.next_char();
                     Token::new("->".to_string(), TokenType::ARROW)
-                } else {
+                } else if self.peek() == Some(&'=') {
+                    self.next_char();
+                    Token::new("-=".to_string(), TokenType::MINUSEQ)}
+                     else {
                     Token::new("-".to_string(), TokenType::MINUS)
                 }
             }
-            Some('*') => Token::new("*".to_string(), TokenType::ASTERISK),
-            Some('/') => Token::new("/".to_string(), TokenType::SLASH),
+            Some('*') => {
+                if self.peek() == Some(&'='){
+                    self.next_char();
+                    Token::new("*=".to_string(), TokenType::ASTERISKEQ)
+                } else {
+                    Token::new("*".to_string(), TokenType::ASTERISK)
+                }
+            }
+            Some('/') => {
+                if self.peek() == Some(&'=') {
+                    self.next_char();
+                    Token::new("/=".to_string(), TokenType::SLASHEQ)
+                } else {
+                    Token::new("/".to_string(), TokenType::SLASH)
+                }
+
+            }
             Some('%') => Token::new("%".to_string(), TokenType::MOD),
             Some('.') => Token::new(".".to_string(), TokenType::POINT),
             Some(':') => {
@@ -214,15 +250,8 @@ impl<'a> Lexer<'a> {
                     Token::new("<".to_string(), TokenType::LT)
                 }
             }
-            Some('!') => {
-                if self.peek() == Some(&'=') {
-                    self.next_char();
-                    Token::new("!=".to_string(), TokenType::NOTEQ)
-                } else {
-                    self.abort("Expected !=, got !");
-                    Token::new("".to_string(), TokenType::EOF) // END OF FILE
-                }
-            }
+            Some('!') => Token::new("!".to_string(), TokenType::NOTEQ),
+
             Some('"') => {
                 self.next_char();
                 let mut string_content = String::new();
@@ -284,6 +313,7 @@ impl<'a> Lexer<'a> {
                     "assert" => TokenType::ASSERT,
                     "break" => TokenType::BREAK,
                     "class" => TokenType::CLASS,
+                    "const" => TokenType::CONST,
                     "continue" => TokenType::CONTINUE,
                     "def" => TokenType::DEF,
                     "del" => TokenType::DEL,
@@ -295,7 +325,7 @@ impl<'a> Lexer<'a> {
                     "fn" => TokenType::FN,
                     "for" => TokenType::FOR,
                     "from" => TokenType::FROM,
-                    "global" => TokenType::GLOBAL,
+                   // "global" => TokenType::GLOBAL,
                     "if" => TokenType::IF,
                     "import" => TokenType::IMPORT,
                     "in" => TokenType::IN,
@@ -303,12 +333,14 @@ impl<'a> Lexer<'a> {
                     "lambda" => TokenType::LAMBDA,
                     "let" => TokenType::LET,
                     "loop" => TokenType::LOOP,
+                    "match" => TokenType::MATCH,
                     "mut" => TokenType::MUT,
                     "not" => TokenType::NOT,
                     "or" => TokenType::OR,
                     "open" => TokenType::OPEN,
                     "pass" => TokenType::PASS,
                     "print" => TokenType::PRINT,
+                    "priv" => TokenType::PRIV,
                     "pub" => TokenType::PUB,
                     "raise" => TokenType::RAISE,
                     "return" => TokenType::RETURN,
