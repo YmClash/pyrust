@@ -3,16 +3,14 @@
 use std::str::Chars;
 use std::iter::Peekable;
 use std::process::exit;
+use std::collections::HashMap;
 
 
 //use nom::character::complete::i64;
 
 
-
-
-
-#[derive(Debug,PartialEq,Eq)]
-
+///  represente les differents type de token
+#[derive(Debug,PartialEq,Eq,Clone)]
 pub enum TokenType {
     EOF,
     NEWLINE,
@@ -40,6 +38,7 @@ pub enum TokenType {
     FN,
     FOR,
     FROM,
+    IMPORT,
     IF,
     IN,
     IS,
@@ -53,14 +52,16 @@ pub enum TokenType {
     OR,
     OPEN,
     PASS, // utile pour Compatibilité multi-style :En permettant à la fois l'utilisation d'accolades (style Rust) et l'indentation significative (style Python)
-PRINT,
+    PRINT,
     PUB,
     RAISE,
+    RANGE, // new keyword
     RETURN,
     SELF, // new keyword
     STATIC, // new keyword
     STRUCT,
     TRY,
+    TYPE,
     TYPEOF, // new keyword
     USE, // maybe instead of import we can use USE
     WHILE,
@@ -91,6 +92,7 @@ PRINT,
     RSQUAREBRACET,        // ]
     LCURBRACET,            // {
     RCURBRACET,            // }
+    ATTENTIONDIESE,                  // #  // diese     !#     detection de #mode
     EQEQ,                   // ==   // equivalence
     NOTEQ,                   // !=   // pas egal
     LT,                     // <   // inferieur
@@ -99,26 +101,31 @@ PRINT,
     GT,                     // >  // plus grand
     GTEQ,                   // >=  // plus grand ou égal
 
+    //token special
+    INDENT, // mode indentation
+    DEDENT, // mode dedentation
+
     //&=, |=, ^=, <<=, >>= pour les opérations bit à bit avec assignation : a faire plus tard
 
 
 }
 
 
-/* Mon Lexer se base sur  quelque  fonction de base  pour extraire les token qui sont :
+/// Mon Lexer se base sur  quelque  fonction de base  pour extraire les token qui sont :
 
-    - new() : pour initialiser le lexer en  passant le fichier code source source
-                et initialiser le premier caractère current_char
-    - next_char() : pour obtenir le prochain caractère
-    - peek() : pour obtenir le prochain caractère sans le consommer
-    - abort() : pour afficher un message d'erreur
-    - skip_whitespace() : pour ignorer les espaces
-    - skip_comment() : pour ignorer les commentaires
-    - get_token() : Fonction principale pour obtenir le token suivant
+///    - new() : pour initialiser le lexer en  passant le fichier code source source
+///                et initialiser le premier caractère current_char
+///    - next_char() : pour obtenir le prochain caractère
+///    - peek() : pour obtenir le prochain caractère sans le consommer
+///    - abort() : pour afficher un message d'erreur
+///    - skip_whitespace() : pour ignorer les espaces
+///    - skip_comment() : pour ignorer les commentaires
+///    - get_token() : Fonction principale pour obtenir le token suivant
 
 
 
-    */
+
+/// represente un token avec son texte et son type
 #[derive(Debug)]
 pub struct Token {
     pub text: String,
@@ -126,26 +133,91 @@ pub struct Token {
 }
 
 
+/// implementation de la structure Token pour cree un nouveau token
 impl Token {
+
     pub fn new(text: String, kind: TokenType) -> Token {
         Token { text, kind }
     }
 }
 
+/// la structure du lexer qui va nous permettre de recuperer les tokens
 pub struct Lexer<'a> {
     source: Peekable<Chars<'a>>,
     current_char: Option<char>,
+    keywords: HashMap<String,TokenType>,
 }
 
+/// implementation de la structure Lexer
 impl<'a> Lexer<'a> {
+    ///methode pour initialiser le lexer a partir du code source
     pub fn new(code_source: &'a str) -> Lexer<'a> {
         let mut lexer = Lexer {
             source: code_source.chars().peekable(),
             current_char: None,
+            keywords: Lexer::init_keywords(),
         };
         lexer.next_char(); // Initialiser le premier caractère
         lexer
     }
+
+    ///methode pour initialiser le HASHMAP de  mots clés
+
+    fn init_keywords() -> HashMap<String,TokenType>{
+        let mut keywords = HashMap::new();
+        keywords.insert("and".to_string(), TokenType::AND);
+        keywords.insert("as".to_string(), TokenType::AS);
+        keywords.insert("assert".to_string(), TokenType::ASSERT);
+        keywords.insert("async".to_string(), TokenType::ASYNC);
+        keywords.insert("await".to_string(), TokenType::AWAIT);
+        keywords.insert("break".to_string(), TokenType::BREAK);
+        keywords.insert("class".to_string(), TokenType::CLASS);
+        keywords.insert("const".to_string(), TokenType::CONST);
+        keywords.insert("continue".to_string(), TokenType::CONTINUE);
+        keywords.insert("def".to_string(), TokenType::DEF);
+        keywords.insert("del".to_string(), TokenType::DEL);
+        keywords.insert("do".to_string(), TokenType::DO);
+        keywords.insert("elif".to_string(), TokenType::ELIF);
+        keywords.insert("else".to_string(), TokenType::ELSE);
+        keywords.insert("enum".to_string(), TokenType::ENUM);
+        keywords.insert("except".to_string(), TokenType::EXCEPT);
+        keywords.insert("finally".to_string(), TokenType::FINALLY);
+        keywords.insert("fn".to_string(), TokenType::FN);
+        keywords.insert("for".to_string(), TokenType::FOR);
+        keywords.insert("from".to_string(), TokenType::FROM);
+        keywords.insert("import".to_string(), TokenType::IMPORT);
+        keywords.insert("if".to_string(), TokenType::IF);
+        keywords.insert("in".to_string(), TokenType::IN);
+        keywords.insert("is".to_string(), TokenType::IS);
+        keywords.insert("lambda".to_string(), TokenType::LAMBDA);
+        keywords.insert("let".to_string(), TokenType::LET);
+        keywords.insert("loop".to_string(), TokenType::LOOP);
+        keywords.insert("match".to_string(), TokenType::MATCH);
+        keywords.insert("mod".to_string(), TokenType::MOD);
+        keywords.insert("mut".to_string(), TokenType::MUT);
+        keywords.insert("not".to_string(), TokenType::NOT);
+        keywords.insert("or".to_string(), TokenType::OR);
+        keywords.insert("open".to_string(), TokenType::OPEN);
+        keywords.insert("pass".to_string(), TokenType::PASS);
+        keywords.insert("print".to_string(), TokenType::PRINT);
+        keywords.insert("pub".to_string(), TokenType::PUB);
+        keywords.insert("raise".to_string(), TokenType::RAISE);
+        keywords.insert("range".to_string(), TokenType::RANGE);
+        keywords.insert("return".to_string(), TokenType::RETURN);
+        keywords.insert("self".to_string(), TokenType::SELF);
+        keywords.insert("static".to_string(), TokenType::STATIC);
+        keywords.insert("string".to_string(),TokenType::STRING);
+        keywords.insert("struct".to_string(), TokenType::STRUCT);
+        keywords.insert("try".to_string(), TokenType::TRY);
+        keywords.insert("type".to_string(), TokenType::TYPE);
+        keywords.insert("typeof".to_string(), TokenType::TYPEOF);
+        keywords.insert("use".to_string(), TokenType::USE);
+        keywords.insert("while".to_string(), TokenType::WHILE);
+        keywords.insert("with".to_string(), TokenType::WITH);
+        keywords.insert("yield".to_string(), TokenType::YIELD);
+        return keywords;
+    }
+
 
     ///methode pour obtenir le prochain caractère
     pub fn next_char(&mut self) {
@@ -153,23 +225,23 @@ impl<'a> Lexer<'a> {
     }
 
 
-
+    ///methode pour obtenir ou regarder  prochain caractère sans le consommer
     pub fn peek(&mut self) -> Option<&char> {
         self.source.peek()
     }
 
-    ///methode pour afficher un message d'erreur
+    ///methode pour afficher un message d'erreur et quitte le lexer
     pub fn abort(&self, message: &str) {
         eprintln!("Lexing error: {}", message);
         exit(1);
     }
 
-    // cette methode est notre fonction principale pour obtenir les tokens
-    //methode pour obtenir le token suivant
-
+    /// cette methode est notre fonction principale pour obtenir les tokens
+    /// methode pour obtenir le token suivant
     pub fn get_token(&mut self) -> Token {
         self.skip_whitespace();
         self.skip_comment();
+
         let token = match self.current_char {
             Some('&') => Token::new("&".to_string(), TokenType::AMPERSAND),
             Some('+') => {
@@ -187,7 +259,7 @@ impl<'a> Lexer<'a> {
                 } else if self.peek() == Some(&'=') {
                     self.next_char();
                     Token::new("-=".to_string(), TokenType::MINUSEQ)}
-                     else {
+                else {
                     Token::new("-".to_string(), TokenType::MINUS)
                 }
             }
@@ -226,6 +298,7 @@ impl<'a> Lexer<'a> {
             Some(']') => Token::new("]".to_string(), TokenType::RSQUAREBRACET),
             Some('{') => Token::new("{".to_string(), TokenType::LCURBRACET),
             Some('}') => Token::new("}".to_string(), TokenType::RCURBRACET),
+
             Some('=') => {
                 if self.peek() == Some(&'=') {
                     self.next_char();
@@ -254,7 +327,18 @@ impl<'a> Lexer<'a> {
                     Token::new("<".to_string(), TokenType::LT)
                 }
             }
-            Some('!') => Token::new("!".to_string(), TokenType::NOTEQ),
+            Some('!') => {
+                if self.peek() == Some(&'='){
+                    self.next_char();
+                    Token::new("!".to_string(), TokenType::NOTEQ)
+                }else if self.peek() == Some(&'#'){
+                    Token::new("!".to_string(), TokenType::ATTENTIONDIESE)}
+                else {
+                    Token::new("!".to_string(), TokenType::NOT)
+                }
+            },
+
+
 
             Some('"') => {
                 self.next_char();
@@ -332,6 +416,7 @@ impl<'a> Lexer<'a> {
                     "fn" => TokenType::FN,
                     "for" => TokenType::FOR,
                     "from" => TokenType::FROM,
+                    "import" => TokenType::IMPORT,
                     "if" => TokenType::IF,
                     "in" => TokenType::IN,
                     "is" => TokenType::IS,
@@ -349,11 +434,13 @@ impl<'a> Lexer<'a> {
                     //"priv" => TokenType::PRIV,
                     "pub" => TokenType::PUB,
                     "raise" => TokenType::RAISE,
+                    "range" => TokenType::RANGE,
                     "return" => TokenType::RETURN,
                     "self" => TokenType::SELF,
                     "static" => TokenType::STATIC,
                     "struct" => TokenType::STRUCT,
                     "try" => TokenType::TRY,
+                    "type" => TokenType::TYPE,
                     "typeof" => TokenType::TYPEOF,
                     "use" => TokenType::USE,
                     "while" => TokenType::WHILE,
@@ -363,6 +450,14 @@ impl<'a> Lexer<'a> {
                 };
                 Token::new(ident_content, token_type)
             }
+
+
+            ////
+            Some(c) if c.is_ascii_digit() => self.get_identifier_or_keyword(),
+            Some(c) if c.is_ascii_alphabetic() => self.get_number(),
+            Some('"') => self.get_string(),
+            /////
+
             Some('\n') => Token::new("\n".to_string(), TokenType::NEWLINE),
             None => Token::new("".to_string(), TokenType::EOF),
             Some(c) => {
@@ -374,7 +469,59 @@ impl<'a> Lexer<'a> {
         token
     }
 
-    //methode pour ignorer les espaces
+    fn get_identifier_or_keyword(&mut self) -> Token{
+        let mut iden_content = String::new();
+        while let Some(&c) = self.peek(){
+            if c.is_ascii_alphanumeric(){
+                iden_content.push(c);
+                self.next_char();
+            } else {
+                break;
+            }
+        }
+        let token_type = self.keywords.get(&iden_content).cloned().unwrap_or(TokenType::IDENT);
+        Token::new(iden_content,token_type)
+    }
+
+    ///methode pour obtenir un nombre
+    fn get_number(&mut self) -> Token{
+        let mut number_content = String::new();
+        while let Some(&c) = self.peek(){
+            if c.is_ascii_digit() || c == '.' {
+                number_content.push(c);
+                self.next_char();
+            } else {
+                break;
+            }
+        }
+        Token::new(number_content,TokenType::NUMBER)
+    }
+
+
+
+    ///methode pour obtenir une chaine de caractère
+    fn get_string(&mut self) -> Token{
+        self.next_char();
+        let mut string_content = String::new();
+        while let Some(&c) = self.peek(){
+            if c == '"' {
+                break;
+            }
+            if c == '\r' || c == '\n' || c == '\t' || c == '\\' || c == '%' {
+                self.abort("Illegal character in string.");
+            }
+            string_content.push(c);
+            self.next_char();
+        }
+        self.next_char(); // Passer le dernier guillemet
+        Token::new(string_content, TokenType::STRING)
+    }
+
+
+
+
+
+    ///methode pour ignorer les espaces
     pub fn skip_whitespace(&mut self) {
         while let Some(c) = self.current_char {
             if c.is_whitespace() && c != '\n' {
@@ -385,8 +532,8 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    // fonction/methode  pour ignorer les commentaires :
-    // les commentaire commence avec # et se termine avec un retour à la ligne
+    /// fonction/methode  pour ignorer les commentaires :
+    /// les commentaire commence avec # et se termine avec un retour à la ligne
 
     pub fn skip_comment(&mut self) {
         if self.current_char == Some('#') {
@@ -396,6 +543,8 @@ impl<'a> Lexer<'a> {
         }
     }
 }
+
+
 
 
 

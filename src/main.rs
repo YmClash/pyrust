@@ -4,14 +4,8 @@ use crate::lex::{Lexer, TokenType};
 mod lex;
 
 fn main() {
-    let source_code = "let five = 5;
-                 let ten = 10;
-                 let add = fn(x, y) {
-                     x + y;
-                 };
-                 let result = add(five, ten);
-                 # Affichage du resultat
-                 print(\" le result est : \",resulat);";
+    let source_code = " !# This is a comment\nlet x = 5+9;\nprint(x);
+                ";
 
     let mut lexer = Lexer::new(source_code);
    // let token = lexer.get_token().kind;
@@ -19,6 +13,7 @@ fn main() {
         let token = lexer.get_token();
         println!("{:?}", token.text);
         println!("Token text : {:?}", token.kind);
+        println!("Token kind : {:?}", token.kind);
         if token.kind == TokenType::EOF {
             break;
         }
