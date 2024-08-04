@@ -1,44 +1,44 @@
-use crate::lex::{Token, TokenType};
-use crate::ast::{Statement, Expression, FunctionDef, StructDef, LetStatement, IfStatement, WhileStatement, ForStatement, ReturnStatement, BinaryOp, UnaryOp, FunctionCall, Parameter, Argument, StructField, Type, Literal};
-use crate::Lexer;
-
-struct Parser {
-    lexer: Lexer,
-    current_token: Token,
-}
-
-impl Parser {
-    fn new(lexer: Lexer) -> Self {
-        let mut parser = Parser {
-            lexer,
-            current_token: Token::new("".to_string(), TokenType::EOF),
-        };
-        parser.next_token();
-        parser
-    }
-
-    fn next_token(&mut self) {
-        self.current_token = self.lexer.get_token();
-    }
-
-    fn parse_program(&mut self) -> Result<ASTNode, String> {
-        // Implémentez la logique pour parser le programme complet
-    }
-
-    fn parse_statement(&mut self) -> Result<ASTNode, String> {
-        // Implémentez la logique pour parser une déclaration
-    }
-
-    // Ajoutez d'autres méthodes pour parser différentes parties de la grammaire
-}
-
-
-
-
-
-
-
-
+// use crate::lex::{Token, TokenType};
+// use crate::ast::{Statement, Expression, FunctionDef, StructDef, LetStatement, IfStatement, WhileStatement, ForStatement, ReturnStatement, BinaryOp, UnaryOp, FunctionCall, Parameter, Argument, StructField, Type, Literal};
+// use crate::Lexer;
+//
+// struct Parser {
+//     lexer: Lexer,
+//     current_token: Token,
+// }
+//
+// impl Parser {
+//     fn new(lexer: Lexer) -> Self {
+//         let mut parser = Parser {
+//             lexer,
+//             current_token: Token::new("".to_string(), TokenType::EOF),
+//         };
+//         parser.next_token();
+//         parser
+//     }
+//
+//     fn next_token(&mut self) {
+//         self.current_token = self.lexer.get_token();
+//     }
+//
+//     fn parse_program(&mut self) -> Result<ASTNode, String> {
+//         // Implémentez la logique pour parser le programme complet
+//     }
+//
+//     fn parse_statement(&mut self) -> Result<ASTNode, String> {
+//         // Implémentez la logique pour parser une déclaration
+//     }
+//
+//     // Ajoutez d'autres méthodes pour parser différentes parties de la grammaire
+// }
+//
+//
+//
+//
+//
+//
+//
+//
 
 
 

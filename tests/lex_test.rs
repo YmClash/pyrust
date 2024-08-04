@@ -37,7 +37,7 @@ mod tests {
             TokenType::MINUS,
             TokenType::ASTERISK,
             TokenType::SLASH,
-            TokenType::MOD,
+            TokenType::MODULO,
             TokenType::POINT,
             TokenType::COLON,
             TokenType::SEMICOLON,
@@ -81,13 +81,12 @@ mod tests {
     #[test]
     fn test_keyword_token() {
         use pyrust::lex::{Lexer, TokenType};
-        let code_source = "let mut fn struct import class pass open as break continue if else while for in do return";
+        let code_source = "let mut fn struct class pass open as break continue if else while for in do return";
         let expected_tokens = vec![
             TokenType::LET,
             TokenType::MUT,
             TokenType::FN,
             TokenType::STRUCT,
-            TokenType::IMPORT,
             TokenType::CLASS,
             TokenType::PASS,
             TokenType::OPEN,

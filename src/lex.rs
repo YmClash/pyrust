@@ -23,13 +23,15 @@ pub enum TokenType {
     AND,
     AS,
     ASSERT,
+    ASYNC,
+    AWAIT,
     BREAK,
     CLASS,
     CONST,
     CONTINUE,
-    DEF, // Keyword for  pour la definition des de methode , il agirait comme une fonction ,cela peux etre un maniere de separe fn et def
+    DEF, // Keyword for  pour la definition des de methode , il agirait omme une fonction ,cela peux etre un maniere de separe fn et def ou decorateur
     DEL,
-    DO,  // new keyword
+    DO,  //  new keyword  maybe using it later
     ELIF,
     ELSE,
     ENUM,
@@ -38,29 +40,29 @@ pub enum TokenType {
     FN,
     FOR,
     FROM,
-    //GLOBAL, // maybe instead of global we can use PUB
     IF,
-    IMPORT, // maybe instead of import we can use USE
     IN,
     IS,
     LAMBDA,
     LET,
     LOOP,
     MATCH,
+    MOD,
     MUT,
-    //NONLOCAL, // maybe instead of nonlocal we can use PRIV
     NOT,
     OR,
     OPEN,
-    PASS,
-    PRINT,
-    PRIV, // maybe instead of priv we can use NONLOCAL
+    PASS, // utile pour Compatibilité multi-style :En permettant à la fois l'utilisation d'accolades (style Rust) et l'indentation significative (style Python)
+PRINT,
     PUB,
     RAISE,
     RETURN,
     SELF, // new keyword
+    STATIC, // new keyword
     STRUCT,
     TRY,
+    TYPEOF, // new keyword
+    USE, // maybe instead of import we can use USE
     WHILE,
     WITH,
     YIELD,
@@ -77,7 +79,7 @@ pub enum TokenType {
     ASTERISKEQ,               // *= /  multiplication assignement
     SLASH,                  // /  // division
     SLASHEQ,                // /=  // division assignement
-    MOD,
+    MODULO,                 // %  // modulo
     POINT,                  // .     // point
     COLON,                  // :  // 2 point
     DCOLON,                 // ::  // double colon
@@ -96,6 +98,8 @@ pub enum TokenType {
     SUIVANT,                // =>  // suivant
     GT,                     // >  // plus grand
     GTEQ,                   // >=  // plus grand ou égal
+
+    //&=, |=, ^=, <<=, >>= pour les opérations bit à bit avec assignation : a faire plus tard
 
 
 }
@@ -143,7 +147,7 @@ impl<'a> Lexer<'a> {
         lexer
     }
 
-    //methode pour obtenir le prochain caractère
+    ///methode pour obtenir le prochain caractère
     pub fn next_char(&mut self) {
         self.current_char = self.source.next();
     }
@@ -154,7 +158,7 @@ impl<'a> Lexer<'a> {
         self.source.peek()
     }
 
-    //methode pour afficher un message d'erreur
+    ///methode pour afficher un message d'erreur
     pub fn abort(&self, message: &str) {
         eprintln!("Lexing error: {}", message);
         exit(1);
@@ -204,7 +208,7 @@ impl<'a> Lexer<'a> {
                 }
 
             }
-            Some('%') => Token::new("%".to_string(), TokenType::MOD),
+            Some('%') => Token::new("%".to_string(), TokenType::MODULO),
             Some('.') => Token::new(".".to_string(), TokenType::POINT),
             Some(':') => {
                 if self.peek() == Some(&':'){
@@ -311,6 +315,8 @@ impl<'a> Lexer<'a> {
                     "and" => TokenType::AND,
                     "as" => TokenType::AS,
                     "assert" => TokenType::ASSERT,
+                    "async" => TokenType::ASYNC,
+                    "await" => TokenType::AWAIT,
                     "break" => TokenType::BREAK,
                     "class" => TokenType::CLASS,
                     "const" => TokenType::CONST,
@@ -320,32 +326,36 @@ impl<'a> Lexer<'a> {
                     "do" => TokenType::DO,
                     "elif" => TokenType::ELIF,
                     "else" => TokenType::ELSE,
+                    "enum" => TokenType::ENUM,
                     "except" => TokenType::EXCEPT,
                     "finally" => TokenType::FINALLY,
                     "fn" => TokenType::FN,
                     "for" => TokenType::FOR,
                     "from" => TokenType::FROM,
-                   // "global" => TokenType::GLOBAL,
                     "if" => TokenType::IF,
-                    "import" => TokenType::IMPORT,
                     "in" => TokenType::IN,
                     "is" => TokenType::IS,
                     "lambda" => TokenType::LAMBDA,
                     "let" => TokenType::LET,
                     "loop" => TokenType::LOOP,
                     "match" => TokenType::MATCH,
+                    "mod" => TokenType::MOD,
                     "mut" => TokenType::MUT,
                     "not" => TokenType::NOT,
                     "or" => TokenType::OR,
                     "open" => TokenType::OPEN,
                     "pass" => TokenType::PASS,
                     "print" => TokenType::PRINT,
-                    "priv" => TokenType::PRIV,
+                    //"priv" => TokenType::PRIV,
                     "pub" => TokenType::PUB,
                     "raise" => TokenType::RAISE,
                     "return" => TokenType::RETURN,
+                    "self" => TokenType::SELF,
+                    "static" => TokenType::STATIC,
                     "struct" => TokenType::STRUCT,
                     "try" => TokenType::TRY,
+                    "typeof" => TokenType::TYPEOF,
+                    "use" => TokenType::USE,
                     "while" => TokenType::WHILE,
                     "with" => TokenType::WITH,
                     "yield" => TokenType::YIELD,
