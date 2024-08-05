@@ -28,7 +28,7 @@ break_instruction ::= "break"
 continue_instruction ::= "continue"
 
 bloc ::= "{" déclaration* "}"
-
+a
 expression ::= littéral
               | IDENT
               | opérateur binaire expression expression

@@ -4,7 +4,7 @@ use crate::lex::{Lexer, TokenType};
 mod lex;
 
 fn main() {
-    let source_code = " !# This is a comment\nlet x = 5+9;\nprint(x);
+    let source_code = "let x = 5+9;
                 ";
 
     let mut lexer = Lexer::new(source_code);

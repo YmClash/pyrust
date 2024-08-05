@@ -34,6 +34,7 @@ pub enum TokenType {
     ELSE,
     ENUM,
     EXCEPT,
+    FALSE,
     FINALLY,
     FN,
     FOR,
@@ -49,6 +50,7 @@ pub enum TokenType {
     MOD,
     MUT,
     NOT,
+    NULL,
     OR,
     OPEN,
     PASS, // utile pour Compatibilité multi-style :En permettant à la fois l'utilisation d'accolades (style Rust) et l'indentation significative (style Python)
@@ -60,6 +62,7 @@ pub enum TokenType {
     SELF, // new keyword
     STATIC, // new keyword
     STRUCT,
+    TRUE,
     TRY,
     TYPE,
     TYPEOF, // new keyword
@@ -121,9 +124,23 @@ pub enum TokenType {
 ///    - skip_whitespace() : pour ignorer les espaces
 ///    - skip_comment() : pour ignorer les commentaires
 ///    - get_token() : Fonction principale pour obtenir le token suivant
+///    - get_identifier_or_keyword() : pour obtenir un identifiant ou un mot clé
+///    - get_number() : pour obtenir un nombre
+///    - get_string() : pour obtenir une chaine de caractère
+///    - handle_indentation() : pour gerer l'indentation
+///   - detect_syntax_mode() : pour detecter le mode de syntaxe
+///
 
 
 
+
+/// represente le mode de syntaxe
+
+#[derive(PartialEq)]
+pub enum SyntaxMode{
+    Braces,
+    Indentation,
+}
 
 /// represente un token avec son texte et son type
 #[derive(Debug)]
@@ -145,7 +162,9 @@ impl Token {
 pub struct Lexer<'a> {
     source: Peekable<Chars<'a>>,
     current_char: Option<char>,
+    syntax_mode: SyntaxMode,
     keywords: HashMap<String,TokenType>,
+    current_indent_level: usize,
 }
 
 /// implementation de la structure Lexer
@@ -155,67 +174,90 @@ impl<'a> Lexer<'a> {
         let mut lexer = Lexer {
             source: code_source.chars().peekable(),
             current_char: None,
+            syntax_mode: SyntaxMode::Indentation, // Mode par defaut
             keywords: Lexer::init_keywords(),
+            current_indent_level: 0 ,
+
         };
         lexer.next_char(); // Initialiser le premier caractère
+        lexer.detect_syntax_mode();
         lexer
     }
+
+    ///methode pour detecter le mode de syntaxe
+    /// mode indentation ou mode avec les accolades
+    /// le mode indentation est le mode par defaut
+
+    fn detect_syntax_mode(&mut self){
+        let mut pee_iter = self.source.clone();
+        while let Some(c) = pee_iter.next(){
+            if !c.is_whitespace(){
+                if c == '{'{
+                    self.syntax_mode = SyntaxMode::Braces;
+                }
+                break;
+            }
+        }
+    }
+
+    ///methode pour gerer l'indentation si est en mode indentation
+    fn handle_indentation(&mut self) -> Option<Token>{
+        if self.current_char == Some('\n'){
+            let mut indent_level = 0 ;
+            while let Some(&c) = self.peek(){
+                if c == ' ' {
+                    indent_level += 1;
+                    self.next_char()
+                } else if c == '\t' {
+                    indent_level += 4;
+                    self.next_char();
+                }else {
+                    break;
+                }
+            }
+
+            if indent_level > self.current_indent_level {
+                self.current_indent_level = indent_level;
+                return Some(Token::new(indent_level.to_string(),TokenType::INDENT));
+            } else if indent_level < self.current_indent_level {
+                self.current_indent_level = indent_level;
+                return Some(Token::new(indent_level.to_string(),TokenType::DEDENT));
+            }
+
+        }
+        None
+    }
+
 
     ///methode pour initialiser le HASHMAP de  mots clés
 
     fn init_keywords() -> HashMap<String,TokenType>{
         let mut keywords = HashMap::new();
-        keywords.insert("and".to_string(), TokenType::AND);
-        keywords.insert("as".to_string(), TokenType::AS);
-        keywords.insert("assert".to_string(), TokenType::ASSERT);
-        keywords.insert("async".to_string(), TokenType::ASYNC);
-        keywords.insert("await".to_string(), TokenType::AWAIT);
-        keywords.insert("break".to_string(), TokenType::BREAK);
-        keywords.insert("class".to_string(), TokenType::CLASS);
-        keywords.insert("const".to_string(), TokenType::CONST);
-        keywords.insert("continue".to_string(), TokenType::CONTINUE);
-        keywords.insert("def".to_string(), TokenType::DEF);
-        keywords.insert("del".to_string(), TokenType::DEL);
-        keywords.insert("do".to_string(), TokenType::DO);
-        keywords.insert("elif".to_string(), TokenType::ELIF);
-        keywords.insert("else".to_string(), TokenType::ELSE);
-        keywords.insert("enum".to_string(), TokenType::ENUM);
-        keywords.insert("except".to_string(), TokenType::EXCEPT);
-        keywords.insert("finally".to_string(), TokenType::FINALLY);
-        keywords.insert("fn".to_string(), TokenType::FN);
-        keywords.insert("for".to_string(), TokenType::FOR);
-        keywords.insert("from".to_string(), TokenType::FROM);
-        keywords.insert("import".to_string(), TokenType::IMPORT);
-        keywords.insert("if".to_string(), TokenType::IF);
-        keywords.insert("in".to_string(), TokenType::IN);
-        keywords.insert("is".to_string(), TokenType::IS);
-        keywords.insert("lambda".to_string(), TokenType::LAMBDA);
-        keywords.insert("let".to_string(), TokenType::LET);
-        keywords.insert("loop".to_string(), TokenType::LOOP);
-        keywords.insert("match".to_string(), TokenType::MATCH);
-        keywords.insert("mod".to_string(), TokenType::MOD);
-        keywords.insert("mut".to_string(), TokenType::MUT);
-        keywords.insert("not".to_string(), TokenType::NOT);
-        keywords.insert("or".to_string(), TokenType::OR);
-        keywords.insert("open".to_string(), TokenType::OPEN);
-        keywords.insert("pass".to_string(), TokenType::PASS);
-        keywords.insert("print".to_string(), TokenType::PRINT);
-        keywords.insert("pub".to_string(), TokenType::PUB);
-        keywords.insert("raise".to_string(), TokenType::RAISE);
-        keywords.insert("range".to_string(), TokenType::RANGE);
-        keywords.insert("return".to_string(), TokenType::RETURN);
-        keywords.insert("self".to_string(), TokenType::SELF);
-        keywords.insert("static".to_string(), TokenType::STATIC);
-        keywords.insert("string".to_string(),TokenType::STRING);
-        keywords.insert("struct".to_string(), TokenType::STRUCT);
-        keywords.insert("try".to_string(), TokenType::TRY);
-        keywords.insert("type".to_string(), TokenType::TYPE);
-        keywords.insert("typeof".to_string(), TokenType::TYPEOF);
-        keywords.insert("use".to_string(), TokenType::USE);
-        keywords.insert("while".to_string(), TokenType::WHILE);
-        keywords.insert("with".to_string(), TokenType::WITH);
-        keywords.insert("yield".to_string(), TokenType::YIELD);
-        return keywords;
+
+        let kw_list = [
+            ("and", TokenType::AND), ("as", TokenType::AS), ("assert", TokenType::ASSERT),
+            ("async", TokenType::ASYNC), ("await", TokenType::AWAIT), ("break", TokenType::BREAK),
+            ("class", TokenType::CLASS), ("const", TokenType::CONST), ("continue", TokenType::CONTINUE),
+            ("def", TokenType::DEF), ("del", TokenType::DEL), ("do", TokenType::DO),
+            ("elif", TokenType::ELIF), ("else", TokenType::ELSE), ("enum", TokenType::ENUM),
+            ("except", TokenType::EXCEPT), ("false", TokenType::FALSE), ("finally", TokenType::FINALLY),
+            ("fn", TokenType::FN), ("for", TokenType::FOR), ("from", TokenType::FROM),
+            ("import", TokenType::IMPORT), ("if", TokenType::IF), ("in", TokenType::IN),
+            ("is", TokenType::IS), ("lambda", TokenType::LAMBDA), ("let", TokenType::LET),
+            ("loop", TokenType::LOOP), ("match", TokenType::MATCH), ("mod", TokenType::MOD),
+            ("mut", TokenType::MUT), ("not", TokenType::NOT), ("null", TokenType::NULL),
+            ("or", TokenType::OR), ("open", TokenType::OPEN), ("pass", TokenType::PASS),
+            ("print", TokenType::PRINT), ("pub", TokenType::PUB), ("raise", TokenType::RAISE),
+            ("range", TokenType::RANGE), ("return", TokenType::RETURN), ("self", TokenType::SELF),
+            ("static", TokenType::STATIC), ("string", TokenType::STRING), ("struct", TokenType::STRUCT),
+            ("try", TokenType::TRY), ("true", TokenType::TRUE), ("type", TokenType::TYPE),
+            ("typeof", TokenType::TYPEOF), ("use", TokenType::USE), ("while", TokenType::WHILE),
+            ("with", TokenType::WITH), ("yield", TokenType::YIELD),
+        ];
+        for (kw, token_type) in kw_list {
+            keywords.insert(kw.to_string(), token_type);
+        }
+        keywords
     }
 
 
@@ -238,9 +280,16 @@ impl<'a> Lexer<'a> {
 
     /// cette methode est notre fonction principale pour obtenir les tokens
     /// methode pour obtenir le token suivant
+    ///methode pour obtenir le token suivant
     pub fn get_token(&mut self) -> Token {
         self.skip_whitespace();
         self.skip_comment();
+
+        if self.syntax_mode == SyntaxMode::Indentation {
+            if let Some(indent_token) = self.handle_indentation() {
+                return indent_token;
+            }
+        }
 
         let token = match self.current_char {
             Some('&') => Token::new("&".to_string(), TokenType::AMPERSAND),
@@ -258,13 +307,13 @@ impl<'a> Lexer<'a> {
                     Token::new("->".to_string(), TokenType::ARROW)
                 } else if self.peek() == Some(&'=') {
                     self.next_char();
-                    Token::new("-=".to_string(), TokenType::MINUSEQ)}
-                else {
+                    Token::new("-=".to_string(), TokenType::MINUSEQ)
+                } else {
                     Token::new("-".to_string(), TokenType::MINUS)
                 }
             }
             Some('*') => {
-                if self.peek() == Some(&'='){
+                if self.peek() == Some(&'=') {
                     self.next_char();
                     Token::new("*=".to_string(), TokenType::ASTERISKEQ)
                 } else {
@@ -278,12 +327,11 @@ impl<'a> Lexer<'a> {
                 } else {
                     Token::new("/".to_string(), TokenType::SLASH)
                 }
-
             }
             Some('%') => Token::new("%".to_string(), TokenType::MODULO),
             Some('.') => Token::new(".".to_string(), TokenType::POINT),
             Some(':') => {
-                if self.peek() == Some(&':'){
+                if self.peek() == Some(&':') {
                     self.next_char();
                     Token::new("::".to_string(), TokenType::DCOLON)
                 } else {
@@ -298,7 +346,6 @@ impl<'a> Lexer<'a> {
             Some(']') => Token::new("]".to_string(), TokenType::RSQUAREBRACET),
             Some('{') => Token::new("{".to_string(), TokenType::LCURBRACET),
             Some('}') => Token::new("}".to_string(), TokenType::RCURBRACET),
-
             Some('=') => {
                 if self.peek() == Some(&'=') {
                     self.next_char();
@@ -306,8 +353,7 @@ impl<'a> Lexer<'a> {
                 } else if self.peek() == Some(&'>') {
                     self.next_char();
                     Token::new("=>".to_string(), TokenType::SUIVANT)
-                }
-                else {
+                } else {
                     Token::new("=".to_string(), TokenType::EQ)
                 }
             }
@@ -328,136 +374,18 @@ impl<'a> Lexer<'a> {
                 }
             }
             Some('!') => {
-                if self.peek() == Some(&'='){
+                if self.peek() == Some(&'=') {
                     self.next_char();
-                    Token::new("!".to_string(), TokenType::NOTEQ)
-                }else if self.peek() == Some(&'#'){
-                    Token::new("!".to_string(), TokenType::ATTENTIONDIESE)}
-                else {
+                    Token::new("!=".to_string(), TokenType::NOTEQ)
+                } else if self.peek() == Some(&'#') {
+                    Token::new("!#".to_string(), TokenType::ATTENTIONDIESE)
+                } else {
                     Token::new("!".to_string(), TokenType::NOT)
                 }
-            },
-
-
-
-            Some('"') => {
-                self.next_char();
-                let mut string_content = String::new();
-                while let Some(&c) = self.peek() {
-                    if c == '"' {
-                        break;
-                    }
-                    if c == '\r' || c == '\n' || c == '\t' || c == '\\' || c == '%' {
-                        self.abort("Illegal character in string.");
-                    }
-                    string_content.push(c);
-                    self.next_char();
-                }
-                self.next_char(); // Passer le dernier guillemet
-                Token::new(string_content, TokenType::STRING)
             }
-            Some(c) if c.is_ascii_digit() => {
-                let mut number_content = String::new();
-                number_content.push(c);
-                while let Some(&c) = self.peek() {
-                    if c.is_ascii_digit() {
-                        number_content.push(c);
-                        self.next_char();
-                    } else {
-                        break;
-                    }
-                }
-                if self.peek() == Some(&'.') {
-                    number_content.push('.');
-                    self.next_char();
-                    if !self.peek().unwrap_or(&' ').is_ascii_digit() {
-                        self.abort("Illegal character in number.");
-                    }
-                    while let Some(&c ) = self.peek() {
-                        if c.is_ascii_digit() {
-                            number_content.push(c);
-                            self.next_char();
-                        } else {
-                            break;
-                        }
-                    }
-                }
-                Token::new(number_content, TokenType::NUMBER)
-            }
-            Some(c) if c.is_ascii_alphabetic() => {
-                let mut ident_content = String::new();
-                ident_content.push(c);
-                while let Some(&c) = self.peek() {
-                    if c.is_ascii_alphanumeric() {
-                        ident_content.push(c);
-                        self.next_char();
-                    } else {
-                        break;
-                    }
-                }
-                let token_type = match ident_content.as_str() {
-                    "and" => TokenType::AND,
-                    "as" => TokenType::AS,
-                    "assert" => TokenType::ASSERT,
-                    "async" => TokenType::ASYNC,
-                    "await" => TokenType::AWAIT,
-                    "break" => TokenType::BREAK,
-                    "class" => TokenType::CLASS,
-                    "const" => TokenType::CONST,
-                    "continue" => TokenType::CONTINUE,
-                    "def" => TokenType::DEF,
-                    "del" => TokenType::DEL,
-                    "do" => TokenType::DO,
-                    "elif" => TokenType::ELIF,
-                    "else" => TokenType::ELSE,
-                    "enum" => TokenType::ENUM,
-                    "except" => TokenType::EXCEPT,
-                    "finally" => TokenType::FINALLY,
-                    "fn" => TokenType::FN,
-                    "for" => TokenType::FOR,
-                    "from" => TokenType::FROM,
-                    "import" => TokenType::IMPORT,
-                    "if" => TokenType::IF,
-                    "in" => TokenType::IN,
-                    "is" => TokenType::IS,
-                    "lambda" => TokenType::LAMBDA,
-                    "let" => TokenType::LET,
-                    "loop" => TokenType::LOOP,
-                    "match" => TokenType::MATCH,
-                    "mod" => TokenType::MOD,
-                    "mut" => TokenType::MUT,
-                    "not" => TokenType::NOT,
-                    "or" => TokenType::OR,
-                    "open" => TokenType::OPEN,
-                    "pass" => TokenType::PASS,
-                    "print" => TokenType::PRINT,
-                    //"priv" => TokenType::PRIV,
-                    "pub" => TokenType::PUB,
-                    "raise" => TokenType::RAISE,
-                    "range" => TokenType::RANGE,
-                    "return" => TokenType::RETURN,
-                    "self" => TokenType::SELF,
-                    "static" => TokenType::STATIC,
-                    "struct" => TokenType::STRUCT,
-                    "try" => TokenType::TRY,
-                    "type" => TokenType::TYPE,
-                    "typeof" => TokenType::TYPEOF,
-                    "use" => TokenType::USE,
-                    "while" => TokenType::WHILE,
-                    "with" => TokenType::WITH,
-                    "yield" => TokenType::YIELD,
-                    _ => TokenType::IDENT,
-                };
-                Token::new(ident_content, token_type)
-            }
-
-
-            ////
-            Some(c) if c.is_ascii_digit() => self.get_identifier_or_keyword(),
-            Some(c) if c.is_ascii_alphabetic() => self.get_number(),
             Some('"') => self.get_string(),
-            /////
-
+            Some(c) if c.is_ascii_digit() => self.get_number(),
+            Some(c) if c.is_ascii_alphabetic() => self.get_identifier_or_keyword(),
             Some('\n') => Token::new("\n".to_string(), TokenType::NEWLINE),
             None => Token::new("".to_string(), TokenType::EOF),
             Some(c) => {
@@ -469,10 +397,11 @@ impl<'a> Lexer<'a> {
         token
     }
 
-    fn get_identifier_or_keyword(&mut self) -> Token{
+    ///methode pour obtenir un identifiant ou un mot clé
+    fn get_identifier_or_keyword(&mut self) -> Token {
         let mut iden_content = String::new();
-        while let Some(&c) = self.peek(){
-            if c.is_ascii_alphanumeric(){
+        while let Some(&c) = self.peek() {
+            if c.is_ascii_alphanumeric() {
                 iden_content.push(c);
                 self.next_char();
             } else {
@@ -480,13 +409,45 @@ impl<'a> Lexer<'a> {
             }
         }
         let token_type = self.keywords.get(&iden_content).cloned().unwrap_or(TokenType::IDENT);
-        Token::new(iden_content,token_type)
+        Token::new(iden_content, token_type)
     }
 
-    ///methode pour obtenir un nombre
-    fn get_number(&mut self) -> Token{
+
+    ///methode pour obtenir une chaine de caractère
+    ///
+    /// Méthode pour obtenir une chaîne de caractères
+    fn get_string(&mut self) -> Token {
+        self.next_char(); // Passer le premier guillemet
+        let mut string_content = String::new();
+        while let Some(&c) = self.peek() {
+            if c == '"' {
+                break;
+            }
+            if c == '\\' {
+                self.next_char();
+                match self.peek() {
+                    Some('n') => string_content.push('\n'),
+                    Some('t') => string_content.push('\t'),
+                    Some('r') => string_content.push('\r'),
+                    Some('"') => string_content.push('"'),
+                    Some('\\') => string_content.push('\\'),
+                    _ => self.abort("Invalid escape sequence in string"),
+                }
+            } else if c == '\n' || c == '\r' {
+                self.abort("Unterminated string");
+            } else {
+                string_content.push(c);
+            }
+            self.next_char();
+        }
+        self.next_char(); // Passer le dernier guillemet
+        Token::new(string_content, TokenType::STRING)
+    }
+
+    ///methode pour obtenir un numbre
+    fn get_number(&mut self) -> Token {
         let mut number_content = String::new();
-        while let Some(&c) = self.peek(){
+        while let Some(&c) = self.peek() {
             if c.is_ascii_digit() || c == '.' {
                 number_content.push(c);
                 self.next_char();
@@ -494,32 +455,25 @@ impl<'a> Lexer<'a> {
                 break;
             }
         }
-        Token::new(number_content,TokenType::NUMBER)
-    }
-
-
-
-    ///methode pour obtenir une chaine de caractère
-    fn get_string(&mut self) -> Token{
-        self.next_char();
-        let mut string_content = String::new();
-        while let Some(&c) = self.peek(){
-            if c == '"' {
-                break;
-            }
-            if c == '\r' || c == '\n' || c == '\t' || c == '\\' || c == '%' {
-                self.abort("Illegal character in string.");
-            }
-            string_content.push(c);
+        // Support de la notation scientifique
+        if self.peek() == Some(&'e') || self.peek() == Some(&'E') {
+            number_content.push(*self.peek().unwrap());
             self.next_char();
+            if self.peek() == Some(&'+') || self.peek() == Some(&'-') {
+                number_content.push(*self.peek().unwrap());
+                self.next_char();
+            }
+            while let Some(&c) = self.peek() {
+                if c.is_ascii_digit() {
+                    number_content.push(c);
+                    self.next_char();
+                } else {
+                    break;
+                }
+            }
         }
-        self.next_char(); // Passer le dernier guillemet
-        Token::new(string_content, TokenType::STRING)
+        Token::new(number_content, TokenType::NUMBER)
     }
-
-
-
-
 
     ///methode pour ignorer les espaces
     pub fn skip_whitespace(&mut self) {
@@ -533,15 +487,30 @@ impl<'a> Lexer<'a> {
     }
 
     /// fonction/methode  pour ignorer les commentaires :
+    ///
     /// les commentaire commence avec # et se termine avec un retour à la ligne
 
     pub fn skip_comment(&mut self) {
         if self.current_char == Some('#') {
-            while self.current_char != Some('\n') {
+            while self.current_char != Some('\n') && self.current_char.is_some() {
                 self.next_char();
             }
+        } else if self.current_char == Some('/') && self.peek() == Some(&'*') {
+            self.next_char(); // Passer le '/'
+            self.next_char(); // Passer le '*'
+            while !(self.current_char == Some('*') && self.peek() == Some(&'/')) {
+                if self.current_char.is_none() {
+                    self.abort("Unterminated multi-line comment");
+                }
+                self.next_char();
+            }
+            self.next_char(); // Passer le '*'
+            self.next_char(); // Passer le '/'
         }
     }
+
+
+    //***/*/*/*/*//*/ Fin de la structure Lexer  //***/*/*/*/*//*/
 }
 
 
@@ -849,25 +818,6 @@ impl<'a> Lexer<'a> {
 //
 //
 // }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 ///////// AST
