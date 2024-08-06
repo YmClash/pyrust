@@ -1,7 +1,9 @@
 // use crate::lex::{Lexer, TokenType};
 //use ymcrust::{type_of};
 
-mod lex;
+
+
+//mod lex;
 
 fn main() {
 
