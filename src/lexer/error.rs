@@ -14,6 +14,7 @@ pub enum CompilerError {
     // CodegenError,
 }
 
+// structure  de la position Elle permettra de suivre précisément la position dans le code source.
 pub struct Position{
     line: usize,
     column: usize,
@@ -38,7 +39,7 @@ pub enum LexerErrorKind {
 
 }
 
-
+/// Implementation de la structure Position pour actualise ses valeurs
 impl Position{
     fn new() -> Self {
         Position{line:1,column:1}
@@ -52,12 +53,35 @@ impl Position{
     }
 }
 
+
+////////////////////////////////////////IMPLEMENTATION FOR DISPLAY/////////////////////////
+
+/// implemente display pour POSITION
+
+impl fmt::Display for Position {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "line {}, column {}", self.line, self.column)
+    }
+}
+
 /// Implementation du trait Display pour LexerError
 impl fmt::Display for LexerError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "LexerError: {} at line {} column {}", self.message, self.line, self.column)
     }
 }
+
+/// Implementation du  displax pour CompilerError
+impl fmt::Display for CompilerError{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            CompilerError::Lexer(err) => write!(f,"LexerError: {}",err),
+            // ajoute d'autre  cas    d'erreur du compilateur
+        }
+    }
+}
+
+/////////////////////////////////////////////IMPLEMENTATION DES ERREUR///////////////////////////
 
 /// Implementation pour les erreurs et methode de creation
 impl LexerError {
@@ -69,6 +93,17 @@ impl LexerError {
             column,
         }
     }
+
+
+    ///  méthode with_position à LexerError pour mettre à jour
+    /// la position après la création de l'erreur :
+
+    pub fn with_position(mut self, position: &Position) -> Self{
+        self.line = position.line;
+        self.column = position.column;
+        self
+    }
+
     /// Methode pour creer une erreur de caractere invalide
     pub fn invalid_character(c: char, line: usize, column: usize) -> Self {
         Self::new(LexerErrorKind::InvalidCharacter(c),
@@ -86,6 +121,17 @@ impl LexerError {
     /// Methode pour creer une erreur de commentaire non terminee
     pub fn unterminated_comment(line: usize, column: usize) -> Self {
         Self::new(LexerErrorKind::UnterminatedComment, "Unterminated comment".to_string(), line, column)
+    }
+}
+
+
+/// Implementation de Error pour CompilerError
+impl Error for CompilerError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            CompilerError::Lexer(err) => Some(err),
+            // Ajouter d'autres cas lorsque vous les implémentez
+        }
     }
 }
 
@@ -116,6 +162,15 @@ impl LexerErrorKind {
             LexerErrorKind::InvalidToken(_) => "Invalid Token",
             LexerErrorKind::UnterminatedString => "Unterminated String",
             LexerErrorKind::UnterminatedComment => "Unterminated Comment",
+        }
+    }
+    //une méthode pour obtenir un message d'erreur formaté :
+    pub fn error_message(&self) -> String{
+        match self {
+            LexerErrorKind::InvalidCharacter(c) => format!("Invalid character: {}", c),
+            LexerErrorKind::InvalidToken(t) => format!("Invalid token: {}", t),
+            LexerErrorKind::UnterminatedString => "Unterminated string".to_string(),
+            LexerErrorKind::UnterminatedComment => "Unterminated comment".to_string(),
         }
     }
 }
