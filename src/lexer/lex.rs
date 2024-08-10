@@ -4,13 +4,10 @@ use std::str::Chars;
 use std::iter::Peekable;
 //use std::process::exit;
 use std::collections::HashMap;
-use crate::lexer::token::{TokenType, Keywords};
+use crate::lexer::token::{TokenType, Keywords, Delimiter,Endmarker,};
 use crate::lexer::error::{LexerError,Position};
 use std::error::Error;
-
-
-
-
+// use crate::lexer::token::Endmarker::ENDMARKER;
 
 /// reprente le mode de syntaxe
 /// syntaxe mode like Rust  ou like Python
@@ -25,13 +22,13 @@ pub enum SyntaxMode {
 pub struct Token{
     pub text: String,
     pub kind: TokenType,
-    pub error: Option<LexerError>,
+    //pub error: Option<LexerError>,  //   implementation pour plus tard
 }
 
 /// implementation de la structure Token pour cree un nouveau token
 impl Token{
     pub fn new(text:String,kind:TokenType) -> Token {
-        Token{text,kind,error}
+        Token{text,kind}
     }
 }
 
@@ -55,7 +52,7 @@ impl <'a>Lexer<'a> {
             source: code_source.chars().peekable(),
             current_char: None,
             syntax_mode: SyntaxMode::Indentation,    //mode par defaut
-            keywords: Lexer::init_keyword(),
+            keywords: Lexer::init_keywords(),
             current_indent: 0,
             buffered_tokens: Vec::new(),
             // position: Position
@@ -133,7 +130,7 @@ impl <'a>Lexer<'a> {
 
     pub fn handle_indentation(&mut self) -> Result<Option<Token>, LexerError> {
         match self.syntax_mode{
-        SyntaxMode::Indentation => self.handdle_python_indentation(),
+        SyntaxMode::Indentation => self.handle_python_indentation(),
         SyntaxMode::Braces => self.handle_rust_indentation(),
         }
     }
@@ -194,15 +191,15 @@ impl <'a>Lexer<'a> {
         match self.current_char {
             Some('{') => {
                 self.next_char();
-                Ok(Some(Token::new("{".to_string(), TokenType::LCURBRACE)))
+                Ok(Some(Token::new("{".to_string(), TokenType::DELIMITERS(Delimiter::LCURBRACE))))
             },
             Some('}') => {
                 self.next_char();
-                Ok(Some(Token::new("}".to_string(), TokenType::RCURBRACE)))
+                Ok(Some(Token::new("}".to_string(), TokenType::DELIMITERS(Delimiter::RCURBRACE))))
             },
             Some(';') => {
                 self.next_char();
-                Ok(Some(Token::new(";".to_string(), TokenType::SEMICOLON)))
+                Ok(Some(Token::new(";".to_string(), TokenType::DELIMITERS(Delimiter::SEMICOLON))))
             },
             _ => Ok(None), // Aucun token d'indentation spécifique trouvé
         }
@@ -227,8 +224,7 @@ impl <'a>Lexer<'a> {
     //
     //     if let Some(indent_token) = self.handle_indentation()? {
     //         return Ok(indent_token)
-    //     }
-    //
+    //     }    //
     //
     // }
     // //////////////////////////////////////////
@@ -241,7 +237,7 @@ impl <'a>Lexer<'a> {
         loop {
             match self.get_token() {
                 Ok(token) => {
-                    if token.kind == TokenType::EOF {
+                    if token.kind == TokenType::ENDER(Endmarker::EOF) || TokenType::ENDER(Endmarker::ENDMARKER) {
                         break;
                     }
                     tokens.push(token);

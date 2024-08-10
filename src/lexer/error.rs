@@ -175,4 +175,4 @@ impl LexerErrorKind {
     }
 }
 
-impl Error for LexerError {}
+// impl Error for LexerError {}
