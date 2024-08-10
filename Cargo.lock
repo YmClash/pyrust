@@ -248,6 +248,7 @@ name = "pyrust"
 version = "0.1.0"
 dependencies = [
  "nom",
+ "num-traits",
  "ymcrust",
 ]
 

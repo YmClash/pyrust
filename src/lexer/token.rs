@@ -2,6 +2,7 @@ use std::fmt;
 use std::fmt::Formatter;
 
 
+
 /// PYRUST TOKEN TYPE
 
 ///  represente les differents type de token
@@ -145,7 +146,7 @@ impl Float {
 
 // Implémentation de Display pour l'affichage
 impl fmt::Display for Float {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
     }
 }

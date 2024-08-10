@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 ymcrust = {git = "https://github.com/Ymclash/ymcrust.git"}
 nom = "7.0"
-
+num-traits= "0.2.19"
 
 
 
@@ -14,3 +14,4 @@ nom = "7.0"
 [[test]]
 name = "lex_test"
 path = "tests/lex_test.rs"
+
