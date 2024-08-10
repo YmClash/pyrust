@@ -1,19 +1,15 @@
 use std::fmt;
 use std::fmt::Formatter;
-
-
+use std::str::FromStr;
 
 /// PYRUST TOKEN TYPE
+/// Représente les différents types de tokens
 
-///  represente les differents type de token
-
-
-
-#[derive(Debug, PartialEq,Eq, Clone)]
-pub enum TokenType{
-    //END MARKERS
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum TokenType {
+    // END MARKERS
     ENDER(Endmarker),
-    //Special Token
+    // Special Token
     NEWLINE,
     INDENT,
     DEDENT,
@@ -24,85 +20,87 @@ pub enum TokenType{
     DELIMITERS(Delimiter),
     LITERALS(Literal),
 
-    COMMENT,     //      COMMENTAIRE   / COMMENT
-    NL, //      NL        NOUVELLE LIGNE  / NEW LINE
+    COMMENT,     // COMMENTAIRE / COMMENT
+    NL, // NOUVELLE LIGNE / NEW LINE
 }
 
-/// Represente les differents type de   mot cle du langage
+/// Représente les différents types de mots-clés du langage
 
-#[derive(Debug, PartialEq,Eq, Clone)]
-pub enum Keywords{
-        AND, AS, ASYNC, AWAIT, BREAK, CONST, CLASS, CONTINUE, DEF, DEL, ELIF, ELSE,
-        ENUM, EXCEPT, FALSE, FN, FOR, FROM, IF, IMPL, IMPORT, IN, IS, LAMBDA, LET,
-        LOOP, MATCH, MOD, MUT, NONE, NOT, OR, PUB, PASS, RAISE, RETURN, SELF,
-        STATIC, STRUCT, SUPER, TRUE, TRY, TYPE, TYPEOF, USE, WITH, WHILE, YIELD,
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum Keywords {
+    AND, AS, ASYNC, AWAIT, BREAK, CONST, CLASS, CONTINUE, DEF, DEL, ELIF, ELSE,
+    ENUM, EXCEPT, FALSE, FN, FOR, FROM, IF, IMPL, IMPORT, IN, IS, LAMBDA, LET,
+    LOOP, MATCH, MOD, MUT, NONE, NOT, OR, PUB, PASS, RAISE, RETURN, SELF,
+    STATIC, STRUCT, SUPER, TRUE, TRY, TYPE, TYPEOF, USE, WITH, WHILE, YIELD,
 }
 
-#[derive(Debug, PartialEq,Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Operator {
-    //OPERATORS
-    PLUS, //           '+'          PLUS   / PLUS SIGN
-    MINUS, //          '-'          MOINS   / MINUS SIGN
-    STAR, //           '*'          ETOILE   / STAR
-    SLASH, //          '/'          SLASH   / SLASH
-    VBAR, //           '|'          BARRE VERTICALE  / VERTICAL BAR
-    AMPER, //          '&'          ET COMMERCIAL  / AMPERSAND
-    LESS, //           '<'          INFERIEUR   / LESS-THAN SIGN
-    GREATER, //        '>'          SUPERIEUR   / GREATER-THAN SIGN
-    EQUAL, //          '='          EGAL   / EQUALS SIGN
-    PERCENT, //        '%'          POURCENTAGE   / PERCENT
-    EQEQUAL, //        '=='         EGAL EGAL   / EQUALS EQUALS
-    NOTEQUAL, //       '!='         DIFFERENT   / NOT EQUAL
-    LESSEQUAL, //      '<='         INFERIEUR EGAL  / LESS-THAN EQUAL
-    FATARROW, //       '=>'         IMPLIQUE   / IMPLIES ****
-    GREATEREQUAL, //   '>='         SUPERIEUR EGAL  / GREATER-THAN EQUAL
-    TILDE, //          '~'          TILDE   / TILDE
-    CIRCUMFLEX, //     '^'          CIRCONFLEXE   / CIRCUMFLEX
-    LEFTSHIFT, //      '<<'         DECALAGE GAUCHE  / LEFT SHIFT
-    RIGHTSHIFT, //     '>>'         DECALAGE DROITE  / RIGHT SHIFT
-    DOUBLESTAR, //     '**'         DOUBLE ÉTOILE  / DOUBLE STAR
-    PLUSEQUAL, //      '+='         PLUS EGAL   / PLUS EQUAL
-    MINEQUAL, //       '-='         MOINS EGAL   / MINUS EQUAL
-    STAREQUAL, //      '*='         ETOILE EGAL  / STAR EQUAL
-    SLASHEQUAL, //     '/='         SLASH EGAL   / SLASH EQUAL
-    PERCENTEQUAL, //   '%='         POURCENTAGE EGAL  / PERCENT EQUAL
-    AMPEREQUAL, //     '&='         ET COMMERCIAL EGAL  / AMPERSAND EQUAL
-    VBAREQUAL, //       '|='        BARRE VERTICALE EGAL  / VERTICAL BAR EQUAL
-    CIRCUMFLEXEQUAL, // '^='        CIRCONFLEXE EGAL  / CIRCUMFLEX EQUAL
-    LEFTSHIFTEQUAL, //  '<<='       DECALAGE GAUCHE EGAL  / LEFT SHIFT EQUAL
-    RIGHTSHIFTEQUAL, // '>>='       DECALAGE DROITE EGAL  / RIGHT SHIFT EQUAL
-    DOUBLESTAREQUAL, // '**='       DOUBLE ETOILE EGAL  / DOUBLE STAR EQUAL
-    DOUBLESLASH, //     '//'        DOUBLE SLASH  / DOUBLE SLASH
-    DOUBLESLASHEQUAL, //'//='       DOUBLE SLASH EGAL  / DOUBLE SLASH EQUAL
-    AT, //              '@'         AROBASE   / AT
-    ATEQUAL, //         '@='        AROBASE EGAL  / AT EQUAL
-    RARROW, //          '->'        FLECHE DROITE  / RIGHT ARROW
-    ELLIPSIS, //        '...'       POINTS DE SUSPENSION  / ELLIPSIS      **COMMENT
-    COLONEQUAL, //      ':='        DEUX POINT EGAL  / COLON EQUAL
-    DCOLON, //          '::'        DEUX POINT DEUX POINT  / DOUBLE COLON
-    STARSLASH, //       '*/'        ETOILE SLASH  / STAR SLASH           **COMMENT
-    SLASHSTAR, //       '/*'        SLASH ETOILE  / SLASH STAR           **COMMENT
-    DIESE, //           '#'         DIESE   / HASH ///                    **COMMENT
-
-
+    // OPERATORS
+    PLUS, // '+' PLUS / PLUS SIGN
+    MINUS, // '-' MOINS / MINUS SIGN
+    STAR, // '*' ETOILE / STAR
+    SLASH, // '/' SLASH / SLASH
+    VBAR, // '|' BARRE VERTICALE / VERTICAL BAR
+    AMPER, // '&' ET COMMERCIAL / AMPERSAND
+    LESS, // '<' INFERIEUR / LESS-THAN SIGN
+    GREATER, // '>' SUPERIEUR / GREATER-THAN SIGN
+    EQUAL, // '=' EGAL / EQUALS SIGN
+    PERCENT, // '%' POURCENTAGE / PERCENT
+    EQEQUAL, // '==' EGAL EGAL / EQUALS EQUALS
+    NOTEQUAL, // '!=' DIFFERENT / NOT EQUAL
+    LESSEQUAL, // '<=' INFERIEUR EGAL / LESS-THAN EQUAL
+    FATARROW, // '=>' IMPLIQUE / IMPLIES
+    GREATEREQUAL, // '>=' SUPERIEUR EGAL / GREATER-THAN EQUAL
+    TILDE, // '~' TILDE / TILDE
+    CIRCUMFLEX, // '^' CIRCONFLEXE / CIRCUMFLEX
+    LEFTSHIFT, // '<<' DECALAGE GAUCHE / LEFT SHIFT
+    RIGHTSHIFT, // '>>' DECALAGE DROITE / RIGHT SHIFT
+    DOUBLESTAR, // '**' DOUBLE ÉTOILE / DOUBLE STAR
+    PLUSEQUAL, // '+=' PLUS EGAL / PLUS EQUAL
+    MINEQUAL, // '-=' MOINS EGAL / MINUS EQUAL
+    STAREQUAL, // '*=' ETOILE EGAL / STAR EQUAL
+    SLASHEQUAL, // '/=' SLASH EGAL / SLASH EQUAL
+    PERCENTEQUAL, // '%=' POURCENTAGE EGAL / PERCENT EQUAL
+    AMPEREQUAL, // '&=' ET COMMERCIAL EGAL / AMPERSAND EQUAL
+    VBAREQUAL, // '|=' BARRE VERTICALE EGAL / VERTICAL BAR EQUAL
+    CIRCUMFLEXEQUAL, // '^=' CIRCONFLEXE EGAL / CIRCUMFLEX EQUAL
+    LEFTSHIFTEQUAL, // '<<=' DECALAGE GAUCHE EGAL / LEFT SHIFT EQUAL
+    RIGHTSHIFTEQUAL, // '>>=' DECALAGE DROITE EGAL / RIGHT SHIFT EQUAL
+    DOUBLESTAREQUAL, // '**=' DOUBLE ETOILE EGAL / DOUBLE STAR EQUAL
+    DOUBLESLASH, // '//' DOUBLE SLASH / DOUBLE SLASH
+    DOUBLESLASHEQUAL, // '//=' DOUBLE SLASH EGAL / DOUBLE SLASH EQUAL
+    AT, // '@' AROBASE / AT
+    ATEQUAL, // '@=' AROBASE EGAL / AT EQUAL
+    RARROW, // '->' FLECHE DROITE / RIGHT ARROW
+    ELLIPSIS, // '...' POINTS DE SUSPENSION / ELLIPSIS
+    COLONEQUAL, // ':=' DEUX POINT EGAL / COLON EQUAL
+    STARSLASH, // '*/' ETOILE SLASH / STAR SLASH
+    SLASHSTAR, // '/*' SLASH ETOILE / SLASH STAR
+    DIESE, // '#' DIESE / HASH
+    EXCLAMATION, // '!' POINT D'EXCLAMATION / EXCLAMATION POINT
+    INTERROGATION, // '?' POINT D'INTERROGATION / QUESTION MARK
 }
 
-#[derive(Debug, PartialEq,Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Delimiter {
-    LPAR, //        '('         PARANTHESE GAUCHE / LEFT PARENTHESIS
-    RPAR, //        ')'         PARANTHESE DROITE / RIGHT PARENTHESIS
-    LSQB, //        '['         CROCHET GAUCHE / LEFT SQUARE BRACKET
-    RSQB, //        ']'         CROCHET DROIT / RIGHT SQUARE BRACKET
-    COLON, //       ':'         DEUX POINT / COLON
-    COMMA, //       ','         VIRGULE / COMMA
-    SEMICOLON, //   ';'         POINT VIRGULE / SEMICOLON
-    DOT, //         '.'         POINT / DOT
-    LCURBRACE, //   '{'         ACCOLADE GAUCHE / LEFT CURLY BRACKET
-    RCURBRACE, //   '}'         ACCOLADE DROITE / RIGHT CURLY BRACKET
-    //AT, //          '@'         AROBASE / AT
-    ELLIPSIS, //    '...'       POINTS DE SUSPENSION / ELLIPSIS
-    DCOLON, //      '::'        DEUX POINT DEUX POINT / DOUBLE COLON
+    LPAR, // '(' PARANTHESE GAUCHE / LEFT PARENTHESIS
+    RPAR, // ')' PARANTHESE DROITE / RIGHT PARENTHESIS
+    LSQB, // '[' CROCHET GAUCHE / LEFT SQUARE BRACKET
+    RSQB, // ']' CROCHET DROIT / RIGHT SQUARE BRACKET
+    COLON, // ':' DEUX POINT / COLON
+    COMMA, // ',' VIRGULE / COMMA
+    SEMICOLON, // ';' POINT VIRGULE / SEMICOLON
+    DOT, // '.' POINT / DOT
+    LCURBRACE, // '{' ACCOLADE GAUCHE / LEFT CURLY BRACKET
+    RCURBRACE, // '}' ACCOLADE DROITE / RIGHT CURLY BRACKET
+    ELLIPSIS, // '...' POINTS DE SUSPENSION / ELLIPSIS
+    DCOLON, // '::' DEUX POINT DEUX POINT / DOUBLE COLON
 }
+
+// Utiliser un type personnalisé pour représenter les nombres à virgule flottante qui implémente Eq
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Float(String);
 
 #[derive(Debug, PartialEq, Clone, Eq)]
 pub enum Literal {
@@ -111,24 +109,17 @@ pub enum Literal {
     STRING(String),
     INTEGER(i64),
     FLOAT(Float),
-    //IMAGINARY(complex::Complex<f32>),
     HEXNUMBER(String),
     BOOLEAN(bool),
     CHAR(char),
 }
 
-#[derive(Debug, PartialEq,Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Endmarker {
     ENDMARKER,
     EOF,
 }
-
-
-// Utiliser un type personnalisé pour représenter les nombres à virgule flottante qui implémente Eq
-
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Float(String);
-
+/////////////////////IMPLEMENTATION  DE  FLOAT////////////////////////////////////////
 impl Float {
     // Méthode pour créer un nouveau Float
     pub fn new<T: ToString>(value: T) -> Result<Self, ParseFloatError> {
@@ -175,193 +166,177 @@ impl From<std::num::ParseFloatError> for ParseFloatError {
         ParseFloatError::InvalidFloat
     }
 }
-
-/////////////////IMPLEMENTATION DES METHODES POUR LE TYPE DE TOKEN////////////////////
+///////////////// IMPLEMENTATION DES METHODES POUR LE TYPE DE TOKEN ////////////////////
 impl TokenType {
-    /// verifie sie le token est un mot cle
+    /// Vérifie si le token est un mot-clé
     pub fn is_keyword(&self) -> bool {
-        matches!(self,TokenType::KEYWORD(_))
-    }
-    /// verifie si le token est un operateur
-    pub fn is_operator(&self) ->bool{
-        matches!(self,TokenType::OPERATOR(_))
+        matches!(self, TokenType::KEYWORD(_))
     }
 
-    /// verifie si le token est un literal
-    pub fn is_literal(&self) -> bool {
-        matches!(self,TokenType::LITERALS(_))
+    /// Vérifie si le token est un opérateur
+    pub fn is_operator(&self) -> bool {
+        matches!(self, TokenType::OPERATOR(_))
     }
-    /// verifie si le token est un delimitateur
+
+    /// Vérifie si le token est un littéral
+    pub fn is_literal(&self) -> bool {
+        matches!(self, TokenType::LITERALS(_))
+    }
+
+    /// Vérifie si le token est un délimiteur
     pub fn is_delimiter(&self) -> bool {
         matches!(self, TokenType::DELIMITERS(_))
     }
-    //  vérifier si un token est un marqueur de fin
+
+    /// Vérifie si le token est un marqueur de fin
     pub fn is_end_marker(&self) -> bool {
         matches!(self, TokenType::ENDER(_))
     }
-
 }
 
-// implementation  die Display pour TokenType
 
-impl fmt::Display for TokenType{
+
+// Implementation de Display pour TokenType
+impl fmt::Display for TokenType {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            TokenType::KEYWORD(kw) => write!(f,"{:?}",kw),
-            TokenType::OPERATOR(op) => write!(f,"{:?}",op),
-            TokenType::DELIMITERS(del) => write!(f,"{:?}",del),
-            TokenType::LITERALS(lit) => write!(f,"{:?}",lit),
-            TokenType::ENDER(end) => write!(f,"{:?}",end),
-            TokenType::NEWLINE => write!(f,"NEWLINE"),
-            TokenType::INDENT => write!(f,"INDENT"),
-            TokenType::DEDENT => write!(f,"DEDENT"),
-            TokenType::BOOLEAN => write!(f,"BOOLEAN"),
-            TokenType::COMMENT => write!(f,"COMMENT"),
-            TokenType::NL => write!(f,"NL"),
+            TokenType::KEYWORD(kw) => write!(f, "{:?}", kw),
+            TokenType::OPERATOR(op) => write!(f, "{:?}", op),
+            TokenType::DELIMITERS(del) => write!(f, "{:?}", del),
+            TokenType::LITERALS(lit) => write!(f, "{:?}", lit),
+            TokenType::ENDER(end) => write!(f, "{:?}", end),
+            TokenType::NEWLINE => write!(f, "NEWLINE"),
+            TokenType::INDENT => write!(f, "INDENT"),
+            TokenType::DEDENT => write!(f, "DEDENT"),
+            TokenType::BOOLEAN => write!(f, "BOOLEAN"),
+            TokenType::COMMENT => write!(f, "COMMENT"),
+            TokenType::NL => write!(f, "NL"),
         }
     }
 }
-
-//implementatnion  de  From<String> pour  TokenType
-
 
 // Implementation de From<String> pour TokenType
-impl From<String> for TokenType {
-    fn from(s: String) -> Self {
-        match s.as_str() {
+impl FromStr for TokenType {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
             // Opérateurs
-            "+" => TokenType::OPERATOR(Operator::PLUS),
-            "-" => TokenType::OPERATOR(Operator::MINUS),
-            "*" => TokenType::OPERATOR(Operator::STAR),
-            "/" => TokenType::OPERATOR(Operator::SLASH),
-            "|" => TokenType::OPERATOR(Operator::VBAR),
-            "&" => TokenType::OPERATOR(Operator::AMPER),
-            "<" => TokenType::OPERATOR(Operator::LESS),
-            ">" => TokenType::OPERATOR(Operator::GREATER),
-            "=" => TokenType::OPERATOR(Operator::EQUAL),
-            "%" => TokenType::OPERATOR(Operator::PERCENT),
-            "==" => TokenType::OPERATOR(Operator::EQEQUAL),
-            "!=" => TokenType::OPERATOR(Operator::NOTEQUAL),
-            "<=" => TokenType::OPERATOR(Operator::LESSEQUAL),
-            "=>" => TokenType::OPERATOR(Operator::FATARROW),
-            ">=" => TokenType::OPERATOR(Operator::GREATEREQUAL),
-            "~" => TokenType::OPERATOR(Operator::TILDE),
-            "^" => TokenType::OPERATOR(Operator::CIRCUMFLEX),
-            "<<" => TokenType::OPERATOR(Operator::LEFTSHIFT),
-            ">>" => TokenType::OPERATOR(Operator::RIGHTSHIFT),
-            "**" => TokenType::OPERATOR(Operator::DOUBLESTAR),
-            "+=" => TokenType::OPERATOR(Operator::PLUSEQUAL),
-            "-=" => TokenType::OPERATOR(Operator::MINEQUAL),
-            "*=" => TokenType::OPERATOR(Operator::STAREQUAL),
-            "/=" => TokenType::OPERATOR(Operator::SLASHEQUAL),
-            "%=" => TokenType::OPERATOR(Operator::PERCENTEQUAL),
-            "&=" => TokenType::OPERATOR(Operator::AMPEREQUAL),
-            "|=" => TokenType::OPERATOR(Operator::VBAREQUAL),
-            "^=" => TokenType::OPERATOR(Operator::CIRCUMFLEXEQUAL),
-            "<<=" => TokenType::OPERATOR(Operator::LEFTSHIFTEQUAL),
-            ">>=" => TokenType::OPERATOR(Operator::RIGHTSHIFTEQUAL),
-            "**=" => TokenType::OPERATOR(Operator::DOUBLESTAREQUAL),
-            "//" => TokenType::OPERATOR(Operator::DOUBLESLASH),
-            "//=" => TokenType::OPERATOR(Operator::DOUBLESLASHEQUAL),
-            "@" => TokenType::OPERATOR(Operator::AT),
-            "@=" => TokenType::OPERATOR(Operator::ATEQUAL),
-            "->" => TokenType::OPERATOR(Operator::RARROW),
-            ":=" => TokenType::OPERATOR(Operator::COLONEQUAL),
-            "::" => TokenType::OPERATOR(Operator::DCOLON),
-            "*/" => TokenType::OPERATOR(Operator::STARSLASH),
-            "/*" => TokenType::OPERATOR(Operator::SLASHSTAR),
-            "#" => TokenType::OPERATOR(Operator::DIESE),
+            "+" => Ok(TokenType::OPERATOR(Operator::PLUS)),
+            "-" => Ok(TokenType::OPERATOR(Operator::MINUS)),
+            "*" => Ok(TokenType::OPERATOR(Operator::STAR)),
+            "/" => Ok(TokenType::OPERATOR(Operator::SLASH)),
+            "|" => Ok(TokenType::OPERATOR(Operator::VBAR)),
+            "&" => Ok(TokenType::OPERATOR(Operator::AMPER)),
+            "<" => Ok(TokenType::OPERATOR(Operator::LESS)),
+            ">" => Ok(TokenType::OPERATOR(Operator::GREATER)),
+            "=" => Ok(TokenType::OPERATOR(Operator::EQUAL)),
+            "%" => Ok(TokenType::OPERATOR(Operator::PERCENT)),
+            "==" => Ok(TokenType::OPERATOR(Operator::EQEQUAL)),
+            "!=" => Ok(TokenType::OPERATOR(Operator::NOTEQUAL)),
+            "<=" => Ok(TokenType::OPERATOR(Operator::LESSEQUAL)),
+            "=>" => Ok(TokenType::OPERATOR(Operator::FATARROW)),
+            ">=" => Ok(TokenType::OPERATOR(Operator::GREATEREQUAL)),
+            "~" => Ok(TokenType::OPERATOR(Operator::TILDE)),
+            "^" => Ok(TokenType::OPERATOR(Operator::CIRCUMFLEX)),
+            "<<" => Ok(TokenType::OPERATOR(Operator::LEFTSHIFT)),
+            ">>" => Ok(TokenType::OPERATOR(Operator::RIGHTSHIFT)),
+            "**" => Ok(TokenType::OPERATOR(Operator::DOUBLESTAR)),
+            "+=" => Ok(TokenType::OPERATOR(Operator::PLUSEQUAL)),
+            "-=" => Ok(TokenType::OPERATOR(Operator::MINEQUAL)),
+            "*=" => Ok(TokenType::OPERATOR(Operator::STAREQUAL)),
+            "/=" => Ok(TokenType::OPERATOR(Operator::SLASHEQUAL)),
+            "%=" => Ok(TokenType::OPERATOR(Operator::PERCENTEQUAL)),
+            "&=" => Ok(TokenType::OPERATOR(Operator::AMPEREQUAL)),
+            "|=" => Ok(TokenType::OPERATOR(Operator::VBAREQUAL)),
+            "^=" => Ok(TokenType::OPERATOR(Operator::CIRCUMFLEXEQUAL)),
+            "<<=" => Ok(TokenType::OPERATOR(Operator::LEFTSHIFTEQUAL)),
+            ">>=" => Ok(TokenType::OPERATOR(Operator::RIGHTSHIFTEQUAL)),
+            "**=" => Ok(TokenType::OPERATOR(Operator::DOUBLESTAREQUAL)),
+            "//" => Ok(TokenType::OPERATOR(Operator::DOUBLESLASH)),
+            "//=" => Ok(TokenType::OPERATOR(Operator::DOUBLESLASHEQUAL)),
+            "@" => Ok(TokenType::OPERATOR(Operator::AT)),
+            "@=" => Ok(TokenType::OPERATOR(Operator::ATEQUAL)),
+            "->" => Ok(TokenType::OPERATOR(Operator::RARROW)),
+            ":=" => Ok(TokenType::OPERATOR(Operator::COLONEQUAL)),
+            // "::" => Ok(TokenType::OPERATOR(Operator::DCOLON)),
+            "*/" => Ok(TokenType::OPERATOR(Operator::STARSLASH)),
+            "/*" => Ok(TokenType::OPERATOR(Operator::SLASHSTAR)),
+            "#" => Ok(TokenType::OPERATOR(Operator::DIESE)),
 
             // Délimiteurs
-            "(" => TokenType::DELIMITERS(Delimiter::LPAR),
-            ")" => TokenType::DELIMITERS(Delimiter::RPAR),
-            "[" => TokenType::DELIMITERS(Delimiter::LSQB),
-            "]" => TokenType::DELIMITERS(Delimiter::RSQB),
-            ":" => TokenType::DELIMITERS(Delimiter::COLON),
-            "," => TokenType::DELIMITERS(Delimiter::COMMA),
-            ";" => TokenType::DELIMITERS(Delimiter::SEMICOLON),
-            "." => TokenType::DELIMITERS(Delimiter::DOT),
-            "{" => TokenType::DELIMITERS(Delimiter::LCURBRACE),
-            "}" => TokenType::DELIMITERS(Delimiter::RCURBRACE),
-            "..." => TokenType::DELIMITERS(Delimiter::ELLIPSIS),
+            "(" => Ok(TokenType::DELIMITERS(Delimiter::LPAR)),
+            ")" => Ok(TokenType::DELIMITERS(Delimiter::RPAR)),
+            "[" => Ok(TokenType::DELIMITERS(Delimiter::LSQB)),
+            "]" => Ok(TokenType::DELIMITERS(Delimiter::RSQB)),
+            ":" => Ok(TokenType::DELIMITERS(Delimiter::COLON)),
+            "," => Ok(TokenType::DELIMITERS(Delimiter::COMMA)),
+            ";" => Ok(TokenType::DELIMITERS(Delimiter::SEMICOLON)),
+            "." => Ok(TokenType::DELIMITERS(Delimiter::DOT)),
+            "::" => Ok(TokenType::DELIMITERS(Delimiter::DCOLON)),
+            "{" => Ok(TokenType::DELIMITERS(Delimiter::LCURBRACE)),
+            "}" => Ok(TokenType::DELIMITERS(Delimiter::RCURBRACE)),
+            "..." => Ok(TokenType::DELIMITERS(Delimiter::ELLIPSIS)),
 
             // Mots-clés
-            "and" => TokenType::KEYWORD(Keywords::AND),
-            "as" => TokenType::KEYWORD(Keywords::AS),
-            "async" => TokenType::KEYWORD(Keywords::ASYNC),
-            "await" => TokenType::KEYWORD(Keywords::AWAIT),
-            "break" => TokenType::KEYWORD(Keywords::BREAK),
-            "const" => TokenType::KEYWORD(Keywords::CONST),
-            "class" => TokenType::KEYWORD(Keywords::CLASS),
-            "continue" => TokenType::KEYWORD(Keywords::CONTINUE),
-            "def" => TokenType::KEYWORD(Keywords::DEF),
-            "del" => TokenType::KEYWORD(Keywords::DEL),
-            "elif" => TokenType::KEYWORD(Keywords::ELIF),
-            "else" => TokenType::KEYWORD(Keywords::ELSE),
-            "enum" => TokenType::KEYWORD(Keywords::ENUM),
-            "except" => TokenType::KEYWORD(Keywords::EXCEPT),
-            "false" | "False" | "FALSE" => TokenType::KEYWORD(Keywords::FALSE),
-            "fn" => TokenType::KEYWORD(Keywords::FN),
-            "for" => TokenType::KEYWORD(Keywords::FOR),
-            "from" => TokenType::KEYWORD(Keywords::FROM),
-            "if" => TokenType::KEYWORD(Keywords::IF),
-            "impl" => TokenType::KEYWORD(Keywords::IMPL),
-            "import" => TokenType::KEYWORD(Keywords::IMPORT),
-            "in" => TokenType::KEYWORD(Keywords::IN),
-            "is" => TokenType::KEYWORD(Keywords::IS),
-            "lambda" => TokenType::KEYWORD(Keywords::LAMBDA),
-            "let" => TokenType::KEYWORD(Keywords::LET),
-            "loop" => TokenType::KEYWORD(Keywords::LOOP),
-            "match" => TokenType::KEYWORD(Keywords::MATCH),
-            "mod" => TokenType::KEYWORD(Keywords::MOD),
-            "mut" => TokenType::KEYWORD(Keywords::MUT),
-            "none" | "None" | "NONE" => TokenType::KEYWORD(Keywords::NONE),
-            "not" => TokenType::KEYWORD(Keywords::NOT),
-            "or" => TokenType::KEYWORD(Keywords::OR),
-            "pub" => TokenType::KEYWORD(Keywords::PUB),
-            "pass" => TokenType::KEYWORD(Keywords::PASS),
-            "raise" => TokenType::KEYWORD(Keywords::RAISE),
-            "return" => TokenType::KEYWORD(Keywords::RETURN),
-            "self" => TokenType::KEYWORD(Keywords::SELF),
-            "static" => TokenType::KEYWORD(Keywords::STATIC),
-            "struct" => TokenType::KEYWORD(Keywords::STRUCT),
-            "super" => TokenType::KEYWORD(Keywords::SUPER),
-            "true" | "True" | "TRUE" => TokenType::KEYWORD(Keywords::TRUE),
-            "try" => TokenType::KEYWORD(Keywords::TRY),
-            "type" => TokenType::KEYWORD(Keywords::TYPE),
-            "typeof" => TokenType::KEYWORD(Keywords::TYPEOF),
-            "use" => TokenType::KEYWORD(Keywords::USE),
-            "with" => TokenType::KEYWORD(Keywords::WITH),
-            "while" => TokenType::KEYWORD(Keywords::WHILE),
-            "yield" => TokenType::KEYWORD(Keywords::YIELD),
+            "and" => Ok(TokenType::KEYWORD(Keywords::AND)),
+            "as" => Ok(TokenType::KEYWORD(Keywords::AS)),
+            "async" => Ok(TokenType::KEYWORD(Keywords::ASYNC)),
+            "await" => Ok(TokenType::KEYWORD(Keywords::AWAIT)),
+            "break" => Ok(TokenType::KEYWORD(Keywords::BREAK)),
+            "const" => Ok(TokenType::KEYWORD(Keywords::CONST)),
+            "class" => Ok(TokenType::KEYWORD(Keywords::CLASS)),
+            "continue" => Ok(TokenType::KEYWORD(Keywords::CONTINUE)),
+            "def" => Ok(TokenType::KEYWORD(Keywords::DEF)),
+            "del" => Ok(TokenType::KEYWORD(Keywords::DEL)),
+            "elif" => Ok(TokenType::KEYWORD(Keywords::ELIF)),
+            "else" => Ok(TokenType::KEYWORD(Keywords::ELSE)),
+            "enum" => Ok(TokenType::KEYWORD(Keywords::ENUM)),
+            "except" => Ok(TokenType::KEYWORD(Keywords::EXCEPT)),
+            "false" | "False" | "FALSE" => Ok(TokenType::KEYWORD(Keywords::FALSE)),
+            "fn" => Ok(TokenType::KEYWORD(Keywords::FN)),
+            "for" => Ok(TokenType::KEYWORD(Keywords::FOR)),
+            "from" => Ok(TokenType::KEYWORD(Keywords::FROM)),
+            "if" => Ok(TokenType::KEYWORD(Keywords::IF)),
+            "impl" => Ok(TokenType::KEYWORD(Keywords::IMPL)),
+            "import" => Ok(TokenType::KEYWORD(Keywords::IMPORT)),
+            "in" => Ok(TokenType::KEYWORD(Keywords::IN)),
+            "is" => Ok(TokenType::KEYWORD(Keywords::IS)),
+            "lambda" => Ok(TokenType::KEYWORD(Keywords::LAMBDA)),
+            "let" => Ok(TokenType::KEYWORD(Keywords::LET)),
+            "loop" => Ok(TokenType::KEYWORD(Keywords::LOOP)),
+            "match" => Ok(TokenType::KEYWORD(Keywords::MATCH)),
+            "mod" => Ok(TokenType::KEYWORD(Keywords::MOD)),
+            "mut" => Ok(TokenType::KEYWORD(Keywords::MUT)),
+            "none" | "None" | "NONE" => Ok(TokenType::KEYWORD(Keywords::NONE)),
+            "not" => Ok(TokenType::KEYWORD(Keywords::NOT)),
+            "or" => Ok(TokenType::KEYWORD(Keywords::OR)),
+            "pub" => Ok(TokenType::KEYWORD(Keywords::PUB)),
+            "pass" => Ok(TokenType::KEYWORD(Keywords::PASS)),
+            "raise" => Ok(TokenType::KEYWORD(Keywords::RAISE)),
+            "return" => Ok(TokenType::KEYWORD(Keywords::RETURN)),
+            "self" => Ok(TokenType::KEYWORD(Keywords::SELF)),
+            "static" => Ok(TokenType::KEYWORD(Keywords::STATIC)),
+            "struct" => Ok(TokenType::KEYWORD(Keywords::STRUCT)),
+            "super" => Ok(TokenType::KEYWORD(Keywords::SUPER)),
+            "true" | "True" | "TRUE" => Ok(TokenType::KEYWORD(Keywords::TRUE)),
+            "try" => Ok(TokenType::KEYWORD(Keywords::TRY)),
+            "type" => Ok(TokenType::KEYWORD(Keywords::TYPE)),
+            "typeof" => Ok(TokenType::KEYWORD(Keywords::TYPEOF)),
+            "use" => Ok(TokenType::KEYWORD(Keywords::USE)),
+            "with" => Ok(TokenType::KEYWORD(Keywords::WITH)),
+            "while" => Ok(TokenType::KEYWORD(Keywords::WHILE)),
+            "yield" => Ok(TokenType::KEYWORD(Keywords::YIELD)),
 
             // Littéraux
-            s if s.starts_with('"') && s.ends_with('"') => TokenType::LITERALS(Literal::STRING(s[1..s.len()-1].to_string())),
-            s if s.parse::<i64>().is_ok() => TokenType::LITERALS(Literal::INTEGER(s.parse().unwrap())),
-            s if s.starts_with("0x") => TokenType::LITERALS(Literal::HEXNUMBER(s.to_string())),
-            s if s.parse::<f64>().is_ok() => TokenType::LITERALS(Literal::FLOAT(Float(s.to_string()))),
+            s if s.starts_with('"') && s.ends_with('"') => Ok(TokenType::LITERALS(Literal::STRING(s[1..s.len()-1].to_string()))),
+            s if s.parse::<i64>().is_ok() => Ok(TokenType::LITERALS(Literal::INTEGER(s.parse().unwrap()))),
+            s if s.starts_with("0x") => Ok(TokenType::LITERALS(Literal::HEXNUMBER(s.to_string()))),
+            s if s.parse::<f64>().is_ok() => Ok(TokenType::LITERALS(Literal::FLOAT(Float(s.to_string())))),
             s if s.starts_with('\'') && s.ends_with('\'') && s.len() == 3 =>
-                TokenType::LITERALS(Literal::CHAR(s.chars().nth(1).unwrap())),
-            // "true" | "True" | "TRUE" => TokenType::LITERALS(Literal::BOOLEAN(true)),
-            // "false" | "False" | "FALSE" => TokenType::LITERALS(Literal::BOOLEAN(false)),
-            //
+                Ok(TokenType::LITERALS(Literal::CHAR(s.chars().nth(1).unwrap()))),
 
-            _ => TokenType::LITERALS(Literal::IDENTIFIER(s)), // Par défaut, considérez-le comme un identifiant
+            _ => Ok(TokenType::LITERALS(Literal::IDENTIFIER(s.to_string()))), // Par défaut, considérez-le comme un identifiant
         }
     }
 }
-
-//
-//
-//
-//
-// rustkeywords = ["as", "break", "const", "continue", "crate","dyn", "else", "enum", "extern", "false", "fn",
-// "for", "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut", "pub", "ref",
-// "return", "self", "Self", "static", "struct", "super", "trait", "true", "type", "unsafe",
-// "use", "where", "while", "async", "await", "dyn",]
-//
-//
-// pythonkeywords = sorted(['False', 'None', 'True', 'and', 'as', 'assert', 'async', 'await', 'break', 'class',
-// 'continue', 'def', 'del', 'elif', 'else', 'except', 'finally', 'for', 'from', 'global',
-// 'if', 'import', 'in', 'is', 'lambda', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return',
-// 'try', 'while', 'with', 'yield'])

@@ -16,8 +16,8 @@ pub enum CompilerError {
 
 // structure  de la position Elle permettra de suivre précisément la position dans le code source.
 pub struct Position{
-    line: usize,
-    column: usize,
+    pub(crate) line: usize,
+    pub(crate) column: usize,
 }
 
 ///Structure pour les erreurs du lexer

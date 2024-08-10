@@ -4,7 +4,7 @@ use std::str::Chars;
 use std::iter::Peekable;
 //use std::process::exit;
 use std::collections::HashMap;
-use crate::lexer::token::{TokenType, Keywords, Delimiter,Endmarker,};
+use crate::lexer::token::{TokenType, Keywords, Delimiter,Endmarker,Literal,Operator,Float};
 use crate::lexer::error::{LexerError,Position};
 use std::error::Error;
 
@@ -40,6 +40,7 @@ pub struct Lexer<'a> {
     keywords: HashMap<String,TokenType>,
     current_indent: usize,
     buffered_tokens: Vec<Token>, // pour la gestion des token multiple en syntaxe_mode : python
+    position: Position
 }
 
 /// Implementation de la structure Lexer
@@ -55,7 +56,7 @@ impl <'a>Lexer<'a> {
             keywords: Lexer::init_keywords(),
             current_indent: 0,
             buffered_tokens: Vec::new(),
-            // position: Position
+            position: Position{line:1,column:1}
         };
         lexer.next_char();
         lexer.detect_syntax();
@@ -158,7 +159,6 @@ impl <'a>Lexer<'a> {
             //     return Err(LexerError::invalid_indentation(self.line, self.column));
             // }
 
-
             let mut tokens = Vec::new();
 
             // Si le niveau d'indentation augmente, produire un token `INDENT`
@@ -207,6 +207,14 @@ impl <'a>Lexer<'a> {
 
 
     pub fn next_char(&mut self) {
+        if let Some(c) = self.current_char{
+            if c == '\n' {
+                self.position.line +=1;
+                self.position.column= 1;
+            }else {
+                self.position.column +=1;
+            }
+        }
         self.current_char = self.source.next()
     }
     pub fn peek(&mut self) -> Option<&char> {
@@ -215,40 +223,192 @@ impl <'a>Lexer<'a> {
     pub fn abort() {}
 
     // /////////////////////////////
-    // pub fn get_token(&mut self) -> Result<Option<Token>,LexerError>{
-    //     if let Some(token) = self.buffered_tokens.pop(){
-    //         return Ok(token);
-    //     }
-    //     self.skip_whitespace();
-    //     self.skip_comment();
-    //
-    //     if let Some(indent_token) = self.handle_indentation()? {
-    //         return Ok(indent_token)
-    //     }    //
-    //
-    // }
-    // //////////////////////////////////////////
+    pub fn get_token(&mut self) -> Result<Option<Token>, LexerError> {
+        if let Some(token) = self.buffered_tokens.pop() {
+            return Ok(Some(token));
+        }
+        self.skip_whitespace();
+        self.skip_comment();
 
-    fn get_identifier_or_keyword() {}
-    fn get_number() {}
-    fn get_string() {}
+        if let Some(indent_token) = self.handle_indentation()? {
+            return Ok(Some(indent_token));
+        }
+            ////// redondance de code
+        // if let Some(token) = self.get_identifier_or_keyword()? {
+        //     return Ok(Some(token));
+        // }
+        //
+        // if let Some(token) = self.get_number()? {
+        //     return Ok(Some(token));
+        // }
+        //
+        // if let Some(token) = self.get_string()? {
+        //     return Ok(Some(token));
+        // }
+
+        match self.current_char {
+            Some(c) if c.is_ascii_alphabetic() => self.get_identifier_or_keyword(),
+            Some(c) if c.is_ascii_digit() => self.get_number(),
+            Some('"') => self.get_string(),
+            Some(c) => self.get_operator_or_delimiter(c),
+            None => Ok(Some(Token::new("".to_string(), TokenType::ENDER(Endmarker::EOF)))),
+        }
+    }
+
+    fn get_identifier_or_keyword(&mut self) -> Result<Option<Token>, LexerError> {
+        let mut identifier = String::new();
+        while let Some(c) = self.current_char {
+            if c.is_ascii_alphanumeric() || c == '_' {
+                identifier.push(c);
+                self.next_char();
+            } else {
+                break;
+            }
+        }
+        let token_type = self.keywords.get(&identifier)
+            .cloned()
+            .unwrap_or(TokenType::LITERALS(Literal::IDENTIFIER(identifier.clone())));
+        Ok(Some(Token::new(identifier, token_type)))
+    }
+
+    /// implementation  de  get_number
+
+    fn get_number(&mut self) -> Result<Option<Token>, LexerError> {
+        let mut number = String::new();
+        let mut is_float = false;
+        let mut is_hex = false;
+
+        // Vérifier si c'est un nombre hexadécimal
+        if self.current_char == Some('0') && self.peek() == Some(&'x') {
+            is_hex = true;
+            number.push('0');
+            self.next_char();
+            number.push('x');
+            self.next_char();
+        }
+
+        while let Some(c) = self.current_char {
+            if c.is_ascii_digit() || (is_hex && c.is_ascii_hexdigit()) || (c == '.' && !is_float) {
+                if c == '.' {
+                    is_float = true;
+                }
+                number.push(c);
+                self.next_char();
+            } else if (c == 'e' || c == 'E') && !is_hex {
+                // Notation scientifique
+                number.push(c);
+                self.next_char();
+                if self.current_char == Some('+') || self.current_char == Some('-') {
+                    number.push(self.current_char.unwrap());
+                    self.next_char();
+                }
+            } else {
+                break;
+            }
+        }
+
+        let token_type = if is_hex {
+            TokenType::LITERALS(Literal::HEXNUMBER(number.clone()))
+        } else if is_float {
+            TokenType::LITERALS(Literal::FLOAT(Float(number.clone())))
+        } else {
+            TokenType::LITERALS(Literal::INTEGER(number.parse().unwrap()))
+        };
+
+        Ok(Some(Token::new(number, token_type)))
+    }
+
+
+    /// implementation   de  get_String
+    fn get_string(&mut self) -> Result<Option<Token>, LexerError> {
+        self.next_char(); // Consommer le guillemet ouvrant
+        let mut string = String::new();
+        while let Some(c) = self.current_char {
+            if c == '"' {
+                self.next_char();
+                return Ok(Some(Token::new(string.clone(), TokenType::LITERALS(Literal::STRING(string)))));
+            }
+            string.push(c);
+            self.next_char();
+        }
+        Err(LexerError::unterminated_string(self.position.line, self.position.column))
+    }
+
+    fn get_operator_or_delimiter(&mut self,c:char) ->Result<Option<Token>,LexerError>{
+        let mut op = c.to_string();
+        let token_type = match (c, self.peek()) {
+            ('=', Some(&'=')) => {
+                self.next_char();
+                op.push('=');
+                TokenType::OPERATOR(Operator::EQEQUAL)
+            },
+            ('!', Some(&'=')) => {
+                self.next_char();
+                op.push('=');
+                TokenType::OPERATOR(Operator::NOTEQUAL)
+            },
+            ('<', Some(&'=')) => {
+                self.next_char();
+                op.push('=');
+                TokenType::OPERATOR(Operator::LESSEQUAL)
+            },
+            ('>', Some(&'=')) => {
+                self.next_char();
+                op.push('=');
+                TokenType::OPERATOR(Operator::GREATEREQUAL)
+            },
+            // ... autres opérateurs composés ...
+
+            _ => match c {
+                '+' => TokenType::OPERATOR(Operator::PLUS),
+                '-' => TokenType::OPERATOR(Operator::MINUS),
+                '*' => TokenType::OPERATOR(Operator::STAR),
+                '/' => TokenType::OPERATOR(Operator::SLASH),
+                '%' => TokenType::OPERATOR(Operator::PERCENT),
+                '|' => TokenType::OPERATOR(Operator::VBAR),
+                '&' => TokenType::OPERATOR(Operator::AMPER),
+                '=' => TokenType::OPERATOR(Operator::EQUAL),
+                '!' => TokenType::OPERATOR(Operator::EXCLAMATION),
+                '<' => TokenType::OPERATOR(Operator::LESS),
+                '>' => TokenType::OPERATOR(Operator::GREATER),
+                '^' => TokenType::OPERATOR(Operator::CIRCUMFLEX),
+                '~' => TokenType::OPERATOR(Operator::TILDE),
+                '@' => TokenType::OPERATOR(Operator::AT),
+                '(' => TokenType::DELIMITERS(Delimiter::LPAR),
+                ')' => TokenType::DELIMITERS(Delimiter::RPAR),
+                '[' => TokenType::DELIMITERS(Delimiter::LSQB),
+                ']' => TokenType::DELIMITERS(Delimiter::RSQB),
+                ':' => TokenType::DELIMITERS(Delimiter::COLON),
+                '{' => TokenType::DELIMITERS(Delimiter::LCURBRACE),
+                '}' => TokenType::DELIMITERS(Delimiter::RCURBRACE),
+                ',' => TokenType::DELIMITERS(Delimiter::COMMA),
+                ';' => TokenType::DELIMITERS(Delimiter::SEMICOLON),
+                '.' => TokenType::DELIMITERS(Delimiter::DOT),
+                _ => return Err(LexerError::invalid_character(c, self.position.line, self.position.column)),
+            }
+        };
+        self.next_char();
+        Ok(Some(Token::new(c.to_string(),token_type))
+        )
+    }
     pub fn tokenize(&mut self) -> Result<Vec<Token>, LexerError> {
         let mut tokens = Vec::new();
         loop {
             match self.get_token() {
                 Ok(token) => {
-                    if token.kind == TokenType::ENDER(Endmarker::EOF) || TokenType::ENDER(Endmarker::ENDMARKER) {
-                        break;
+                    if let Some(token) = token {
+                        if token.kind == TokenType::ENDER(Endmarker::EOF) || token.kind == TokenType::ENDER(Endmarker::ENDMARKER) {
+                            break;
+                        }
+                        tokens.push(token);
                     }
-                    tokens.push(token);
-                },
+                }
                 Err(e) => return Err(e),
             }
         }
         Ok(tokens)
     }
-
-
+    /// fonction pour sauter les espaces
     pub fn skip_whitespace(&mut self){
         while let Some(c) = self.current_char{
             if !c.is_whitespace() || c == '\n'{
@@ -258,6 +418,7 @@ impl <'a>Lexer<'a> {
         }
 
     }
+    /// fonction pour sauter les commentaires
     pub fn skip_comment(&mut self) {
         match self.current_char {
             Some('#') => {
