@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use crate::lexer::token::{TokenType, Keywords, Delimiter,Endmarker,};
 use crate::lexer::error::{LexerError,Position};
 use std::error::Error;
-// use crate::lexer::token::Endmarker::ENDMARKER;
+
 
 /// reprente le mode de syntaxe
 /// syntaxe mode like Rust  ou like Python
