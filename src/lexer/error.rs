@@ -1,9 +1,181 @@
+
 use std::fmt;
-use std::fmt::Formatter;
+use std::fmt::{Display, Formatter};
 use std::error::Error;
 
 
+#[derive(Debug,PartialEq)]
+pub  struct LexerError{
+    pub(crate) error: LexerErrorType,
+   // location: Location,
+}
 
+#[derive(Debug,PartialEq)]
+pub enum LexerErrorType {
+    StringError,
+    CommentError,
+    IndentationError,
+    NestungError,
+    TabError,
+    TabAndSpaceError,
+    DefaultAurgumentError,
+    PositionalArgumentError,
+    DuplicateArgumentError,
+    InvalidTokenError {token: char},
+    FStringError(FStringErrorType),
+    LineContinuationError,
+    EofError,
+    OtherError(String)
+
+}
+
+///implementation de la structure LexerErrorType
+
+impl Display for LexerErrorType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            LexerErrorType::StringError => write!(f, "String Error"),
+            LexerErrorType::CommentError => write!(f, "Comment Error"),
+            LexerErrorType::IndentationError => write!(f, "Indentation Error"),
+            LexerErrorType::NestungError => write!(f, "Nesting Error"),
+            LexerErrorType::TabError => write!(f, "Tab Error"),
+            LexerErrorType::TabAndSpaceError => write!(f, "Tab and Space Error"),
+            LexerErrorType::DefaultAurgumentError => write!(f, "Default Argument Error"),
+            LexerErrorType::PositionalArgumentError => write!(f, "Positional Argument Error"),
+            LexerErrorType::DuplicateArgumentError => write!(f, "Duplicate Argument Error"),
+            LexerErrorType::InvalidTokenError { token } => write!(f, "Invalid Token Error: {}", token),
+            LexerErrorType::FStringError(err) => write!(f, "FString Error: {:?}", err),
+            LexerErrorType::LineContinuationError => write!(f, "Line Continuation Error"),
+            LexerErrorType::EofError => write!(f, "EOF Error"),
+            LexerErrorType::OtherError(msg) => write!(f, "Other Error: {}", msg),
+        }
+    }
+}
+#[derive(Debug,PartialEq)]
+pub struct FStringError{
+    pub error: FStringErrorType,
+   // pub location: Location,
+}
+
+#[derive(Debug,PartialEq)]
+pub enum FStringErrorType{
+    UncolosedLbrace,
+    UnopenedRbrace,
+    ExpectedRbrace,
+    InvalidExpression,
+    InvalidConversion,
+    EmptyExpression,
+    MismatchDelimiters,
+    ExpressionNestedTooDeep,
+
+}
+
+impl Display for FStringErrorType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            FStringErrorType::UncolosedLbrace => write!(f, "Unclosed Left Brace"),
+            FStringErrorType::UnopenedRbrace => write!(f, "Unopened Right Brace"),
+            FStringErrorType::ExpectedRbrace => write!(f, "Expected Right Brace"),
+            FStringErrorType::InvalidExpression => write!(f, "Invalid Expression"),
+            FStringErrorType::InvalidConversion => write!(f, "Invalid Conversion"),
+            FStringErrorType::EmptyExpression => write!(f, "Empty Expression"),
+            FStringErrorType::MismatchDelimiters => write!(f, "Mismatch Delimiters"),
+            FStringErrorType::ExpressionNestedTooDeep => write!(f, "Expression Nested Too Deep"),
+        }
+    }
+}
+
+
+////////////////////////////////////////IMPLEMENTATION Position /////////////////////////
+
+#[derive(Debug, PartialEq,Copy,Clone,Eq)]
+pub struct Position {
+    line: usize,
+    column: usize,
+}
+
+impl Display for Position {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "line {}, column {}", self.line, self.column)
+    }
+}
+
+impl Position{
+    pub fn visualize<'a> (&self,line: &'a str,
+    desc: impl Display + 'a) {
+        struct Visualise<'a,D: Display>{
+            loc:Position,
+            line:&'a str,
+            desc:D,
+        }
+        impl <D: Display> Display for Visualise<'_,D>{
+            fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+                write!(f,"{}\n{}{arrow:>pad$}",self.desc,self.line,pad=self.loc.column,arrow="^",)
+            }
+        }
+        Visualise {
+            loc: *self,
+            line,
+            desc,
+        };
+    }
+}
+
+impl Position{
+    pub fn new(line:usize,column:usize) -> Self{
+        Position{line,column}
+    }
+    pub fn line(&self) -> usize{
+        self.line
+    }
+    pub fn column(&self) -> usize{
+        self.column
+    }
+    pub fn reset(&mut self){
+        self.line = 1;
+        self.column = 1;
+    }
+    pub fn right(&mut self){
+        self.column += 1;
+    }
+    pub fn left(&mut self){
+        self.column -= 1;
+    }
+    pub fn newline(&mut self){
+        self.line += 1;
+        self.column = 1;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/////////////////////////////////ERROR LEXER #2////////////////////////////////////////
+
+/*
 /// Enumeration des erreurs du compilateur
 ////////////////////////ENUM COMPILER ERROR POUR UTILISATION ULTERIEURE /////////////////////////
 #[derive(Debug)]
@@ -34,8 +206,11 @@ pub struct LexerError {
 pub enum LexerErrorKind {
     InvalidCharacter(char),
     InvalidToken(String),
+    InvalidFloat(String),
+    InvalidInterger(String),
     UnterminatedString,
     UnterminatedComment,
+
 
 }
 
@@ -111,7 +286,7 @@ impl LexerError {
     }
     /// Methode pour creer une erreur de token invalide
     pub fn invalid_token(t: &str, line: usize, column: usize) -> Self {
-        Self::new(LexerErrorKind::InvalidToken(t.to_string()), format!("Invalid token: {}", t), line, column)
+        Self::new(LexerErrorKind::InvalidToken(t.to_string().clone()), format!("Invalid token: {}", t), line, column)
     }
     /// Methode pour creer une erreur de string non terminee
     pub fn unterminated_string(line: usize, column: usize) -> Self {
@@ -121,6 +296,16 @@ impl LexerError {
     /// Methode pour creer une erreur de commentaire non terminee
     pub fn unterminated_comment(line: usize, column: usize) -> Self {
         Self::new(LexerErrorKind::UnterminatedComment, "Unterminated comment".to_string(), line, column)
+    }
+    /// Methode pour creer une erreur de float invalide
+    pub fn invalid_float(value: String,line: usize,column:usize) ->Self{
+        Self::new(LexerErrorKind::InvalidToken(value.clone()),format!("Invalid float: {}",value),line,column)
+    }
+    /// Methode pour creer une erreur de hex invalide
+    pub fn invalid_interger(value:String,line:usize,column:usize) ->Self{
+        LexerError::new(
+            LexerErrorKind::InvalidToken(value.clone()),
+            format!("Invalid integer: {}", value),line,column)
     }
 }
 
@@ -142,6 +327,8 @@ impl From<LexerErrorKind> for LexerError {
         let message = match &kind {
             LexerErrorKind::InvalidCharacter(c) => format!("Invalid character: {}", c),
             LexerErrorKind::InvalidToken(t) => format!("Invalid token: {}", t),
+            LexerErrorKind::InvalidFloat(f) => format!("Invalid float: {}", f),
+            LexerErrorKind::InvalidInterger(i) => format!("Invalid integer: {}", i),
             LexerErrorKind::UnterminatedString => "Unterminated string".to_string(),
             LexerErrorKind::UnterminatedComment => "Unterminated comment".to_string(),
         };
@@ -160,6 +347,8 @@ impl LexerErrorKind {
         match self {
             LexerErrorKind::InvalidCharacter(_) => "Invalid Character",
             LexerErrorKind::InvalidToken(_) => "Invalid Token",
+            LexerErrorKind::InvalidFloat(_) => "Invalid Float",
+            LexerErrorKind::InvalidInterger(_) => "Invalid Integer",
             LexerErrorKind::UnterminatedString => "Unterminated String",
             LexerErrorKind::UnterminatedComment => "Unterminated Comment",
         }
@@ -169,6 +358,8 @@ impl LexerErrorKind {
         match self {
             LexerErrorKind::InvalidCharacter(c) => format!("Invalid character: {}", c),
             LexerErrorKind::InvalidToken(t) => format!("Invalid token: {}", t),
+            LexerErrorKind::InvalidFloat(f) => format!("Invalid float: {}", f),
+            LexerErrorKind::InvalidInterger(i) => format!("Invalid integer: {}", i),
             LexerErrorKind::UnterminatedString => "Unterminated string".to_string(),
             LexerErrorKind::UnterminatedComment => "Unterminated comment".to_string(),
         }
@@ -176,3 +367,6 @@ impl LexerErrorKind {
 }
 
 // impl Error for LexerError {}
+
+
+ */

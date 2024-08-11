@@ -9,7 +9,13 @@ nom = "7.0"
 float-derive = "0.1.0"
 num-traits = "0.2.14"
 num-complex = "0.4.6"
+num-bigint = "0.4.6"
 
+
+
+[lib]
+name = "pyrust"
+path = "src/lib.rs"
 
 
 
