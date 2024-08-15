@@ -20,7 +20,7 @@ mod tests {
         let tokens = lexer.tokenize().unwrap();
 
         let expected_tokens = vec![
-            Token::new("def".to_string(), TokenType::KEYWORD(Keywords::DEF)),
+            Token::new("def".to_string(), TokenType::(Keywords::DEF)),
             Token::new("my_function".to_string(), TokenType::LITERALS(Literal::IDENTIFIER("my_function".to_string()))),
             Token::new("(".to_string(), TokenType::DELIMITERS(Delimiter::LPAR)),
             Token::new("x".to_string(), TokenType::LITERALS(Literal::IDENTIFIER("x".to_string()))),

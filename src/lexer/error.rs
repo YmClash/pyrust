@@ -15,18 +15,21 @@ pub enum LexerErrorType {
     StringError,
     CommentError,
     IndentationError,
-    NestungError,
+    NestingError,
     TabError,
     TabAndSpaceError,
-    DefaultAurgumentError,
+    DefaultArgumentError,
     PositionalArgumentError,
     DuplicateArgumentError,
     InvalidTokenError {token: char},
     FStringError(FStringErrorType),
     LineContinuationError,
     EofError,
-    OtherError(String)
+    OtherError(String),
 
+    InvalidNumber,
+    UnterminatedString,
+    InvalidCharacter,
 }
 
 ///implementation de la structure LexerErrorType
@@ -37,10 +40,10 @@ impl Display for LexerErrorType {
             LexerErrorType::StringError => write!(f, "String Error"),
             LexerErrorType::CommentError => write!(f, "Comment Error"),
             LexerErrorType::IndentationError => write!(f, "Indentation Error"),
-            LexerErrorType::NestungError => write!(f, "Nesting Error"),
+            LexerErrorType::NestingError => write!(f, "Nesting Error"),
             LexerErrorType::TabError => write!(f, "Tab Error"),
             LexerErrorType::TabAndSpaceError => write!(f, "Tab and Space Error"),
-            LexerErrorType::DefaultAurgumentError => write!(f, "Default Argument Error"),
+            LexerErrorType::DefaultArgumentError => write!(f, "Default Argument Error"),
             LexerErrorType::PositionalArgumentError => write!(f, "Positional Argument Error"),
             LexerErrorType::DuplicateArgumentError => write!(f, "Duplicate Argument Error"),
             LexerErrorType::InvalidTokenError { token } => write!(f, "Invalid Token Error: {}", token),
@@ -48,6 +51,9 @@ impl Display for LexerErrorType {
             LexerErrorType::LineContinuationError => write!(f, "Line Continuation Error"),
             LexerErrorType::EofError => write!(f, "EOF Error"),
             LexerErrorType::OtherError(msg) => write!(f, "Other Error: {}", msg),
+            LexerErrorType::InvalidNumber => write!(f, "Invalid Number"),
+            LexerErrorType::UnterminatedString => write!(f, "Unterminated String"),
+            LexerErrorType::InvalidCharacter => write!(f, "Invalid Character"),
         }
     }
 }
@@ -81,6 +87,7 @@ impl Display for FStringErrorType {
             FStringErrorType::EmptyExpression => write!(f, "Empty Expression"),
             FStringErrorType::MismatchDelimiters => write!(f, "Mismatch Delimiters"),
             FStringErrorType::ExpressionNestedTooDeep => write!(f, "Expression Nested Too Deep"),
+
         }
     }
 }
@@ -90,8 +97,8 @@ impl Display for FStringErrorType {
 
 #[derive(Debug, PartialEq,Copy,Clone,Eq)]
 pub struct Position {
-    line: usize,
-    column: usize,
+    pub(crate) line: usize,
+    pub (crate) column: usize,
 }
 
 impl Display for Position {
@@ -121,6 +128,7 @@ impl Position{
     }
 }
 
+// implementation de Position {
 impl Position{
     pub fn new(line:usize,column:usize) -> Self{
         Position{line,column}

@@ -89,7 +89,7 @@ pub enum TokenType {
     DCOLON, // '::' DEUX POINT DEUX POINT / DOUBLE COLON
 
     //KEYWORDS,
-    AND, AS, ASYNC, AWAIT, BREAK, CONST, CLASS, CONTINUE, DEF, DEL, ELIF, ELSE,
+    AND, AS ,ASYNC, AWAIT, BREAK, CONST, CLASS, CONTINUE, DEF, DEL, ELIF, ELSE,
     ENUM, EXCEPT, FALSE, FN, FOR, FROM, IF, IMPL, IMPORT, IN, IS, LAMBDA, LET,
     LOOP, MATCH, MOD, MUT, NONE, NOT, OR, PUB, PASS, RAISE, RETURN, SELF,
     STATIC, STRUCT, SUPER, TRUE, TRY, TYPE, TYPEOF, USE, WITH, WHILE, YIELD,
@@ -245,6 +245,47 @@ impl Display for TokenType {
         }
     }
 }
+
+
+////  Essai  implementation  de  token_type is_keyword is_operator is_literal is_delimiter
+
+
+impl TokenType {
+    pub fn is_keyword(&self) -> bool {
+        matches!(self, TokenType::AND | TokenType::AS | TokenType::ASYNC | TokenType::AWAIT |
+            TokenType::BREAK| TokenType::CONST | TokenType::CLASS | TokenType::CONTINUE |
+            TokenType::DEF | TokenType::DEL | TokenType::ELIF | TokenType::ELSE | TokenType::ENUM |
+            TokenType::EXCEPT | TokenType::FALSE | TokenType::FN | TokenType::FOR | TokenType::FROM |
+            TokenType::IF | TokenType::IMPL | TokenType::IMPORT | TokenType::IN | TokenType::IS |
+            TokenType::LAMBDA | TokenType::LET | TokenType::LOOP | TokenType::MATCH | TokenType::MOD |
+            TokenType::MUT | TokenType::NONE | TokenType::NOT | TokenType::OR | TokenType::PUB |
+            TokenType::PASS | TokenType::RAISE | TokenType::RETURN | TokenType::SELF | TokenType::STATIC |
+            TokenType::STRUCT | TokenType::SUPER | TokenType::TRUE | TokenType::TRY | TokenType::TYPE |
+            TokenType::TYPEOF | TokenType::USE | TokenType::WITH | TokenType::WHILE | TokenType::YIELD)
+    }
+
+    pub fn is_operator(&self) -> bool {
+        matches!(self, TokenType::PLUS | TokenType::MINUS | TokenType::STAR | TokenType::SLASH |
+            TokenType::VBAR | TokenType::AMPER | TokenType::LESS | TokenType::GREATER | TokenType::EQUAL |
+            TokenType::PERCENT | TokenType::EQEQUAL | TokenType::NOTEQUAL | TokenType::LESSEQUAL |
+            TokenType::FATARROW | TokenType::GREATEREQUAL | TokenType::TILDE | TokenType::CIRCUMFLEX |
+            TokenType::LEFTSHIFT | TokenType::RIGHTSHIFT | TokenType::DOUBLESTAR | TokenType::PLUSEQUAL |
+            TokenType::MINEQUAL | TokenType::STAREQUAL | TokenType::SLASHEQUAL | TokenType::PERCENTEQUAL |
+            TokenType::AMPEREQUAL | TokenType::VBAREQUAL | TokenType::CIRCUMFLEXEQUAL | TokenType::LEFTSHIFTEQUAL |
+            TokenType::RIGHTSHIFTEQUAL | TokenType::DOUBLESTAREQUAL | TokenType::DOUBLESLASH | TokenType::DOUBLESLASHEQUAL |
+            TokenType::AT | TokenType::ATEQUAL | TokenType::RARROW | TokenType::COLONEQUAL | TokenType::STARSLASH |
+            TokenType::SLASHSTAR | TokenType::DIESE | TokenType::EXCLAMATION | TokenType::INTERROGATION)
+    }
+
+    pub fn is_delimiter(&self) -> bool {
+        matches!(self, TokenType::LPAR | TokenType::RPAR | TokenType::LSQB | TokenType::RSQB |
+            TokenType::COLON | TokenType::COMMA | TokenType::SEMICOLON | TokenType::DOT | TokenType::LCURBRACE |
+            TokenType::RCURBRACE | TokenType::ELLIPSIS | TokenType::DCOLON)
+    }
+}
+
+
+
 
 
 //
