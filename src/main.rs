@@ -4,7 +4,8 @@
 
 //mod lex;
 
-use pyrust::lex::Lexer;
+use pyrust::lex::{Lexer, Token};
+use pyrust::lexer::token::TokenType;
 
 fn main() {
 

@@ -1,12 +1,13 @@
-use crate::lexer::token;
+use std::char;
+use std::cmp::Ordering;
+use std::collections::HashMap;
+use std::iter::Peekable;
+use std::str::{Chars, FromStr};
+
 use num_bigint::BigInt;
 use num_traits::identities::Zero;
 use num_traits::Num;
-use std::char;
-use std::cmp::Ordering;
-use std::str::{Chars, FromStr};
-use std::collections::HashMap;
-use std::iter::Peekable;
+
 use crate::error::{LexerError, LexerErrorType, Position};
 use crate::token::{StringKind, TokenType};
 
