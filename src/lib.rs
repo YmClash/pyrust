@@ -1,8 +1,13 @@
-pub mod lex;
-//mod parser;
+pub mod lexer;
+mod semantic;
+mod utils;
+mod codegen;
+mod parser;
 //mod ast;
 
-pub use lex::*;
+pub use lexer::*;
+
+
 
 //pub use parser::*;
 
