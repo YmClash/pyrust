@@ -1,64 +1,97 @@
 use pyrust::lexer::lex::Lexer;
-use pyrust::lexer::token::{TokenType, Keywords, Literal, Operator, Delimiter, };
-use pyrust::lexer::error::LexerError;
-use pyrust::lexer::lex::Token;
+use pyrust::lexer::tok::{TokenType, Keywords, Operators, Delimiters, };
+use num_bigint::BigInt;
 #[cfg(test)]
 mod tests {
+    use pyrust::tok::StringKind;
     use super::*;
 
     #[test]
-    fn test_lexer_basic() {
+    fn test_lex_number() {
+        let mut lexer = Lexer::new("123 3.14");
+        assert_eq!(lexer.get_token(), Some(TokenType::INTEGER { value: 123.into() }));
+        assert_eq!(lexer.get_token(), Some(TokenType::FLOAT { value: 3.14 }));
+    }
+
+    #[test]
+    fn test_lex_identifier_and_keyword() {
+        let mut lexer = Lexer::new("variable if");
+        assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "variable".to_string() }));
+        assert_eq!(lexer.get_token(), Some(TokenType::KEYWORD(Keywords::IF)));
+    }
+
+    #[test]
+    fn test_lex_comment() {
+        let mut lexer = Lexer::new("# This is a comment\ncode");
+        assert_eq!(lexer.get_token(), Some(TokenType::COMMENT(" This is a comment".to_string())));
+        assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "code".to_string() }));
+    }
+
+    #[test]
+    fn test_basic_tokens() {
         let input = r#"
-        def my_function(x):
-            if x > 10:
-                return x + 1
-            else:
-                return x - 1
+            let x = 42;
+            let y = 3.14;
+            if (x > y) {
+                print("x is greater");
+            } else {
+                print("y is greater or equal");
+            }
+            // This is a comment
+            /* This is a
+               multi-line comment */
         "#;
 
         let mut lexer = Lexer::new(input);
-        let tokens = lexer.tokenize().unwrap();
+        let tokens = lexer.tokenize();
 
+        // Imprimez les tokens pour le débogage
+        for token in &tokens {
+            println!("{:?}", token);
+        }
+
+        // Vérifions les tokens un par un
         let expected_tokens = vec![
-            Token::new("def".to_string(), TokenType::(Keywords::DEF)),
-            Token::new("my_function".to_string(), TokenType::LITERALS(Literal::IDENTIFIER("my_function".to_string()))),
-            Token::new("(".to_string(), TokenType::DELIMITERS(Delimiter::LPAR)),
-            Token::new("x".to_string(), TokenType::LITERALS(Literal::IDENTIFIER("x".to_string()))),
-            Token::new(")".to_string(), TokenType::DELIMITERS(Delimiter::RPAR)),
-            Token::new(":".to_string(), TokenType::DELIMITERS(Delimiter::COLON)),
-            Token::new("NEWLINE".to_string(), TokenType::NEWLINE),
-            Token::new("INDENT".to_string(), TokenType::INDENT),
-            Token::new("if".to_string(), TokenType::KEYWORD(Keywords::IF)),
-            Token::new("x".to_string(), TokenType::LITERALS(Literal::IDENTIFIER("x".to_string()))),
-            Token::new(">".to_string(), TokenType::OPERATOR(Operator::GREATER)),
-            Token::new("10".to_string(), TokenType::LITERALS(Literal::INTEGER(10))),
-            Token::new(":".to_string(), TokenType::DELIMITERS(Delimiter::COLON)),
-            Token::new("NEWLINE".to_string(), TokenType::NEWLINE),
-            Token::new("INDENT".to_string(), TokenType::INDENT),
-            Token::new("return".to_string(), TokenType::KEYWORD(Keywords::RETURN)),
-            Token::new("x".to_string(), TokenType::LITERALS(Literal::IDENTIFIER("x".to_string()))),
-            Token::new("+".to_string(), TokenType::OPERATOR(Operator::PLUS)),
-            Token::new("1".to_string(), TokenType::LITERALS(Literal::INTEGER(1))),
-            Token::new("NEWLINE".to_string(), TokenType::NEWLINE),
-            Token::new("DEDENT".to_string(), TokenType::DEDENT),
-            Token::new("else".to_string(), TokenType::KEYWORD(Keywords::ELSE)),
-            Token::new(":".to_string(), TokenType::DELIMITERS(Delimiter::COLON)),
-            Token::new("NEWLINE".to_string(), TokenType::NEWLINE),
-            Token::new("INDENT".to_string(), TokenType::INDENT),
-            Token::new("return".to_string(), TokenType::KEYWORD(Keywords::RETURN)),
-            Token::new("x".to_string(), TokenType::LITERALS(Literal::IDENTIFIER("x".to_string()))),
-            Token::new("-".to_string(), TokenType::OPERATOR(Operator::MINUS)),
-            Token::new("1".to_string(), TokenType::LITERALS(Literal::INTEGER(1))),
-            Token::new("NEWLINE".to_string(), TokenType::NEWLINE),
-            Token::new("DEDENT".to_string(), TokenType::DEDENT),
-            Token::new("DEDENT".to_string(), TokenType::DEDENT),
+            TokenType::KEYWORD(Keywords::LET),
+            TokenType::IDENTIFIER { name: "x".to_string() },
+            TokenType::OPERATOR(Operators::EQUAL),
+            TokenType::INTEGER { value: BigInt::from(42) },
+            TokenType::DELIMITER(Delimiters::SEMICOLON),
+            TokenType::KEYWORD(Keywords::LET),
+            TokenType::IDENTIFIER { name: "y".to_string() },
+            TokenType::OPERATOR(Operators::EQUAL),
+            TokenType::FLOAT { value: 3.14 },
+            TokenType::DELIMITER(Delimiters::SEMICOLON),
+            TokenType::KEYWORD(Keywords::IF),
+            TokenType::DELIMITER(Delimiters::LPAR),
+            TokenType::IDENTIFIER { name: "x".to_string() },
+            TokenType::OPERATOR(Operators::GREATER),
+            TokenType::IDENTIFIER { name: "y".to_string() },
+            TokenType::DELIMITER(Delimiters::RPAR),
+            TokenType::DELIMITER(Delimiters::LCURBRACE),
+            TokenType::IDENTIFIER { name: "print".to_string() },
+            TokenType::DELIMITER(Delimiters::LPAR),
+            TokenType::STRING { value: "x is greater".to_string(), kind: StringKind::NORMAL },
+            TokenType::DELIMITER(Delimiters::RPAR),
+            TokenType::DELIMITER(Delimiters::SEMICOLON),
+            TokenType::DELIMITER(Delimiters::RCURBRACE),
+            TokenType::KEYWORD(Keywords::ELSE),
+            TokenType::DELIMITER(Delimiters::LCURBRACE),
+            TokenType::IDENTIFIER { name: "print".to_string() },
+            TokenType::DELIMITER(Delimiters::LPAR),
+            TokenType::STRING { value: "y is greater or equal".to_string(), kind: StringKind::NORMAL },
+            TokenType::DELIMITER(Delimiters::RPAR),
+            TokenType::DELIMITER(Delimiters::SEMICOLON),
+            TokenType::DELIMITER(Delimiters::RCURBRACE),
+            TokenType::COMMENT(" This is a comment".to_string()),
+            TokenType::COMMENT(" This is a\n               multi-line comment ".to_string()),
+            TokenType::EOF,
         ];
 
-        assert_eq!(tokens.len(), expected_tokens.len());
+        assert_eq!(tokens.len(), expected_tokens.len(), "Le nombre de tokens ne correspond pas");
 
-        for (i, token) in tokens.iter().enumerate() {
-            assert_eq!(token.text, expected_tokens[i].text);
-            assert_eq!(format!("{:?}", token.kind), format!("{:?}", expected_tokens[i].kind));
+        for (token, expected_type) in tokens.iter().zip(expected_tokens.iter()) {
+            assert_eq!(&token.token_type, expected_type, "Type de token incorrect pour '{}'", token.text);
         }
     }
 }

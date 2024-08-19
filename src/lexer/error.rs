@@ -1,7 +1,8 @@
+#![allow(dead_code)]
+
 
 use std::fmt;
 use std::fmt::{Display, Formatter};
-use std::error::Error;
 
 
 #[derive(Debug,PartialEq)]
