@@ -14,8 +14,7 @@ fn main() {
 
     println!("Start Lexer");
 
-    let code = "let momo = 42; let audi = x + 5.0; let z = y * 2;\
-                if z > 10 { print(\"z is greater than 10\"); }";
+    let code = "( { [ ] } )";
     let code2 = r#"
             let x = 42;
             let y = x + 5.0;

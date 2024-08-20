@@ -160,6 +160,7 @@ impl<'a> Lexer<'a> {
         delimiters.insert("{".to_string(), Delimiters::LCURBRACE);
         delimiters.insert("}".to_string(), Delimiters::RCURBRACE);
         delimiters.insert("]".to_string(), Delimiters::RSBRACKET);
+        delimiters.insert("[".to_string(), Delimiters::LSBRACKET);
         delimiters.insert(";".to_string(), Delimiters::SEMICOLON);
         delimiters.insert(":".to_string(), Delimiters::COLON);
         delimiters.insert(",".to_string(), Delimiters::COMMA);
@@ -195,6 +196,8 @@ impl<'a> Lexer<'a> {
 
     pub fn get_token(&mut self) -> Option<TokenType> {
         self.skip_whitespace();
+
+
 
         match self.peek_char() {
             Some('0'..='9') => Some(self.lex_number()),
@@ -263,54 +266,100 @@ impl<'a> Lexer<'a> {
             TokenType::IDENTIFIER { name: self.current_token_text.clone() }
         }
     }
-    /**/
 
     fn lex_string(&mut self) -> TokenType {
         self.current_token_text.clear();
 
-        let quote = self.advance();
+        let quote = self.advance();  // Consomme le premier guillemet
         let mut value = String::new();
-        let kind = StringKind::NORMAL;
+        let mut is_escaped = false;
 
         while let Some(&ch) = self.source.peek() {
-            if ch == quote {
-                self.advance();
+            self.advance();  // Consomme le caractère actuel
+
+            if is_escaped {
+                // Gérer les séquences d'échappement
+                value.push(ch);
+                is_escaped = false;
+            } else if ch == '\\' {
+                is_escaped = true;  // Activer le flag d'échappement
+            } else if ch == quote {
+                // Terminer la chaîne à la guillemet fermante
                 break;
+            } else if ch == '\n' || ch == '\r' {
+                // Ignorer les sauts de ligne
+                continue;
+            } else if ch.is_whitespace() {
+                // Remplacer les espaces multiples par un seul espace
+                if !value.ends_with(' ') {
+                    value.push(' ');
+                }
+            } else {
+                value.push(ch);
             }
-            value.push(self.advance());
         }
 
-        return TokenType::STRING { value, kind };
+        return TokenType::STRING { value, kind: StringKind::NORMAL };
     }
+
     fn lex_operator(&mut self) -> Option<TokenType> {
         self.current_token_text.clear();
 
-        let mut op = String::new();
-        while let Some(&ch) = self.source.peek() {
-            if !ch.is_alphanumeric() && !ch.is_whitespace() {
-                op.push(self.advance());
-            } else {
-                break;
+        // Regardez les deux prochains caractères pour vérifier les opérateurs composés
+        let first_char = self.advance().to_string();
+        let mut op = first_char.clone();
+
+        if let Some(&next_char) = self.source.peek() {
+            op.push(next_char);  // Regardez l'opérateur composé potentiel
+            if self.operators.contains_key(&op) {
+                self.advance();  // Consomme le deuxième caractère de l'opérateur composé
+                return Some(TokenType::OPERATOR(self.operators[&op].clone()));
             }
         }
 
-        if let Some(operator) = self.operators.get(&op) {
-            Some(TokenType::OPERATOR(operator.clone()))
-        } else {
-            println!("Unknown token: {}", op);
-            None
+        // Si ce n'est pas un opérateur composé, vérifiez l'opérateur simple
+        if let Some(operator) = self.operators.get(&first_char) {
+            return Some(TokenType::OPERATOR(operator.clone()));
         }
+
+        // Si l'opérateur n'est pas reconnu, retournez un token UNKNOWN
+        println!("Unknown token: {}", first_char); // Affichez l'opérateur inconnu
+        Some(TokenType::UNKNOWN)
     }
+
+
+
+    // fn lex_operator(&mut self) -> Option<TokenType> {
+    //     self.current_token_text.clear();
+    //
+    //     let mut op = String::new();
+    //     while let Some(&ch) = self.source.peek() {
+    //         if !ch.is_alphanumeric() && !ch.is_whitespace() {
+    //             op.push(self.advance());
+    //         } else {
+    //             break;
+    //         }
+    //     }
+    //
+    //     if let Some(operator) = self.operators.get(&op) {
+    //         Some(TokenType::OPERATOR(operator.clone()))
+    //     } else {
+    //         println!("Unknown token: {}", op);
+    //         Some(TokenType::UNKNOWN) // Retourner UNKNOWN au lieu de None pour les opérateurs inconnus
+    //     }
+    // }
+
+
     fn lex_delimiter(&mut self) -> TokenType {
         self.current_token_text.clear();
-
         let ch = self.advance();
-        return TokenType::DELIMITER(self.delimiters[&ch.to_string()].clone());
+        if let Some(delimiter) = self.delimiters.get(&ch.to_string()) {
+            return TokenType::DELIMITER(delimiter.clone());
+        } else {
+            return TokenType::UNKNOWN;
+        }
+        // TokenType::DELIMITER(self.delimiters[&ch.to_string()].clone())
     }
-
-
-    //fn is_char(){}
-    //fn is_number(){}
     fn lex_comment(&mut self) -> TokenType {
         self.current_token_text.clear();
         let start_char = self.advance(); // Consomme le '#' ou le '/'
