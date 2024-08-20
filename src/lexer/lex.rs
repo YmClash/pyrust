@@ -4,6 +4,10 @@ use std::str::Chars;
 use std::collections::HashMap;
 use crate::tok::{TokenType, Keywords, Delimiters, Operators, StringKind};
 
+
+
+/// structure Token
+/// elle contient le text du token, le type du token, la ligne et la colonne
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct Token{
@@ -12,12 +16,16 @@ pub struct Token{
     line: usize,
     column: usize,
 }
+
+/// implementation de la structure Token
 #[allow(dead_code)]
 impl Token {
     fn new(text: String,token_type: TokenType,line: usize,column: usize) -> Self{
         Token{text, token_type, line, column}
     }
 }
+
+/// structure Lexer
 #[allow(dead_code)]
 pub struct Lexer<'a>{
     source:Peekable<Chars<'a>>,
@@ -30,9 +38,10 @@ pub struct Lexer<'a>{
     current_token_text: String,
 }
 
+/// implementation  du lexer avec tout les  methodes pour classer les tokens
 #[allow(dead_code)]
 impl<'a> Lexer<'a> {
-
+    /// creation d'une nouvelle instance de lexer
     pub fn new(code_source: &'a str) -> Self{
         let lexer = Lexer{
             source: code_source.chars().peekable(),
@@ -48,7 +57,8 @@ impl<'a> Lexer<'a> {
 
 
     }
-
+    /// creation d'une hashmap pour les mots cles
+    /// c'est plus facile de les stocker les mots cles dans une hashmap pour les retrouver plus facilement
     fn keywords() ->HashMap<String,Keywords>{
         let mut keywords = HashMap::new();
         keywords.insert("and".to_string(), Keywords::AND);
@@ -101,7 +111,7 @@ impl<'a> Lexer<'a> {
         return keywords;
 
     }
-
+    /// creation d'une hashmap pour les operateurs
     fn operators() ->HashMap<String,Operators> {
         let mut operators = HashMap::new();
         operators.insert("+".to_string(), Operators::PLUS);
@@ -152,7 +162,7 @@ impl<'a> Lexer<'a> {
         return operators;
     }
 
-
+    /// creation d'une hashmap pour les delimiters
     fn delimiters() ->HashMap<String,Delimiters>{
         let mut delimiters = HashMap::new();
         delimiters.insert("(".to_string(), Delimiters::LPAR);
@@ -171,6 +181,7 @@ impl<'a> Lexer<'a> {
         return delimiters;
     }
 
+        /// methode pour avancer d'un caractere
     #[allow(dead_code)]
     fn next_char(&mut self) -> Option<char> {
         let ch = self.source.next()?;
@@ -184,20 +195,26 @@ impl<'a> Lexer<'a> {
         Some(ch)
     }
 
+    /// methode pour regarder le prochain caractere sans avancer
     #[allow(dead_code)]
     fn peek_char(&mut self) -> Option<char>{
         self.source.peek().copied()
     }
-
+    /// methode pour regarder le 2eme prochain caractere sans avancer
     #[allow(dead_code)]
     fn peek_next_char(&mut self) -> Option<char> {
         self.source.clone().nth(1)
     }
 
+    /// C'est L'une de 2 methode principal avec fonction tokenize() pour obtenir le token
+    /// son role c'est de sauter les espaces et examiner le prochain caractère
+    /// Détermine le type de token en fonction de ce caractère.
+    /// Appelle la méthode appropriée (comme lex_number(), lex_identifier_or_keyword(), etc.) pour analyser le token complet.
+    /// Renvoie une Option<TokenType> représentant un seul token.
+
+    /// methode pour obtenir le token
     pub fn get_token(&mut self) -> Option<TokenType> {
         self.skip_whitespace();
-
-
 
         match self.peek_char() {
             Some('0'..='9') => Some(self.lex_number()),
@@ -218,7 +235,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-
+    ///methode pour les differents types de token de Type Number integer et float
     fn lex_number(&mut self) -> TokenType {
         self.current_token_text.clear();
         let mut number = String::new();
@@ -244,11 +261,8 @@ impl<'a> Lexer<'a> {
         }
     }
 
-
     //fn lex_identifier(){}
-
-
-
+    /// methode pour les differents types de token de Type Identifier  ou Keyword
     fn lex_identifier_or_keyword(&mut self) -> TokenType {
         self.current_token_text.clear();
         while let Some(&ch) = self.source.peek() {
@@ -267,6 +281,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    /// methode pour les differents types de token de Type String
     fn lex_string(&mut self) -> TokenType {
         self.current_token_text.clear();
 
@@ -279,29 +294,35 @@ impl<'a> Lexer<'a> {
 
             if is_escaped {
                 // Gérer les séquences d'échappement
-                value.push(ch);
+                match ch {
+                    'n' => value.push('\n'),
+                    't' => value.push('\t'),
+                    'r' => value.push('\r'),
+                    '\\' => value.push('\\'),
+                    '"' => value.push('"'),
+                    '\'' => value.push('\''),
+                    _ => {
+                        // Pour les autres caractères, on les ajoute tels quels
+                        value.push('\\');
+                        value.push(ch);
+                    }
+                }
                 is_escaped = false;
             } else if ch == '\\' {
                 is_escaped = true;  // Activer le flag d'échappement
             } else if ch == quote {
                 // Terminer la chaîne à la guillemet fermante
                 break;
-            } else if ch == '\n' || ch == '\r' {
-                // Ignorer les sauts de ligne
-                continue;
-            } else if ch.is_whitespace() {
-                // Remplacer les espaces multiples par un seul espace
-                if !value.ends_with(' ') {
-                    value.push(' ');
-                }
             } else {
                 value.push(ch);
             }
         }
 
-        return TokenType::STRING { value, kind: StringKind::NORMAL };
+        self.current_token_text = value.clone();
+        TokenType::STRING { value, kind: StringKind::NORMAL }
     }
 
+    /// methode pour les differents types de token de Type Operator
     fn lex_operator(&mut self) -> Option<TokenType> {
         self.current_token_text.clear();
 
@@ -327,8 +348,6 @@ impl<'a> Lexer<'a> {
         Some(TokenType::UNKNOWN)
     }
 
-
-
     // fn lex_operator(&mut self) -> Option<TokenType> {
     //     self.current_token_text.clear();
     //
@@ -349,7 +368,7 @@ impl<'a> Lexer<'a> {
     //     }
     // }
 
-
+    /// methode pour les differents types de token de Type Delimiter
     fn lex_delimiter(&mut self) -> TokenType {
         self.current_token_text.clear();
         let ch = self.advance();
@@ -360,6 +379,8 @@ impl<'a> Lexer<'a> {
         }
         // TokenType::DELIMITER(self.delimiters[&ch.to_string()].clone())
     }
+
+    /// methode pour les differents types de token de Type Comment # ou // ou /* */
     fn lex_comment(&mut self) -> TokenType {
         self.current_token_text.clear();
         let start_char = self.advance(); // Consomme le '#' ou le '/'
@@ -424,17 +445,19 @@ impl<'a> Lexer<'a> {
     }
     ////////////
 
+    /// methode pour avancer d'un caractere
     fn advance(&mut self) -> char {
         let ch = self.source.next().unwrap();
         if ch == '\n' {
-            self.current_line += 1;
-            self.current_column = 1;
+            self.current_line += 1; // Incrémenter le numéro de ligne
+            self.current_column = 1; // Réinitialiser le numéro de colonne
         } else {
-            self.current_column += 1;
+            self.current_column += 1;// sinon incrementer le numero de colonne
         }
         ch
     }
 
+    /// methode pour sauter les espaces
     fn skip_whitespace(&mut self) {
         while let Some(&ch) = self.source.peek() {
             if ch.is_whitespace() {
@@ -445,6 +468,12 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    /// C'est la deuxieme methode principal avec get_token() pour obtenir les tokens
+    /// son role c'est de tokeniser le code source
+    /// appel la methode get_token pour obtenir les tokens
+    /// elle creeun objet Token pour chaque TokenType retourné par get_token()
+    /// elle retourne  un vecteur de tokens Vec<Token>
+    /// methode pour tokeniser le code source
     pub fn tokenize(&mut self) -> Vec<Token> {
         let mut tokens = Vec::new();
         while let Some(token_type) = self.get_token() {
@@ -462,7 +491,7 @@ impl<'a> Lexer<'a> {
         }
         return tokens;
     }
-
+    /// methode pour les differents types de token de Type Unknown
     fn lex_unknown(&mut self) -> TokenType{
         let ch = self.advance();
         self.current_token_text = ch.to_string();

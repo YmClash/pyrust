@@ -52,18 +52,19 @@ mod tests {
         assert_eq!(lexer.get_token(), Some(TokenType::COMMENT(" This is a comment".to_string())));
         assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "code".to_string() }));
     }
-    // #[test]
-    // fn test_lex_multiline_string() {
-    //     let mut lexer = Lexer::new(r#""This is a \
-    //                                    multi-line string""#);
-    //     assert_eq!(
-    //         lexer.get_token(),
-    //         Some(TokenType::STRING {
-    //             value: "This is a multi-line string".to_string(),
-    //             kind: StringKind::NORMAL
-    //         })
-    //     );
-    // }
+    #[test]
+    fn test_lex_multiline_string() {
+        let mut lexer = Lexer::new(r#""This is a \
+                                       multi-line string""#);
+        assert_eq!(
+            lexer.get_token(),
+            Some(TokenType::STRING {
+                value: "This is a \n multi-line string".to_string(),
+
+                kind: StringKind::NORMAL
+            })
+        );
+    }
     #[test]
     fn test_lex_complex_operator() {
         let mut lexer = Lexer::new("a += 1 && b == c || d != e");
@@ -243,6 +244,76 @@ mod tests {
             assert_eq!(&token.token_type, expected_type, "Type de token incorrect pour '{}'", token.text);
         }
     }
+
+    // test pour les chaines vides
+    #[test]
+    fn test_empty_string() {
+        let mut lexer = Lexer::new(r#""""#);
+        assert_eq!(
+            lexer.get_token(),
+            Some(TokenType::STRING {
+                value: "".to_string(),
+                kind: StringKind::NORMAL
+            })
+        );
+    }
+
+    // test nombre negatif
+    #[test]
+    fn test_negative_numbers() {
+        let mut lexer = Lexer::new("-42 -3.14");
+        assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::MINUS)));
+        assert_eq!(lexer.get_token(), Some(TokenType::INTEGER { value: BigInt::from(42) }));
+        assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::MINUS)));
+        assert_eq!(lexer.get_token(), Some(TokenType::FLOAT { value: 3.14 }));
+    }
+
+
+    //Test pour les identifiants avec des underscores :
+    #[test]
+    fn test_identifiers_with_underscores() {
+        let mut lexer = Lexer::new("my_variable _private");
+        assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "my_variable".to_string() }));
+        assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "_private".to_string() }));
+    }
+    //Test pour les opérateurs composés :
+    // #[test]
+    // fn test_compound_operators() {
+    //     let mut lexer = Lexer::new("++ -- ** //");
+    //     assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::PLUSEQUAL)));
+    //     assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::MINEQUAL)));
+    //     assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::DOUBLESTAR)));
+    //     assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::DOUBLESLASH)));
+    // }
+
+    //Test pour la gestion des espaces et des sauts de ligne :
+
+    #[test]
+    fn test_whitespace_handling() {
+        let mut lexer = Lexer::new("let   x\n=\t42");
+        assert_eq!(lexer.get_token(), Some(TokenType::KEYWORD(Keywords::LET)));
+        assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "x".to_string() }));
+        assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::EQUAL)));
+        assert_eq!(lexer.get_token(), Some(TokenType::INTEGER { value: BigInt::from(42) }));
+    }
+
+    //Test pour les caractères d'échappement dans les chaînes :
+
+    #[test]
+    fn test_string_escape_sequences() {
+        let mut lexer = Lexer::new(r#""Hello\nWorld\t\"Escaped\"""#);
+        assert_eq!(
+            lexer.get_token(),
+            Some(TokenType::STRING {
+                value: "Hello\nWorld\t\"Escaped\"".to_string(),
+                kind: StringKind::NORMAL
+            })
+        );
+    }
+
+
+
+
 }
 
 //by YmC
