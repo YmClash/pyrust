@@ -129,7 +129,7 @@ impl<'a> Lexer<'a> {
         operators.insert("++".to_string(), Operators::PLUSEQUAL);
         operators.insert("--".to_string(), Operators::MINEQUAL);
         operators.insert("**".to_string(), Operators::DOUBLESTAR);
-        operators.insert("//".to_string(), Operators::DOUBLESLASH);
+        //operators.insert("//".to_string(), Operators::DOUBLESLASH);
         operators.insert("&&".to_string(), Operators::AND);
         operators.insert("||".to_string(), Operators::OR);
         operators.insert("!".to_string(), Operators::EXCLAMATION);
@@ -222,8 +222,12 @@ impl<'a> Lexer<'a> {
             Some('"') | Some('\'') => Some(self.lex_string()),
             Some('#') => Some(self.lex_comment()),
             Some('/') => {
-                if self.peek_next_char() == Some('/') || self.peek_next_char() == Some('*') {
-                    Some(self.lex_comment())
+                if let Some(next_char) = self.peek_next_char() {
+                    match next_char {
+                        '/' => return Some(self.lex_comment()),  // Toujours traiter `//` comme un commentaire
+                        '*' => return Some(self.lex_comment()),  // Traiter `/* ... */` comme un commentaire multi-ligne
+                        _ => return self.lex_operator(),
+                    }
                 } else {
                     self.lex_operator()
                 }
@@ -293,7 +297,6 @@ impl<'a> Lexer<'a> {
             self.advance();  // Consomme le caractère actuel
 
             if is_escaped {
-                // Gérer les séquences d'échappement
                 match ch {
                     'n' => value.push('\n'),
                     't' => value.push('\t'),
@@ -301,17 +304,23 @@ impl<'a> Lexer<'a> {
                     '\\' => value.push('\\'),
                     '"' => value.push('"'),
                     '\'' => value.push('\''),
-                    _ => {
-                        // Pour les autres caractères, on les ajoute tels quels
-                        value.push('\\');
-                        value.push(ch);
-                    }
+                    '\n' => {
+                        // Ignorer le saut de ligne après un backslash
+                        // et tous les espaces blancs au début de la ligne suivante
+                        while let Some(&next_ch) = self.source.peek() {
+                            if next_ch.is_whitespace() && next_ch != '\n' {
+                                self.advance();
+                            } else {
+                                break;
+                            }
+                        }
+                    },
+                    _ => value.push(ch),
                 }
                 is_escaped = false;
             } else if ch == '\\' {
-                is_escaped = true;  // Activer le flag d'échappement
+                is_escaped = true;
             } else if ch == quote {
-                // Terminer la chaîne à la guillemet fermante
                 break;
             } else {
                 value.push(ch);
@@ -348,25 +357,6 @@ impl<'a> Lexer<'a> {
         Some(TokenType::UNKNOWN)
     }
 
-    // fn lex_operator(&mut self) -> Option<TokenType> {
-    //     self.current_token_text.clear();
-    //
-    //     let mut op = String::new();
-    //     while let Some(&ch) = self.source.peek() {
-    //         if !ch.is_alphanumeric() && !ch.is_whitespace() {
-    //             op.push(self.advance());
-    //         } else {
-    //             break;
-    //         }
-    //     }
-    //
-    //     if let Some(operator) = self.operators.get(&op) {
-    //         Some(TokenType::OPERATOR(operator.clone()))
-    //     } else {
-    //         println!("Unknown token: {}", op);
-    //         Some(TokenType::UNKNOWN) // Retourner UNKNOWN au lieu de None pour les opérateurs inconnus
-    //     }
-    // }
 
     /// methode pour les differents types de token de Type Delimiter
     fn lex_delimiter(&mut self) -> TokenType {
@@ -383,7 +373,7 @@ impl<'a> Lexer<'a> {
     /// methode pour les differents types de token de Type Comment # ou // ou /* */
     fn lex_comment(&mut self) -> TokenType {
         self.current_token_text.clear();
-        let start_char = self.advance(); // Consomme le '#' ou le '/'
+        let start_char = self.advance(); // Consomme le '/' ou le '#'
         let mut comment = String::new();
 
         match start_char {
@@ -400,32 +390,39 @@ impl<'a> Lexer<'a> {
                 if let Some(&next_char) = self.source.peek() {
                     match next_char {
                         '/' => {
-                            // Commentaire en ligne commençant par '//'
                             self.advance(); // Consomme le deuxième '/'
-                            while let Some(ch) = self.next_char() {
-                                if ch == '\n' {
-                                    break;
+                            if self.peek_char() == Some('/') {
+                                // C'est un commentaire de type `///`
+                                self.advance(); // Consomme le troisième '/'
+                                while let Some(ch) = self.next_char() {
+                                    if ch == '\n' {
+                                        break;
+                                    }
+                                    comment.push(ch);
                                 }
-                                comment.push(ch);
+                                return TokenType::DOCSTRING(comment); // Retourne un DOCSTRING
+                            } else {
+                                // C'est un commentaire normal `//`
+                                while let Some(ch) = self.next_char() {
+                                    if ch == '\n' {
+                                        break;
+                                    }
+                                    comment.push(ch);
+                                }
+                                return TokenType::COMMENT(comment);
                             }
                         },
                         '*' => {
                             // Commentaire multi-lignes
                             self.advance(); // Consomme le '*'
-                            let mut depth = 1;
                             while let Some(ch) = self.next_char() {
                                 if ch == '*' && self.peek_char() == Some('/') {
                                     self.advance(); // Consomme le '/'
-                                    depth -= 1;
-                                    if depth == 0 {
-                                        break;
-                                    }
-                                } else if ch == '/' && self.peek_char() == Some('*') {
-                                    self.advance(); // Consomme le '*'
-                                    depth += 1;
+                                    break;
                                 }
                                 comment.push(ch);
                             }
+                            return TokenType::COMMENT(comment);
                         },
                         _ => {
                             // Ce n'est pas un commentaire, c'est probablement un opérateur de division
@@ -443,6 +440,7 @@ impl<'a> Lexer<'a> {
         self.current_token_text = comment.clone();
         return TokenType::COMMENT(comment);
     }
+
     ////////////
 
     /// methode pour avancer d'un caractere

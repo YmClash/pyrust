@@ -17,6 +17,9 @@ pub enum TokenType{
     DELIMITER(Delimiters),
     UNKNOWN,
     COMMENT(String),
+    DOCSTRING(String),
+
+
 
 }
 
@@ -57,7 +60,7 @@ pub enum Operators{
     AND, // '&&' ET ET / AND
     OR, // '||' OU OU / OR
 
-    DOUBLESLASH, // '//' DOUBLE SLASH / DOUBLE SLASH
+    //DOUBLESLASH, // '//' DOUBLE SLASH / DOUBLE SLASH
     DOUBLESLASHEQUAL, // '//=' DOUBLE SLASH EGAL / DOUBLE SLASH EQUAL
     AT, // '@' AROBASE / AT
     ATEQUAL, // '@=' AROBASE EGAL / AT EQUAL
