@@ -242,6 +242,19 @@ impl<'a> Lexer<'a> {
     ///methode pour les differents types de token de Type Number integer et float
     fn lex_number(&mut self) -> TokenType {
         self.current_token_text.clear();
+
+        if self.peek_char() == Some('0') {
+            if let Some(next_char) = self.peek_next_char(){
+                if next_char == 'x' || next_char == 'X' {
+                    self.advance();
+                    self.advance();
+                    return self.lex_hexadecimal();
+                }
+            }
+        }
+
+
+
         let mut number = String::new();
         let mut is_float = false;
 
@@ -264,6 +277,26 @@ impl<'a> Lexer<'a> {
             TokenType::INTEGER { value: number.parse().unwrap() }
         }
     }
+
+    fn lex_hexadecimal(&mut self) -> TokenType {
+        let mut hex_number = String::new();
+        while let Some(&ch) = self.source.peek() {
+            if ch.is_digit(16) {
+                hex_number.push(self.advance());
+            } else {
+                break;
+            }
+        }
+        if hex_number.is_empty() {
+            // Erreur: aucun chiffre hexadécimal trouvé
+            TokenType::UNKNOWN
+        }
+        else {
+            TokenType::HEXADECIMAL { value: u64::from_str_radix(&hex_number, 16).unwrap() }
+            }
+    }
+
+
 
     //fn lex_identifier(){}
     /// methode pour les differents types de token de Type Identifier  ou Keyword

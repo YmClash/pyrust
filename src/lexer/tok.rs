@@ -9,6 +9,7 @@ pub enum TokenType{
     IDENTIFIER{name: String},
     INTEGER{value: BigInt},
     FLOAT{value: f64},
+    HEXADECIMAL{value: u64},
     STRING{value: String,kind: StringKind},
     EOF,
     NEWLINE,
