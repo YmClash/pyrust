@@ -432,6 +432,74 @@ mod tests {
         assert_eq!(lexer.get_token(), Some(TokenType::UNKNOWN));
     }
 
+    #[test]
+    fn test_valid_hexadecimal() {
+        let mut lexer = Lexer::new("0x1A3F");
+        assert_eq!(lexer.get_token(), Some(TokenType::HEXADECIMAL { value: 0x1A3F }));
+    }
+
+    #[test]
+    fn test_valid_hexadecimal_uppercase(){
+        let mut lexer = Lexer::new("0X1A3F");
+        assert_eq!(lexer.get_token(), Some(TokenType::HEXADECIMAL { value: 0x1A3F }));
+
+    }
+
+    #[test]
+    fn test_valid_hexadecimal_mixed_case() {
+        let mut lexer = Lexer::new("0xaBcD");
+        assert_eq!(lexer.get_token(), Some(TokenType::HEXADECIMAL { value: 0xABCD }));
+    }
+
+    #[test]
+    fn test_valid_hexadecimal_mixed_case_2(){
+        let mut lexer = Lexer::new("0x1A3F 0Xb4");
+        assert_eq!(lexer.get_token(), Some(TokenType::HEXADECIMAL { value: 0x1A3F }));
+        assert_eq!(lexer.get_token(), Some(TokenType::HEXADECIMAL { value: 0xB4 }));
+    }
+
+    #[test]
+    fn test_valid_hexadecimal_zero() {
+        let mut lexer = Lexer::new("0x0");
+        assert_eq!(lexer.get_token(), Some(TokenType::HEXADECIMAL { value: 0 }));
+    }
+
+    #[test]
+    fn test_valid_hexadecimal_max() {
+        let mut lexer = Lexer::new("0xFFFFFFFFFFFFFFFF");
+        assert_eq!(lexer.get_token(), Some(TokenType::HEXADECIMAL { value: 0xFFFFFFFFFFFFFFFF }));
+    }
+
+    #[test]
+    fn test_invalid_hexadecimal_no_digits() {
+        let mut lexer = Lexer::new("0x");
+        assert_eq!(lexer.get_token(), Some(TokenType::UNKNOWN));
+    }
+
+    #[test]
+    fn test_invalid_hexadecimal_invalid_digits() {
+        let mut lexer = Lexer::new("0xG123");
+        assert_eq!(lexer.get_token(), Some(TokenType::UNKNOWN));
+        assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "G123".to_string() }));
+    }
+
+    #[test]
+    fn test_hexadecimal_followed_by_identifier() {
+        let mut lexer = Lexer::new("0xABC def");
+        assert_eq!(lexer.get_token(), Some(TokenType::HEXADECIMAL { value: 0xABC }));
+        assert_eq!(lexer.get_token(), Some(TokenType::KEYWORD(Keywords::DEF) ));
+    }
+
+    #[test]
+    fn test_multiple_hexadecimals() {
+        let mut lexer = Lexer::new("0x123 0x456 0x789");
+        assert_eq!(lexer.get_token(), Some(TokenType::HEXADECIMAL { value: 0x123 }));
+        assert_eq!(lexer.get_token(), Some(TokenType::HEXADECIMAL { value: 0x456 }));
+        assert_eq!(lexer.get_token(), Some(TokenType::HEXADECIMAL { value: 0x789 }));
+    }
+
+
+
 
 
 }

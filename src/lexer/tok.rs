@@ -1,4 +1,5 @@
 use num_bigint::BigInt;
+use crate::error::LexerError;
 
 
 
@@ -19,6 +20,7 @@ pub enum TokenType{
     UNKNOWN,
     COMMENT(String),
     DOCSTRING(String),
+    ERROR(LexerError),
 
 
 

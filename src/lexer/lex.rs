@@ -5,8 +5,7 @@ use std::collections::HashMap;
 use crate::tok::{TokenType, Keywords, Delimiters, Operators, StringKind};
 
 
-
-/// structure Token
+/// Structure Token,
 /// elle contient le text du token, le type du token, la ligne et la colonne
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -17,7 +16,7 @@ pub struct Token{
     column: usize,
 }
 
-/// implementation de la structure Token
+/// Implementation de la structure Token
 #[allow(dead_code)]
 impl Token {
     fn new(text: String,token_type: TokenType,line: usize,column: usize) -> Self{
@@ -38,10 +37,10 @@ pub struct Lexer<'a>{
     current_token_text: String,
 }
 
-/// implementation  du lexer avec tout les  methodes pour classer les tokens
+/// Implementation du lexer avec tous les methodes pour classer les tokens
 #[allow(dead_code)]
 impl<'a> Lexer<'a> {
-    /// creation d'une nouvelle instance de lexer
+    /// Creation d'une nouvelle instance de lexer
     pub fn new(code_source: &'a str) -> Self{
         let lexer = Lexer{
             source: code_source.chars().peekable(),
@@ -57,7 +56,7 @@ impl<'a> Lexer<'a> {
 
 
     }
-    /// creation d'une hashmap pour les mots cles
+    /// Creation d'une hashmap pour les mots cles
     /// c'est plus facile de les stocker les mots cles dans une hashmap pour les retrouver plus facilement
     fn keywords() ->HashMap<String,Keywords>{
         let mut keywords = HashMap::new();
@@ -162,7 +161,7 @@ impl<'a> Lexer<'a> {
         return operators;
     }
 
-    /// creation d'une hashmap pour les delimiters
+    /// Creation d'une hashmap pour les delimiters
     fn delimiters() ->HashMap<String,Delimiters>{
         let mut delimiters = HashMap::new();
         delimiters.insert("(".to_string(), Delimiters::LPAR);
@@ -181,7 +180,7 @@ impl<'a> Lexer<'a> {
         return delimiters;
     }
 
-        /// methode pour avancer d'un caractere
+        /// Methode pour avancer d'un caractere
     #[allow(dead_code)]
     fn next_char(&mut self) -> Option<char> {
         let ch = self.source.next()?;
@@ -195,12 +194,12 @@ impl<'a> Lexer<'a> {
         Some(ch)
     }
 
-    /// methode pour regarder le prochain caractere sans avancer
+    /// Methode pour regarder le prochain caractere sans avancer
     #[allow(dead_code)]
     fn peek_char(&mut self) -> Option<char>{
         self.source.peek().copied()
     }
-    /// methode pour regarder le 2eme prochain caractere sans avancer
+    /// Methode pour regarder le 2eme prochain caractere sans avancer
     #[allow(dead_code)]
     fn peek_next_char(&mut self) -> Option<char> {
         self.source.clone().nth(1)
@@ -224,9 +223,9 @@ impl<'a> Lexer<'a> {
             Some('/') => {
                 if let Some(next_char) = self.peek_next_char() {
                     match next_char {
-                        '/' => return Some(self.lex_comment()),  // Toujours traiter `//` comme un commentaire
-                        '*' => return Some(self.lex_comment()),  // Traiter `/* ... */` comme un commentaire multi-ligne
-                        _ => return self.lex_operator(),
+                        '/' => Some(self.lex_comment()),  // Toujours traiter `//` comme un commentaire
+                        '*' => Some(self.lex_comment()),  // Traiter `/* ... */` comme un commentaire multi-ligne
+                        _ => self.lex_operator(),
                     }
                 } else {
                     self.lex_operator()
@@ -280,6 +279,7 @@ impl<'a> Lexer<'a> {
 
     fn lex_hexadecimal(&mut self) -> TokenType {
         let mut hex_number = String::new();
+
         while let Some(&ch) = self.source.peek() {
             if ch.is_digit(16) {
                 hex_number.push(self.advance());
@@ -288,7 +288,7 @@ impl<'a> Lexer<'a> {
             }
         }
         if hex_number.is_empty() {
-            // Erreur: aucun chiffre hexadécimal trouvé
+            // Erreur : aucun chiffre hexadécimal trouvé
             TokenType::UNKNOWN
         }
         else {
@@ -299,7 +299,7 @@ impl<'a> Lexer<'a> {
 
 
     //fn lex_identifier(){}
-    /// methode pour les differents types de token de Type Identifier  ou Keyword
+    /// Methode pour les different types de token de Type Identifier ou Keyword
     fn lex_identifier_or_keyword(&mut self) -> TokenType {
         self.current_token_text.clear();
         while let Some(&ch) = self.source.peek() {
@@ -318,7 +318,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    /// methode pour les differents types de token de Type String
+    /// Methode pour les differents types de token de Type String
     fn lex_string(&mut self) -> TokenType {
         self.current_token_text.clear();
 
@@ -364,7 +364,7 @@ impl<'a> Lexer<'a> {
         TokenType::STRING { value, kind: StringKind::NORMAL }
     }
 
-    /// methode pour les differents types de token de Type Operator
+    /// Methode pour les differents types de token de Type Operator
     fn lex_operator(&mut self) -> Option<TokenType> {
         self.current_token_text.clear();
 
@@ -391,19 +391,19 @@ impl<'a> Lexer<'a> {
     }
 
 
-    /// methode pour les differents types de token de Type Delimiter
+    /// Methode pour les differents types de token de Type Delimiter
     fn lex_delimiter(&mut self) -> TokenType {
         self.current_token_text.clear();
         let ch = self.advance();
         if let Some(delimiter) = self.delimiters.get(&ch.to_string()) {
-            return TokenType::DELIMITER(delimiter.clone());
+            TokenType::DELIMITER(delimiter.clone())
         } else {
             return TokenType::UNKNOWN;
         }
         // TokenType::DELIMITER(self.delimiters[&ch.to_string()].clone())
     }
 
-    /// methode pour les differents types de token de Type Comment # ou // ou /* */
+    /// Methode pour les differents types de token de Type Comment # ou // ou /* */
     fn lex_comment(&mut self) -> TokenType {
         self.current_token_text.clear();
         let start_char = self.advance(); // Consomme le '/' ou le '#'
@@ -421,7 +421,7 @@ impl<'a> Lexer<'a> {
             },
             '/' => {
                 if let Some(&next_char) = self.source.peek() {
-                    match next_char {
+                    return match next_char {
                         '/' => {
                             self.advance(); // Consomme le deuxième '/'
                             if self.peek_char() == Some('/') {
@@ -433,7 +433,7 @@ impl<'a> Lexer<'a> {
                                     }
                                     comment.push(ch);
                                 }
-                                return TokenType::DOCSTRING(comment); // Retourne un DOCSTRING
+                                TokenType::DOCSTRING(comment) // Retourne un DOCSTRING
                             } else {
                                 // C'est un commentaire normal `//`
                                 while let Some(ch) = self.next_char() {
@@ -442,7 +442,7 @@ impl<'a> Lexer<'a> {
                                     }
                                     comment.push(ch);
                                 }
-                                return TokenType::COMMENT(comment);
+                                TokenType::COMMENT(comment)
                             }
                         },
                         '*' => {
@@ -455,11 +455,11 @@ impl<'a> Lexer<'a> {
                                 }
                                 comment.push(ch);
                             }
-                            return TokenType::COMMENT(comment);
+                            TokenType::COMMENT(comment)
                         },
                         _ => {
                             // Ce n'est pas un commentaire, c'est probablement un opérateur de division
-                            return TokenType::OPERATOR(Operators::SLASH);
+                            TokenType::OPERATOR(Operators::SLASH)
                         }
                     }
                 }
@@ -476,7 +476,7 @@ impl<'a> Lexer<'a> {
 
     ////////////
 
-    /// methode pour avancer d'un caractere
+    /// Methode pour avancer d'un character
     fn advance(&mut self) -> char {
         let ch = self.source.next().unwrap();
         if ch == '\n' {
@@ -488,7 +488,7 @@ impl<'a> Lexer<'a> {
         ch
     }
 
-    /// methode pour sauter les espaces
+    /// Methode pour sauter les espaces
     fn skip_whitespace(&mut self) {
         while let Some(&ch) = self.source.peek() {
             if ch.is_whitespace() {
@@ -499,11 +499,11 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    /// C'est la deuxieme methode principal avec get_token() pour obtenir les tokens
-    /// son role c'est de tokeniser le code source
-    /// appel la methode get_token pour obtenir les tokens
-    /// elle creeun objet Token pour chaque TokenType retourné par get_token()
-    /// elle retourne  un vecteur de tokens Vec<Token>
+    /// C'est la deuxième methode principal avec get_token() pour obtenir les tokens
+    /// Son role c'est de tokeniser le code source
+    /// appel la methode get_token pour obtenir les tokens.
+    /// Elle crée objet Token pour chaque TokenType retourné par get_token()
+    /// elle retourne un vecteur de tokens Vec<Token>
     /// methode pour tokeniser le code source
     pub fn tokenize(&mut self) -> Vec<Token> {
         let mut tokens = Vec::new();
@@ -528,6 +528,10 @@ impl<'a> Lexer<'a> {
         self.current_token_text = ch.to_string();
         TokenType::UNKNOWN
     }
+
+    // fn lex_error(&mut self, message:&str) -> TokenType{
+    //     TokenType::ERROR(LexerError::new(message, self.current_line, self.current_column))
+    // }
 }
 
 
