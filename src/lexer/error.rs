@@ -3,7 +3,6 @@
 
 use std::fmt::{Display, Formatter};
 use std::fmt;
-use std::fmt::Write;
 
 
 
@@ -19,8 +18,8 @@ use std::fmt::Write;
 
 #[derive(Debug, PartialEq,Clone)]
 pub struct Position {
-    line: usize,
-    column: usize,
+    pub(crate) line: usize,
+    pub(crate) column: usize,
 }
 
 
@@ -28,7 +27,7 @@ pub struct Position {
 pub struct LexerError{
     pub error: LexerErrorType,
     pub message: String,
-    position: Position,
+    pub position: Position,
 }
 
 //
@@ -43,6 +42,7 @@ pub enum LexerErrorType{
     UnterminatedComment,
 }
 
+#[allow(dead_code)]
 impl Position{
     fn new() -> Self{
         Position{line:1,column:1}
@@ -54,10 +54,19 @@ impl Position{
             self.column = 1;
         }
     }
-    fn mouve_left(&mut self) {
+    fn move_left(&mut self) {
         self.column -= 1;
     }
+
+    // pub fn new_with_position(line: usize, column: usize) -> Self {
+    //     Position { line, column }
+    // }
 }
+
+
+
+
+
 
 impl Display for Position{
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -65,28 +74,24 @@ impl Display for Position{
     }
 }
 
+
+
 impl Display for LexerError{
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f,"LexerError: {} at {}",self.message,self.position)
     }
 }
 
-impl Display for LexerErrorType{
-    fn fmt(&self,f:&mut Formatter<'_>) -> fmt::Result{
-        if let LexerErrorType::InvalidCharacter(c) = self {
-            write!(f, "Invalid character: {}", c)
-        } else if let LexerErrorType::InvalidToken(t) = self {
-            write!(f, "Invalid token: {}", t)
-        } else if let LexerErrorType::InvalidFloat(f) = self {
-            write!(f, "Invalid float: {}", f)
-        } else if let LexerErrorType::InvalidInteger(i) = self {
-            write!(f, "Invalid integer: {}", i)
-        } else if let LexerErrorType::InvalidHexadecimal(h) = self {
-            write!(f, "Invalid hexadecimal: {}", h)
-        } else if let LexerErrorType::UnterminatedString = self {
-            write!(f, "Unterminated string")
-        } else {
-            write!(f, "Unterminated comment")
+impl Display for LexerErrorType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            LexerErrorType::InvalidCharacter(c) => write!(f, "Invalid character: {}", c),
+            LexerErrorType::InvalidToken(t) => write!(f, "Invalid token: {}", t),
+            LexerErrorType::InvalidFloat(fl) => write!(f, "Invalid float: {}", fl),
+            LexerErrorType::InvalidInteger(i) => write!(f, "Invalid integer: {}", i),
+            LexerErrorType::InvalidHexadecimal(h) => write!(f, "Invalid hexadecimal: {}", h),
+            LexerErrorType::UnterminatedString => write!(f, "Unterminated string"),
+            LexerErrorType::UnterminatedComment => write!(f, "Unterminated comment"),
         }
     }
 }
