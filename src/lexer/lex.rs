@@ -3,6 +3,7 @@ use std::iter::Peekable;
 use std::str::Chars;
 use std::collections::HashMap;
 use crate::tok::{TokenType, Keywords, Delimiters, Operators, StringKind};
+use crate::error::{LexerError, LexerErrorType, Position};
 
 
 /// Structure Token,
@@ -238,12 +239,11 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    ///methode pour les differents types de token de Type Number integer et float
     fn lex_number(&mut self) -> TokenType {
         self.current_token_text.clear();
 
         if self.peek_char() == Some('0') {
-            if let Some(next_char) = self.peek_next_char(){
+            if let Some(next_char) = self.peek_next_char() {
                 if next_char == 'x' || next_char == 'X' {
                     self.advance();
                     self.advance();
@@ -251,8 +251,6 @@ impl<'a> Lexer<'a> {
                 }
             }
         }
-
-
 
         let mut number = String::new();
         let mut is_float = false;
@@ -270,35 +268,93 @@ impl<'a> Lexer<'a> {
             }
         }
 
-        if is_float {
-            TokenType::FLOAT { value: number.parse().unwrap() }
-        } else {
-            TokenType::INTEGER { value: number.parse().unwrap() }
+        if number.is_empty() {
+            // Si aucun nombre n'a été trouvé, c'est une erreur
+            return self.create_error(LexerErrorType::InvalidInteger(number));
         }
+
+        if is_float {
+            match number.parse::<f64>() {
+                Ok(value) => TokenType::FLOAT { value },
+                Err(_) => self.create_error(LexerErrorType::InvalidFloat(number)),
+            }
+        } else {
+            match number.parse::<i64>() {
+                Ok(value) => TokenType::INTEGER { value:value.into() },
+                Err(_) => self.create_error(LexerErrorType::InvalidInteger(number)),
+            }
+        }
+    }
+
+
+    /////////////////////////////////////////////////////////
+
+    // ///methode pour les differents types de token de Type Number integer et float
+    // fn lex_number(&mut self) -> TokenType {
+    //     self.current_token_text.clear();
+    //
+    //     if self.peek_char() == Some('0') {
+    //         if let Some(next_char) = self.peek_next_char(){
+    //             if next_char == 'x' || next_char == 'X' {
+    //                 self.advance();
+    //                 self.advance();
+    //                 return self.lex_hexadecimal();
+    //             }
+    //         }
+    //     }
+    //
+    //
+    //
+    //     let mut number = String::new();
+    //     let mut is_float = false;
+    //
+    //     while let Some(&ch) = self.source.peek() {
+    //         if ch.is_digit(10) || (ch == '.' && !is_float) {
+    //             if ch == '.' {
+    //                 is_float = true;
+    //             }
+    //             let ch = self.advance();
+    //             self.current_token_text.push(ch);
+    //             number.push(ch);
+    //         } else {
+    //             break;
+    //         }
+    //     }
+    //
+    //     if is_float {
+    //         TokenType::FLOAT { value: number.parse().unwrap() }
+    //     } else {
+    //         TokenType::INTEGER { value: number.parse().unwrap() }
+    //     }
+    // }
+
+    fn is_hex_digit(ch:char) -> bool{
+        ch.is_digit(16)
     }
 
     fn lex_hexadecimal(&mut self) -> TokenType {
         let mut hex_number = String::new();
+        //let start_position = Position::new(self.current_line, self.current_column);
 
         while let Some(&ch) = self.source.peek() {
-            if ch.is_digit(16) {
+            if Self::is_hex_digit(ch) {
                 hex_number.push(self.advance());
             } else {
                 break;
             }
         }
+
         if hex_number.is_empty() {
             // Erreur : aucun chiffre hexadécimal trouvé
-            TokenType::UNKNOWN
+            return self.create_error(LexerErrorType::InvalidHexadecimal(hex_number.clone()));
+        } else {
+            return TokenType::HEXADECIMAL { value: u64::from_str_radix(&hex_number, 16).unwrap() };
         }
-        else {
-            TokenType::HEXADECIMAL { value: u64::from_str_radix(&hex_number, 16).unwrap() }
-            }
     }
 
 
 
-    //fn lex_identifier(){}
+        //fn lex_identifier(){}
     /// Methode pour les different types de token de Type Identifier ou Keyword
     fn lex_identifier_or_keyword(&mut self) -> TokenType {
         self.current_token_text.clear();
@@ -317,8 +373,6 @@ impl<'a> Lexer<'a> {
             TokenType::IDENTIFIER { name: self.current_token_text.clone() }
         }
     }
-
-    /// Methode pour les differents types de token de Type String
     fn lex_string(&mut self) -> TokenType {
         self.current_token_text.clear();
 
@@ -339,7 +393,6 @@ impl<'a> Lexer<'a> {
                     '\'' => value.push('\''),
                     '\n' => {
                         // Ignorer le saut de ligne après un backslash
-                        // et tous les espaces blancs au début de la ligne suivante
                         while let Some(&next_ch) = self.source.peek() {
                             if next_ch.is_whitespace() && next_ch != '\n' {
                                 self.advance();
@@ -354,15 +407,68 @@ impl<'a> Lexer<'a> {
             } else if ch == '\\' {
                 is_escaped = true;
             } else if ch == quote {
-                break;
+                self.current_token_text = value.clone();
+                return TokenType::STRING { value, kind: StringKind::NORMAL };
             } else {
                 value.push(ch);
             }
         }
 
-        self.current_token_text = value.clone();
-        TokenType::STRING { value, kind: StringKind::NORMAL }
+        // Si nous sortons de la boucle sans avoir trouvé de guillemet fermant
+        self.create_error(LexerErrorType::UnterminatedString)
     }
+
+
+    ///////////////////////////////////////
+
+    // /// Methode pour les differents types de token de Type String
+    // fn lex_string(&mut self) -> TokenType {
+    //     self.current_token_text.clear();
+    //
+    //     let quote = self.advance();  // Consomme le premier guillemet
+    //     let mut value = String::new();
+    //     let mut is_escaped = false;
+    //     if self.peek_char().is_none() {
+    //         return self.create_error(LexerErrorType::UnterminatedString);
+    //     }
+    //
+    //     while let Some(&ch) = self.source.peek() {
+    //         self.advance();  // Consomme le caractère actuel
+    //
+    //         if is_escaped {
+    //             match ch {
+    //                 'n' => value.push('\n'),
+    //                 't' => value.push('\t'),
+    //                 'r' => value.push('\r'),
+    //                 '\\' => value.push('\\'),
+    //                 '"' => value.push('"'),
+    //                 '\'' => value.push('\''),
+    //                 '\n' => {
+    //                     // Ignorer le saut de ligne après un backslash
+    //                     // et tous les espaces blancs au début de la ligne suivante
+    //                     while let Some(&next_ch) = self.source.peek() {
+    //                         if next_ch.is_whitespace() && next_ch != '\n' {
+    //                             self.advance();
+    //                         } else {
+    //                             break;
+    //                         }
+    //                     }
+    //                 },
+    //                 _ => value.push(ch),
+    //             }
+    //             is_escaped = false;
+    //         } else if ch == '\\' {
+    //             is_escaped = true;
+    //         } else if ch == quote {
+    //             break;
+    //         } else {
+    //             value.push(ch);
+    //         }
+    //     }
+    //
+    //     self.current_token_text = value.clone();
+    //     TokenType::STRING { value, kind: StringKind::NORMAL }
+    // }
 
     /// Methode pour les differents types de token de Type Operator
     fn lex_operator(&mut self) -> Option<TokenType> {
@@ -448,14 +554,26 @@ impl<'a> Lexer<'a> {
                         '*' => {
                             // Commentaire multi-lignes
                             self.advance(); // Consomme le '*'
+                            let mut depth = 1;
                             while let Some(ch) = self.next_char() {
                                 if ch == '*' && self.peek_char() == Some('/') {
                                     self.advance(); // Consomme le '/'
-                                    break;
+                                    depth -= 1;
+                                    if depth ==0{
+                                        break;
+                                    }
+                                } else if ch == '/' && self.peek_char() == Some('*') {
+                                    self.advance(); // Consomme le '*'
+                                    depth += 1;
                                 }
                                 comment.push(ch);
                             }
-                            TokenType::COMMENT(comment)
+                            if depth > 0 {
+                                // Erreur : commentaire multi-lignes non terminé
+                                self.create_error(LexerErrorType::UnterminatedComment)
+                            }else {
+                                TokenType::COMMENT(comment)
+                            }
                         },
                         _ => {
                             // Ce n'est pas un commentaire, c'est probablement un opérateur de division
@@ -529,10 +647,29 @@ impl<'a> Lexer<'a> {
         TokenType::UNKNOWN
     }
 
-    // fn lex_error(&mut self, message:&str) -> TokenType{
-    //     TokenType::ERROR(LexerError::new(message, self.current_line, self.current_column))
+    // Methode pour creer une erreur
+
+    // fn create_error(&self, error_type: LexerErrorType) -> TokenType {
+    //     let position = Position::new_with_position(self.current_line, self.current_column);
+    //     TokenType::ERROR(LexerError::new(error_type, message, position))
     // }
+    //
+
+    fn create_error(&self, error: LexerErrorType) -> TokenType {
+        let position = Position {
+            line: self.current_line,
+            column: self.current_column,
+        };
+        TokenType::ERROR(LexerError::new(
+            error.clone(),
+            error.to_string(),
+            position
+        ))
+    }
 }
+
+
+
 
 
 

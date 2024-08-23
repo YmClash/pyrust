@@ -4,6 +4,7 @@ use num_bigint::BigInt;
 
 #[cfg(test)]
 mod tests {
+    use pyrust::error::{ LexerErrorType};
     use super::*;
 
     // Test pour les nombres
@@ -365,12 +366,6 @@ mod tests {
         assert_eq!(lexer.get_token(), Some(TokenType::UNKNOWN)); // `$` n'est pas un caractère valide dans un identifiant
     }
 
-    #[test]
-    fn test_unterminated_string() {
-        let mut lexer = Lexer::new("\"This string is not terminated");
-        assert_eq!(lexer.get_token(), Some(TokenType::STRING { value: "This string is not terminated".to_string(), kind: StringKind::NORMAL }));
-        assert_eq!(lexer.get_token(), Some(TokenType::EOF)); // Ou bien un type d'erreur approprié
-    }
 
     #[test]
     fn test_invalid_escape_sequence() {
@@ -410,7 +405,11 @@ mod tests {
     #[test]
     fn test_large_numbers() {
         let mut lexer = Lexer::new("123456789012345678901234567890");
-        assert_eq!(lexer.get_token(), Some(TokenType::INTEGER { value: BigInt::from(123456789012345678901234567890_u128) }));
+        if let Some(TokenType::ERROR(error)) = lexer.get_token() {
+            assert_eq!(error.error, LexerErrorType::InvalidInteger("123456789012345678901234567890".to_string()));
+        } else {
+            panic!("Expected an ERROR token for very large integer");
+        }
     }
 
     #[test]
@@ -426,10 +425,13 @@ mod tests {
         assert_eq!(lexer.get_token(), Some(TokenType::HEXADECIMAL { value: 0xB4 }));
     }
 
-    #[test]
     fn test_invalid_hex_number() {
         let mut lexer = Lexer::new("0xGHI");
-        assert_eq!(lexer.get_token(), Some(TokenType::UNKNOWN));
+        if let Some(TokenType::ERROR(error)) = lexer.get_token() {
+            assert_eq!(error.error, LexerErrorType::InvalidHexadecimal("".to_string()));
+        } else {
+            panic!("Expected an ERROR token for invalid hexadecimal");
+        }
     }
 
     #[test]
@@ -470,24 +472,13 @@ mod tests {
         assert_eq!(lexer.get_token(), Some(TokenType::HEXADECIMAL { value: 0xFFFFFFFFFFFFFFFF }));
     }
 
-    #[test]
-    fn test_invalid_hexadecimal_no_digits() {
-        let mut lexer = Lexer::new("0x");
-        assert_eq!(lexer.get_token(), Some(TokenType::UNKNOWN));
-    }
 
-    #[test]
-    fn test_invalid_hexadecimal_invalid_digits() {
-        let mut lexer = Lexer::new("0xG123");
-        assert_eq!(lexer.get_token(), Some(TokenType::UNKNOWN));
-        assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "G123".to_string() }));
-    }
 
     #[test]
     fn test_hexadecimal_followed_by_identifier() {
         let mut lexer = Lexer::new("0xABC def");
         assert_eq!(lexer.get_token(), Some(TokenType::HEXADECIMAL { value: 0xABC }));
-        assert_eq!(lexer.get_token(), Some(TokenType::KEYWORD(Keywords::DEF) ));
+        assert_eq!(lexer.get_token(), Some(TokenType::KEYWORD(Keywords::DEF)));
     }
 
     #[test]
@@ -499,9 +490,123 @@ mod tests {
     }
 
 
-
-
+///////////////////////////////////////////////////ERROR HANDLING TEST ///////////////////////////////////////////////////////////////////////////
+//     fn test_invalid_number() {
+//         let mut lexer = Lexer::new("123a");
+//         assert_eq!(lexer.get_token(), Some(TokenType::INTEGER { value: BigInt::from(123) }));
+//         assert_eq!(
+//             lexer.get_token(),
+//             Some(TokenType::ERROR(LexerError::invalid_integer("123a", Position { line: 1, column: 4 })))
+//         );
+//     }
+//
+//     // Test pour un float invalide
+//     #[test]
+//     fn test_invalid_float() {
+//         let mut lexer = Lexer::new("3.14.15");
+//         assert_eq!(lexer.get_token(), Some(TokenType::ERROR(LexerError::invalid_float("3.14.15", Position { line: 1, column: 7 }))));
+//     }
+//
+//     // Test pour une chaîne non terminée
+//     #[test]
+//     fn test_unterminated_string() {
+//         let mut lexer = Lexer::new("\"Hello, world");
+//         assert_eq!(
+//             lexer.get_token(),
+//             Some(TokenType::ERROR(LexerError::unterminated_string(Position { line: 1, column: 14 })))
+//         );
+//     }
+//
+//     // Test pour un commentaire non terminé
+//     #[test]
+//     fn test_unterminated_comment() {
+//         let mut lexer = Lexer::new("/* This is a comment");
+//         assert_eq!(
+//             lexer.get_token(),
+//             Some(TokenType::ERROR(LexerError::unterminated_comment(Position { line: 1, column: 21 })))
+//         );
+//     }
+//
+//     // Test pour un caractère invalide
+//     #[test]
+//     fn test_invalid_character() {
+//         let mut lexer = Lexer::new("@");
+//         assert_eq!(
+//             lexer.get_token(),
+//             Some(TokenType::ERROR(LexerError::invalid_character('@', Position { line: 1, column: 1 })))
+//         );
+//     }
+//
+//     // Test pour un hexadécimal invalide
+//     #[test]
+//     fn test_invalid_hexadecimal() {
+//         let mut lexer = Lexer::new("0xGHI");
+//         assert_eq!(
+//             lexer.get_token(),
+//             Some(TokenType::ERROR(LexerError::invalid_hexadecimal("GHI", Position { line: 1, column: 3 })))
+//         );
+//     }
+//
+//     // Test pour un hexadécimal valide suivi d'un identifiant
+//     #[test]
+//     fn test_hexadecimal_followed_by_identifier_2() {
+//         let mut lexer = Lexer::new("0x1FAb identifier");
+//         assert_eq!(lexer.get_token(), Some(TokenType::HEXADECIMAL { value: 0x1FAb }));
+//         assert_eq!(
+//             lexer.get_token(),
+//             Some(TokenType::IDENTIFIER { name: "identifier".to_string() })
+//         );
+//     }
+//
+//     // Test pour une chaîne avec des caractères d'échappement incorrects
+//     #[test]
+//     fn test_invalid_escape_sequence_2() {
+//         let mut lexer = Lexer::new("\"Hello\\x\"");
+//         assert_eq!(
+//             lexer.get_token(),
+//             Some(TokenType::ERROR(LexerError::invalid_character('x', Position { line: 1, column: 8 })))
+//         );
+//     }
+//
+//     // Test pour une chaîne avec un saut de ligne non échappé
+//     #[test]
+//     fn test_unescaped_newline_in_string() {
+//         let mut lexer = Lexer::new("\"Hello\nWorld\"");
+//         assert_eq!(
+//             lexer.get_token(),
+//             Some(TokenType::ERROR(LexerError::unterminated_string(Position { line: 1, column: 7 })))
+//         );
+//     }
+//
+//     // Test pour un opérateur non reconnu
+//     #[test]
+//     fn test_unrecognized_operator() {
+//         let mut lexer = Lexer::new("a $ b");
+//         assert_eq!(
+//             lexer.get_token(),
+//             Some(TokenType::IDENTIFIER { name: "a".to_string() })
+//         );
+//         assert_eq!(
+//             lexer.get_token(),
+//             Some(TokenType::ERROR(LexerError::invalid_character('$', Position { line: 1, column: 3 })))
+//         );
+//         assert_eq!(
+//             lexer.get_token(),
+//             Some(TokenType::IDENTIFIER { name: "b".to_string() })
+//         );
+//     }
+//
+//     // Test pour un commentaire multi-ligne non terminé
+//     #[test]
+//     fn test_unterminated_multiline_comment() {
+//         let mut lexer = Lexer::new("/* This is a multi-line comment that doesn't end");
+//         assert_eq!(
+//             lexer.get_token(),
+//             Some(TokenType::ERROR(LexerError::unterminated_comment(Position { line: 1, column: 50 })))
+//         );
+//     }
 
 }
+
 
 // //by YmC

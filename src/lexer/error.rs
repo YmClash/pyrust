@@ -18,8 +18,8 @@ use std::fmt;
 
 #[derive(Debug, PartialEq,Clone)]
 pub struct Position {
-    pub(crate) line: usize,
-    pub(crate) column: usize,
+    pub line: usize,
+    pub column: usize,
 }
 
 
