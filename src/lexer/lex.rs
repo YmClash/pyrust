@@ -50,7 +50,7 @@ impl<'a> Lexer<'a> {
             operators: Self::operators(),
             delimiters: Self::delimiters(),
             current_line: 1,
-            current_column: 0,
+            current_column: 1,
             current_token_text: String::new(),
         };
         lexer
@@ -286,48 +286,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-
-    /////////////////////////////////////////////////////////
-
-    // ///methode pour les differents types de token de Type Number integer et float
-    // fn lex_number(&mut self) -> TokenType {
-    //     self.current_token_text.clear();
-    //
-    //     if self.peek_char() == Some('0') {
-    //         if let Some(next_char) = self.peek_next_char(){
-    //             if next_char == 'x' || next_char == 'X' {
-    //                 self.advance();
-    //                 self.advance();
-    //                 return self.lex_hexadecimal();
-    //             }
-    //         }
-    //     }
-    //
-    //
-    //
-    //     let mut number = String::new();
-    //     let mut is_float = false;
-    //
-    //     while let Some(&ch) = self.source.peek() {
-    //         if ch.is_digit(10) || (ch == '.' && !is_float) {
-    //             if ch == '.' {
-    //                 is_float = true;
-    //             }
-    //             let ch = self.advance();
-    //             self.current_token_text.push(ch);
-    //             number.push(ch);
-    //         } else {
-    //             break;
-    //         }
-    //     }
-    //
-    //     if is_float {
-    //         TokenType::FLOAT { value: number.parse().unwrap() }
-    //     } else {
-    //         TokenType::INTEGER { value: number.parse().unwrap() }
-    //     }
-    // }
-
+// savoir si c'est un  hexdigit
     fn is_hex_digit(ch:char) -> bool{
         ch.is_digit(16)
     }

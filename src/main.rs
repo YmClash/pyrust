@@ -24,6 +24,9 @@ fn main() {
             # This is a single-line comment
             if z > 10 {
                 print("z is greater than 10");
+            } else {
+            def foo(x: int, y: int) -> int {
+                return x + y;
             }
         "#;
     //
