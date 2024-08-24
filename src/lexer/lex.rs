@@ -472,8 +472,12 @@ impl<'a> Lexer<'a> {
         }
 
         // Si l'opérateur n'est pas reconnu, retournez un token UNKNOWN
-        println!("Unknown token: {}", first_char); // Affichez l'opérateur inconnu
-        Some(TokenType::UNKNOWN)
+        // println!("Unknown token: {}", first_char); // Affichez l'opérateur inconnu
+        // Some(TokenType::UNKNOWN)
+
+        Some(TokenType::ERROR(LexerError::invalid_token(&first_char, Position { line: self.current_line, column: self.current_column })))
+
+
     }
 
 

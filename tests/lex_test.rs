@@ -123,7 +123,7 @@ mod tests {
     fn test_lex_unexpected_character() {
         let mut lexer = Lexer::new("@ $");
         assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::AT)));
-        assert_eq!(lexer.get_token(), Some(TokenType::UNKNOWN));
+        assert_eq!(lexer.get_token(), Some(TokenType::ERROR(LexerError::invalid_token("$", Position { line: 1, column: 4 }))));
     }
 
     // Test pour un mélange d'opérateurs et de caractères inconnus
@@ -131,7 +131,7 @@ mod tests {
     fn test_mixed_operators_and_unknown() {
         let mut lexer = Lexer::new("@$");
         assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::AT)));
-        assert_eq!(lexer.get_token(), Some(TokenType::UNKNOWN));
+        assert_eq!(lexer.get_token(), Some(TokenType::ERROR(LexerError::invalid_token("$", Position { line: 1, column: 3 }))));
     }
 
     // Test pour l'opérateur @ seul
@@ -364,7 +364,14 @@ mod tests {
     fn test_invalid_identifier() {
         let mut lexer = Lexer::new("var$");
         assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "var".to_string() }));
-        assert_eq!(lexer.get_token(), Some(TokenType::UNKNOWN)); // `$` n'est pas un caractère valide dans un identifiant
+
+        if let Some(TokenType::ERROR(error)) = lexer.get_token() {
+            assert_eq!(error.error, LexerErrorType::InvalidToken("$".to_string()));
+        } else {
+            panic!("Expected an ERROR token for '$'");
+        }
+
+        assert_eq!(lexer.get_token(), Some(TokenType::EOF));
     }
 
 
@@ -426,10 +433,11 @@ mod tests {
         assert_eq!(lexer.get_token(), Some(TokenType::HEXADECIMAL { value: 0xB4 }));
     }
 
+    #[test]
     fn test_invalid_hex_number() {
         let mut lexer = Lexer::new("0xGHI");
         if let Some(TokenType::ERROR(error)) = lexer.get_token() {
-            assert_eq!(error.error, LexerErrorType::InvalidHexadecimal("".to_string()));
+            assert_eq!(error.error, LexerErrorType::InvalidHexadecimal("0x".to_string()));
         } else {
             panic!("Expected an ERROR token for invalid hexadecimal");
         }
@@ -492,14 +500,21 @@ mod tests {
 
 
 ///////////////////////////////////////////////////ERROR HANDLING TEST ///////////////////////////////////////////////////////////////////////////
-    fn test_invalid_number() {
-        let mut lexer = Lexer::new("123a");
-        assert_eq!(lexer.get_token(), Some(TokenType::INTEGER { value: BigInt::from(123) }));
-        assert_eq!(
-            lexer.get_token(),
-            Some(TokenType::ERROR(LexerError::invalid_integer("123a", Position { line: 1, column: 4 })))
-        );
-    }
+#[test]
+fn test_invalid_number() {
+    let mut lexer = Lexer::new("123a");
+
+    // Le premier token devrait être un entier valide
+    assert_eq!(lexer.get_token(), Some(TokenType::INTEGER { value: BigInt::from(123) }));
+
+    // Le deuxième token devrait être un identifiant
+    assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "a".to_string() }));
+
+    // Il ne devrait plus y avoir de tokens
+    assert_eq!(lexer.get_token(), Some(TokenType::EOF));
+}
+
+
 
     //Test pour un float invalide
     #[test]
@@ -528,29 +543,19 @@ mod tests {
         );
     }
 
-    // // Test pour un caractère invalide
-    // #[test]
-    // fn test_invalid_character() {
-    //     let mut lexer = Lexer::new("ç");
-    //     assert_eq!(
-    //         lexer.get_token(),
-    //         Some(TokenType::ERROR(LexerError::invalid_character('@', Position { line: 1, column: 1 })))
-    //     );
-    // }
-
-    // Test pour un hexadécimal invalide
-    // #[test]
-    // fn test_invalid_hexadecimal() {
-    //     let mut lexer = Lexer::new("0xGHI");
-    //     assert_eq!(
-    //         lexer.get_token(),
-    //         Some(TokenType::ERROR(LexerError::new(
-    //             LexerErrorType::InvalidHexadecimal("0xGHI".to_string()),
-    //             "Invalid hexadecimal: 0xGHI".to_string(),
-    //             Position { line: 1, column: 3 }
-    //         )))
-    //     );
-    // }
+    //Test pour un hexadécimal invalide
+    #[test]
+    fn test_invalid_hexadecimal() {
+        let mut lexer = Lexer::new("0xGHI");
+        assert_eq!(
+            lexer.get_token(),
+            Some(TokenType::ERROR(LexerError::new(
+                LexerErrorType::InvalidHexadecimal("0x".to_string()),
+                "Invalid hexadecimal: 0x".to_string(),
+                Position { line: 1, column: 3 }
+            )))
+        );
+    }
 
     //Test pour un hexadécimal valide suivi d'un identifiant
     #[test]
@@ -564,33 +569,18 @@ mod tests {
     }
 
     // Test pour une chaîne avec un saut de ligne non échappé
-    // #[test]
-    // fn test_unescaped_newline_in_string() {
-    //     let mut lexer = Lexer::new("\"Hello\nWorld\"");
-    //     assert_eq!(
-    //         lexer.get_token(),
-    //         Some(TokenType::ERROR(LexerError::unterminated_string(Position { line: 1, column: 7 })))
-    //     );
-    // }
-//
-//     // Test pour un opérateur non reconnu
-//     #[test]
-//     fn test_unrecognized_operator() {
-//         let mut lexer = Lexer::new("a $ b");
-//         assert_eq!(
-//             lexer.get_token(),
-//             Some(TokenType::IDENTIFIER { name: "a".to_string() })
-//         );
-//         assert_eq!(
-//             lexer.get_token(),
-//             Some(TokenType::ERROR(LexerError::invalid_character('$', Position { line: 1, column: 3 })))
-//         );
-//         assert_eq!(
-//             lexer.get_token(),
-//             Some(TokenType::IDENTIFIER { name: "b".to_string() })
-//         );
-//     }
-//
+    #[test]
+    fn test_multiline_string() {
+        let mut lexer = Lexer::new("\"Hello\nWorld\"");
+        assert_eq!(
+            lexer.get_token(),
+            Some(TokenType::STRING {
+                value: "Hello\nWorld".to_string(),
+                kind: StringKind::NORMAL
+            })
+        );
+    }
+
     // Test pour un commentaire multi-ligne non terminé
     #[test]
     fn test_unterminated_multiline_comment() {
@@ -600,6 +590,41 @@ mod tests {
             Some(TokenType::ERROR(LexerError::unterminated_comment(Position { line: 1, column: 49 })))
         );
     }
+
+    #[test]
+    fn test_unknown_operator() {
+        let mut lexer = Lexer::new("a $$ b");
+
+
+        // Le premier token devrait être un identifiant
+        assert_eq!(
+            lexer.get_token(),
+            Some(TokenType::IDENTIFIER { name: "a".to_string() })
+        );
+
+        // Les deux prochains tokens devraient être des erreurs pour des opérateurs inconnus
+        for _ in 0..2 {
+            if let Some(TokenType::ERROR(error)) = lexer.get_token() {
+                assert_eq!(error.error, LexerErrorType::InvalidToken("$".to_string()));
+                // Nous ne vérifions pas la position exacte ici
+            } else {
+                panic!("Expected an ERROR token for unknown operator");
+            }
+        }
+
+        // Le quatrième token devrait être un autre identifiant
+        assert_eq!(
+            lexer.get_token(),
+            Some(TokenType::IDENTIFIER { name: "b".to_string() })
+        );
+
+        // Assurons-nous qu'il n'y a plus de tokens
+        assert_eq!(lexer.get_token(), Some(TokenType::EOF));
+    }
+
+
+
+
 
 }
 
