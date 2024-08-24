@@ -245,55 +245,71 @@ impl<'a> Lexer<'a> {
         if self.peek_char() == Some('0') {
             if let Some(next_char) = self.peek_next_char() {
                 if next_char == 'x' || next_char == 'X' {
-                    self.advance();
-                    self.advance();
+                    let ch1 = self.advance(); // '0'
+                    let ch2 = self.advance(); // 'x' ou 'X'
+                    self.current_token_text.push(ch1);
+                    self.current_token_text.push(ch2);
                     return self.lex_hexadecimal();
                 }
             }
         }
 
         let mut number = String::new();
-        let mut is_float = false;
+        let mut dot_count = 0;
 
         while let Some(&ch) = self.source.peek() {
-            if ch.is_digit(10) || (ch == '.' && !is_float) {
-                if ch == '.' {
-                    is_float = true;
+            if ch.is_digit(10) {
+                let digit = self.advance();
+                number.push(digit);
+                self.current_token_text.push(digit);
+            } else if ch == '.' {
+                if dot_count == 0 {
+                    let dot = self.advance();
+                    number.push(dot);
+                    self.current_token_text.push(dot);
+                    dot_count += 1;
+                } else {
+                    // Deuxième point trouvé, c'est une erreur
+                    while let Some(&next_ch) = self.source.peek() {
+                        if next_ch.is_digit(10) || next_ch == '.' {
+                            let ch = self.advance();
+                            number.push(ch);
+                            self.current_token_text.push(ch);
+                        } else {
+                            break;
+                        }
+                    }
+                    return self.create_error(LexerErrorType::InvalidFloat(number));
                 }
-                let ch = self.advance();
-                self.current_token_text.push(ch);
-                number.push(ch);
             } else {
                 break;
             }
         }
 
         if number.is_empty() {
-            // Si aucun nombre n'a été trouvé, c'est une erreur
             return self.create_error(LexerErrorType::InvalidInteger(number));
         }
 
-        if is_float {
+        if dot_count > 0 {
             match number.parse::<f64>() {
                 Ok(value) => TokenType::FLOAT { value },
                 Err(_) => self.create_error(LexerErrorType::InvalidFloat(number)),
             }
         } else {
             match number.parse::<i64>() {
-                Ok(value) => TokenType::INTEGER { value:value.into() },
+                Ok(value) => TokenType::INTEGER { value: value.into() },
                 Err(_) => self.create_error(LexerErrorType::InvalidInteger(number)),
             }
         }
     }
 
-// savoir si c'est un  hexdigit
+    // savoir si c'est un  hexdigit
     fn is_hex_digit(ch:char) -> bool{
         ch.is_digit(16)
     }
 
     fn lex_hexadecimal(&mut self) -> TokenType {
-        let mut hex_number = String::new();
-        //let start_position = Position::new(self.current_line, self.current_column);
+        let mut hex_number = self.current_token_text.clone(); // Déjà contient "0x" ou "0X"
 
         while let Some(&ch) = self.source.peek() {
             if Self::is_hex_digit(ch) {
@@ -303,13 +319,18 @@ impl<'a> Lexer<'a> {
             }
         }
 
-        if hex_number.is_empty() {
-            // Erreur : aucun chiffre hexadécimal trouvé
-            return self.create_error(LexerErrorType::InvalidHexadecimal(hex_number.clone()));
-        } else {
-            return TokenType::HEXADECIMAL { value: u64::from_str_radix(&hex_number, 16).unwrap() };
+    self.current_token_text = hex_number.clone();
+
+    if hex_number.len() == 2 { // Seulement "0x" ou "0X"
+        self.create_error(LexerErrorType::InvalidHexadecimal(hex_number))
+    } else {
+        match u64::from_str_radix(&hex_number[2..], 16) { // Skip "0x"
+            Ok(value) => TokenType::HEXADECIMAL { value },
+            Err(_) => self.create_error(LexerErrorType::InvalidHexadecimal(hex_number)),
         }
     }
+}
+
 
 
 

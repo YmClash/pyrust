@@ -505,7 +505,7 @@ mod tests {
     #[test]
     fn test_invalid_float() {
         let mut lexer = Lexer::new("3.14.15");
-        assert_eq!(lexer.get_token(), Some(TokenType::ERROR(LexerError::invalid_float("3.14.15", Position { line: 1, column: 7 }))));
+        assert_eq!(lexer.get_token(), Some(TokenType::ERROR(LexerError::invalid_float("3.14.15", Position { line: 1, column: 8 }))));
     }
 
     // Test pour une chaîne non terminée
