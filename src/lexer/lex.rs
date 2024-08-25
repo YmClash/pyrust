@@ -403,46 +403,87 @@ impl<'a> Lexer<'a> {
     }
 
     /// Methode pour les differents types de token de Type Operator
+    // fn lex_operator(&mut self) -> Option<TokenType> {
+    //     self.current_token_text.clear();
+    //
+    //     // Regardez les deux prochains caractères pour vérifier les opérateurs composés
+    //     let first_char = self.advance().to_string();
+    //     let mut op = first_char.clone();
+    //
+    //     if let Some(&next_char) = self.source.peek() {
+    //         op.push(next_char);  // Regardez l'opérateur composé potentiel
+    //         if self.operators.contains_key(&op) {
+    //             self.advance();  // Consomme le deuxième caractère de l'opérateur composé
+    //             return Some(TokenType::OPERATOR(self.operators[&op].clone()));
+    //         }
+    //     }
+    //
+    //     // Si ce n'est pas un opérateur composé, vérifiez l'opérateur simple
+    //     if let Some(operator) = self.operators.get(&first_char) {
+    //         return Some(TokenType::OPERATOR(operator.clone()));
+    //     }
+    //
+    //     // Si l'opérateur n'est pas reconnu, retournez un token UNKNOWN
+    //     // println!("Unknown token: {}", first_char); // Affichez l'opérateur inconnu
+    //     // Some(TokenType::UNKNOWN)
+    //
+    //     Some(TokenType::ERROR(LexerError::invalid_token(&first_char, Position { line: self.current_line, column: self.current_column })))
+    //
+    //
+    // }
+
+
     fn lex_operator(&mut self) -> Option<TokenType> {
         self.current_token_text.clear();
 
         // Regardez les deux prochains caractères pour vérifier les opérateurs composés
-        let first_char = self.advance().to_string();
-        let mut op = first_char.clone();
+        let first_char = self.advance();
+        self.current_token_text.push(first_char);
+        let mut op = self.current_token_text.clone();
 
         if let Some(&next_char) = self.source.peek() {
-            op.push(next_char);  // Regardez l'opérateur composé potentiel
+            op.push(next_char);
             if self.operators.contains_key(&op) {
-                self.advance();  // Consomme le deuxième caractère de l'opérateur composé
+                self.advance();
+                self.current_token_text.push(next_char);
                 return Some(TokenType::OPERATOR(self.operators[&op].clone()));
             }
         }
 
         // Si ce n'est pas un opérateur composé, vérifiez l'opérateur simple
-        if let Some(operator) = self.operators.get(&first_char) {
+        if let Some(operator) = self.operators.get(&self.current_token_text) {
             return Some(TokenType::OPERATOR(operator.clone()));
         }
 
-        // Si l'opérateur n'est pas reconnu, retournez un token UNKNOWN
-        // println!("Unknown token: {}", first_char); // Affichez l'opérateur inconnu
-        // Some(TokenType::UNKNOWN)
-
-        Some(TokenType::ERROR(LexerError::invalid_token(&first_char, Position { line: self.current_line, column: self.current_column })))
-
-
+        // Si l'opérateur n'est pas reconnu, retournez une erreur
+        Some(TokenType::ERROR(LexerError::invalid_token(&self.current_token_text, Position { line: self.current_line, column: self.current_column })))
     }
 
 
+
+
+
+
+
     /// Methode pour les differents types de token de Type Delimiter
+    // fn lex_delimiter(&mut self) -> TokenType {
+    //     self.current_token_text.clear();
+    //     let ch = self.advance();
+    //     if let Some(delimiter) = self.delimiters.get(&ch.to_string()) {
+    //         TokenType::DELIMITER(delimiter.clone())
+    //     } else {
+    //         return TokenType::UNKNOWN;
+    //     }
+    //     // TokenType::DELIMITER(self.delimiters[&ch.to_string()].clone())
+    // }
     fn lex_delimiter(&mut self) -> TokenType {
-        self.current_token_text.clear();
         let ch = self.advance();
         if let Some(delimiter) = self.delimiters.get(&ch.to_string()) {
+            self.current_token_text = ch.to_string();
             TokenType::DELIMITER(delimiter.clone())
         } else {
-            return TokenType::UNKNOWN;
+            TokenType::UNKNOWN
         }
-        // TokenType::DELIMITER(self.delimiters[&ch.to_string()].clone())
     }
 
     /// Methode pour les differents types de token de Type Comment # ou // ou /* */
@@ -568,6 +609,12 @@ impl<'a> Lexer<'a> {
                 self.current_line,
                 self.current_column
             );
+            // match &token.token_type {
+            //     TokenType::DELIMITER(delimiter) =>{
+            //         token.text = delimiter.to_string();
+            //     },
+            //     => {}
+            // }
             tokens.push(token);
             self.current_token_text.clear();
             if matches!(token_type,TokenType::EOF){
@@ -577,6 +624,8 @@ impl<'a> Lexer<'a> {
         return tokens;
     }
     /// methode pour les differents types de token de Type Unknown
+    ///
+    ///
     fn lex_unknown(&mut self) -> TokenType{
         let ch = self.advance();
         self.current_token_text = ch.to_string();

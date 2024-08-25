@@ -14,9 +14,9 @@ fn main() {
 
     println!("Start Lexer");
 
-    let code = "( { [ ] } )";
+    //let code = "( { [ ] } )";
     let code2 = r#"
-            let x = 42;
+            let x = 42.0;
             let y = x + 5.0;
             /* This is a
                multi-line comment */
@@ -29,23 +29,9 @@ fn main() {
                 return x + y;
             }
         "#;
-    //
-    // let mut lexer = Lexer::new(code);
-    // match lexer.tokenize() {
-    //     Ok(tokens) => {
-    //         for token in tokens {
-    //             println!("{:?}", token);
-    //         }
-    //     }
-    //     Err(e) => {
-    //         eprintln!("Lexer error: {:?}", e);
-    //     }
-    // }
 
-    // let token = lox(code);
-    // println!("{:?}", token);
 
-    let mut  nova = Lexer::new(code);
+    let mut  nova = Lexer::new(code2);
     let tokens = Lexer::tokenize(&mut nova);
     for token in tokens {
         println!("{:?}", token);
