@@ -6,6 +6,10 @@ use crate::tok::{TokenType, Keywords, Delimiters, Operators, StringKind};
 use crate::error::{LexerError, LexerErrorType, Position};
 
 
+
+
+
+
 /// Structure Token,
 /// elle contient le text du token, le type du token, la ligne et la colonne
 #[allow(dead_code)]
