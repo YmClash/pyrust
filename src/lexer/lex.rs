@@ -398,58 +398,6 @@ impl<'a> Lexer<'a> {
         self.create_error(LexerErrorType::UnterminatedString)
     }
 
-
-    ///////////////////////////////////////
-
-    // /// Methode pour les differents types de token de Type String
-    // fn lex_string(&mut self) -> TokenType {
-    //     self.current_token_text.clear();
-    //
-    //     let quote = self.advance();  // Consomme le premier guillemet
-    //     let mut value = String::new();
-    //     let mut is_escaped = false;
-    //     if self.peek_char().is_none() {
-    //         return self.create_error(LexerErrorType::UnterminatedString);
-    //     }
-    //
-    //     while let Some(&ch) = self.source.peek() {
-    //         self.advance();  // Consomme le caractère actuel
-    //
-    //         if is_escaped {
-    //             match ch {
-    //                 'n' => value.push('\n'),
-    //                 't' => value.push('\t'),
-    //                 'r' => value.push('\r'),
-    //                 '\\' => value.push('\\'),
-    //                 '"' => value.push('"'),
-    //                 '\'' => value.push('\''),
-    //                 '\n' => {
-    //                     // Ignorer le saut de ligne après un backslash
-    //                     // et tous les espaces blancs au début de la ligne suivante
-    //                     while let Some(&next_ch) = self.source.peek() {
-    //                         if next_ch.is_whitespace() && next_ch != '\n' {
-    //                             self.advance();
-    //                         } else {
-    //                             break;
-    //                         }
-    //                     }
-    //                 },
-    //                 _ => value.push(ch),
-    //             }
-    //             is_escaped = false;
-    //         } else if ch == '\\' {
-    //             is_escaped = true;
-    //         } else if ch == quote {
-    //             break;
-    //         } else {
-    //             value.push(ch);
-    //         }
-    //     }
-    //
-    //     self.current_token_text = value.clone();
-    //     TokenType::STRING { value, kind: StringKind::NORMAL }
-    // }
-
     /// Methode pour les differents types de token de Type Operator
     fn lex_operator(&mut self) -> Option<TokenType> {
         self.current_token_text.clear();
@@ -631,14 +579,7 @@ impl<'a> Lexer<'a> {
         TokenType::UNKNOWN
     }
 
-    // Methode pour creer une erreur
-
-    // fn create_error(&self, error_type: LexerErrorType) -> TokenType {
-    //     let position = Position::new_with_position(self.current_line, self.current_column);
-    //     TokenType::ERROR(LexerError::new(error_type, message, position))
-    // }
-    //
-
+    /// Methode pour creer un token de type erreur
     fn create_error(&self, error: LexerErrorType) -> TokenType {
         let position = Position {
             line: self.current_line,

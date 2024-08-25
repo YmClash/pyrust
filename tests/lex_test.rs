@@ -2,6 +2,8 @@ use pyrust::lexer::lex::Lexer;
 use pyrust::lexer::tok::{TokenType, Keywords, Operators, Delimiters, StringKind};
 use pyrust::error::{LexerError,Position};
 use num_bigint::BigInt;
+use std::time::Instant;
+
 
 #[cfg(test)]
 mod tests {
@@ -499,6 +501,25 @@ mod tests {
     }
 
 
+
+    /// Test pour vérifier la tokenisation des opérateurs complexes.
+    #[test]
+    fn test_lex_complex_operator_3() {
+        let mut lexer = Lexer::new("a += 1 && b == c || d != e");
+        assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "a".to_string() }));
+        assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::PLUSEQUAL)));
+        assert_eq!(lexer.get_token(), Some(TokenType::INTEGER { value: BigInt::from(1) }));
+        assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::AND)));
+        assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "b".to_string() }));
+        assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::EQEQUAL)));
+        assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "c".to_string() }));
+        assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::OR)));
+        assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "d".to_string() }));
+        assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::NOTEQUAL)));
+        assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "e".to_string() }));
+    }
+
+
 ///////////////////////////////////////////////////ERROR HANDLING TEST ///////////////////////////////////////////////////////////////////////////
 #[test]
 fn test_invalid_number() {
@@ -624,7 +645,137 @@ fn test_invalid_number() {
 
 
 
+}
 
+
+////// TESTS AVANCÉS //////
+
+mod advanced_tests {
+    use super::*;
+
+    // Tests de performance
+    #[test]
+    fn test_lexer_performance_large_input() {
+        let single_line = "let x = 42;\n";
+        let num_lines = 100000;
+
+        let start = Instant::now();
+        let mut token_count = 0;
+
+        for _ in 0..num_lines {
+            let mut lexer = Lexer::new(single_line);
+            while let Some(token) = lexer.get_token() {
+                token_count += 1;
+                if matches!(token, TokenType::EOF) {
+                    break;
+                }
+            }
+        }
+
+        let duration = start.elapsed();
+
+        println!("Tokenizing {} lines took: {:?}", num_lines, duration);
+        println!("Total tokens processed: {}", token_count);
+        println!("Tokens per second: {}", token_count as f64 / duration.as_secs_f64());
+
+        // Ajuster le seuil en fonction de la performance actuelle
+        assert!(duration.as_secs() < 15, "Tokenizing took too long");
+        assert_eq!(token_count, num_lines * 6); // 6 tokens per line (let, x, =, 42, ;, EOF)
+    }
+
+
+
+    #[test]
+    fn test_lexer_robustness_very_long_identifier() {
+        let very_long_identifier = "a".repeat(10000);
+        let mut lexer = Lexer::new(&very_long_identifier);
+        if let Some(TokenType::IDENTIFIER { name }) = lexer.get_token() {
+            assert_eq!(name, very_long_identifier);
+        } else {
+            panic!("Expected an IDENTIFIER token for very long identifier");
+        }
+        assert_eq!(lexer.get_token(), Some(TokenType::EOF));
+    }
+
+    #[test]
+    fn test_lexer_robustness_very_long_number() {
+        let very_long_number = "9".repeat(1000);
+        let mut lexer = Lexer::new(&very_long_number);
+        if let Some(TokenType::ERROR(error)) = lexer.get_token() {
+            let expected_error = LexerError::invalid_integer(&very_long_number, Position { line: 1, column: 1001 });
+            assert_eq!(error.error, expected_error.error);
+            assert_eq!(error.message, expected_error.message);
+            assert_eq!(error.position, expected_error.position);
+        } else {
+            panic!("Expected an ERROR token for very long number");
+        }
+    }
+
+
+
+    #[test]
+    fn test_lexer_robustness_deeply_nested_expressions() {
+        let deeply_nested = "(".repeat(1000) + &"42".to_string() + &")".repeat(1000);
+        let mut lexer = Lexer::new(&deeply_nested);
+
+        for _ in 0..1000 {
+            assert_eq!(lexer.get_token(), Some(TokenType::DELIMITER(Delimiters::LPAR)));
+        }
+        assert_eq!(lexer.get_token(), Some(TokenType::INTEGER { value: BigInt::from(42) }));
+        for _ in 0..1000 {
+            assert_eq!(lexer.get_token(), Some(TokenType::DELIMITER(Delimiters::RPAR)));
+        }
+        assert_eq!(lexer.get_token(), Some(TokenType::EOF));
+    }
+
+
+    #[test]
+    fn test_lexer_robustness_malformed_input() {
+        let malformed_input = "let x = @#$%^&*;";
+        let mut lexer = Lexer::new(malformed_input);
+
+        assert_eq!(lexer.get_token(), Some(TokenType::KEYWORD(Keywords::LET)));
+        assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "x".to_string() }));
+        assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::EQUAL)));
+        assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::AT)));
+
+        // Vérifie si le reste est traité comme un commentaire
+        if let Some(TokenType::COMMENT(comment)) = lexer.get_token() {
+            assert_eq!(comment, "$%^&*;");
+        } else {
+            panic!("Expected a COMMENT token for '#$%^&*;'");
+        }
+
+        // Vérifie qu'il n'y a plus de tokens
+        assert_eq!(lexer.get_token(), Some(TokenType::EOF));
+    }
+
+    // #[test]
+    // fn test_lexer_robustness_malformed_input_2() {
+    //     let malformed_input = "let x = @#$%^&*;";
+    //     let mut lexer = Lexer::new(malformed_input);
+    //
+    //     assert_eq!(lexer.get_token(), Some(TokenType::KEYWORD(Keywords::LET)));
+    //     assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "x".to_string() }));
+    //     assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::EQUAL)));
+    //     assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::AT)));
+    //
+    //     // Vérifie le traitement des caractères non reconnus
+    //     let invalid_chars = "#$%^&*;";
+    //     for (i, ch) in invalid_chars.chars().enumerate() {
+    //         if let Some(TokenType::ERROR(error)) = lexer.get_token() {
+    //             let expected_error = LexerError::invalid_token(&ch.to_string(), Position { line: 1, column: 9 + i });
+    //             assert_eq!(error.error, expected_error.error);
+    //             assert_eq!(error.message, expected_error.message);
+    //             assert_eq!(error.position, expected_error.position);
+    //         } else {
+    //             panic!("Expected an ERROR token for '{}'", ch);
+    //         }
+    //     }
+    //
+    //     // Vérifie qu'il n'y a plus de tokens
+    //     assert_eq!(lexer.get_token(), Some(TokenType::EOF));
+    // }
 
 }
 
