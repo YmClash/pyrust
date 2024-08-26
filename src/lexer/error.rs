@@ -40,6 +40,7 @@ pub enum LexerErrorType{
     InvalidHexadecimal(String),
     UnterminatedString,
     UnterminatedComment,
+    InvaliIndentation,
 }
 
 #[allow(dead_code)]
@@ -92,6 +93,7 @@ impl Display for LexerErrorType {
             LexerErrorType::InvalidHexadecimal(h) => write!(f, "Invalid hexadecimal: {}", h),
             LexerErrorType::UnterminatedString => write!(f, "Unterminated string"),
             LexerErrorType::UnterminatedComment => write!(f, "Unterminated comment"),
+            LexerErrorType::InvaliIndentation => write!(f, "Invalid indentation"),
         }
     }
 }
@@ -127,6 +129,9 @@ impl LexerError{
     }
     pub fn unterminated_comment(position: Position) -> Self{
         Self::new(LexerErrorType::UnterminatedComment,"Unterminated comment".to_string(),position)
+    }
+    pub fn invalid_indentation(position: Position) -> Self{
+        Self::new(LexerErrorType::InvaliIndentation,"Invalid indentation".to_string(),position)
     }
 
 }

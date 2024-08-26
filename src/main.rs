@@ -8,7 +8,7 @@
 //mod lex;
 
 
-use pyrust::lex::{lox, Lexer};
+use pyrust::lex::{lox, Lexer, SyntaxMode};
 
 fn main() {
 
@@ -28,10 +28,15 @@ fn main() {
             def foo(x: int, y: int) -> int {
                 return x + y;
             }
+            for i in range(10):
+                print(i);
+
         "#;
+    let source = "def example():\n    if condition:\n        do_something()\n    else:\n        do_something_else()";
 
 
-    let mut  nova = Lexer::new(code2);
+
+    let mut  nova = Lexer::new(source,SyntaxMode::Braces);
     let tokens = Lexer::tokenize(&mut nova);
     for token in tokens {
         println!("{:?}", token);
