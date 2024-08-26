@@ -18,10 +18,29 @@ mod tests {
         assert_eq!(lexer.get_token(), Some(TokenType::FLOAT { value: 3.14 }));
     }
 
+    #[test]
+    fn test_lex_number_2() {
+        let mut lexer = Lexer::new("123 3.14", SyntaxMode::Indentation);
+        assert_eq!(lexer.get_token(), Some(TokenType::INTEGER { value: BigInt::from(123) }));
+        assert_eq!(lexer.get_token(), Some(TokenType::FLOAT { value: 3.14 }));
+    }
+
     // Test pour les chaînes avec des séquences d'échappement
     #[test]
     fn test_lex_string_with_escapes() {
         let mut lexer = Lexer::new(r#""Hello, \"world\"""#, SyntaxMode::Braces);
+        assert_eq!(
+            lexer.get_token(),
+            Some(TokenType::STRING {
+                value: r#"Hello, "world""#.to_string(),
+                kind: StringKind::NORMAL
+            })
+        );
+    }
+
+    #[test]
+    fn test_lex_string_with_escapes_2() {
+        let mut lexer = Lexer::new(r#""Hello, \"world\"""#, SyntaxMode::Indentation);
         assert_eq!(
             lexer.get_token(),
             Some(TokenType::STRING {
@@ -38,7 +57,12 @@ mod tests {
         assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "variable".to_string() }));
         assert_eq!(lexer.get_token(), Some(TokenType::KEYWORD(Keywords::IF)));
     }
-
+    #[test]
+    fn test_lex_identifier_and_keyword_2() {
+        let mut lexer = Lexer::new("variable if", SyntaxMode::Indentation);
+        assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "variable".to_string() }));
+        assert_eq!(lexer.get_token(), Some(TokenType::KEYWORD(Keywords::IF)));
+    }
     // Test pour les commentaires multi-lignes
     #[test]
     fn test_lex_multi_line_comment() {
@@ -47,10 +71,24 @@ mod tests {
         assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "code".to_string() }));
     }
 
+    #[test]
+    fn test_lex_multi_line_comment_2() {
+        let mut lexer = Lexer::new("/* comment */ code", SyntaxMode::Indentation);
+        assert_eq!(lexer.get_token(), Some(TokenType::COMMENT(" comment ".to_string())));
+        assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "code".to_string() }));
+    }
+
     // Test pour les commentaires avec du code à l'intérieur
     #[test]
     fn test_lex_comment_with_code_inside() {
         let mut lexer = Lexer::new("/* this is not code: let x = 42; */ actual_code", SyntaxMode::Braces);
+        assert_eq!(lexer.get_token(), Some(TokenType::COMMENT(" this is not code: let x = 42; ".to_string())));
+        assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "actual_code".to_string() }));
+    }
+
+    #[test]
+    fn test_lex_comment_with_code_inside_2() {
+        let mut lexer = Lexer::new("/* this is not code: let x = 42; */ actual_code", SyntaxMode::Indentation);
         assert_eq!(lexer.get_token(), Some(TokenType::COMMENT(" this is not code: let x = 42; ".to_string())));
         assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "actual_code".to_string() }));
     }
