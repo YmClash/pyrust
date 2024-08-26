@@ -1,163 +1,306 @@
+//#![allow(dead_code)]
 
-use std::fmt;
+
 use std::fmt::{Display, Formatter};
-use std::error::Error;
+use std::fmt;
 
 
-#[derive(Debug,PartialEq)]
-pub  struct LexerError{
-    pub(crate) error: LexerErrorType,
-   // location: Location,
+
+/// Enumeration des erreurs du compilateur
+// #[derive(Debug, PartialEq,Clone)]
+// pub enum CompilerError{
+//     Lexer(LexerError),
+//     ParserError,
+//     SemanticError,
+//     CodegenError,
+//
+// }
+
+#[derive(Debug, PartialEq,Clone)]
+pub struct Position {
+    pub line: usize,
+    pub column: usize,
 }
 
-#[derive(Debug,PartialEq)]
-pub enum LexerErrorType {
-    StringError,
-    CommentError,
-    IndentationError,
-    NestingError,
-    TabError,
-    TabAndSpaceError,
-    DefaultArgumentError,
-    PositionalArgumentError,
-    DuplicateArgumentError,
-    InvalidTokenError {token: char},
-    FStringError(FStringErrorType),
-    LineContinuationError,
-    EofError,
-    OtherError(String),
 
-    InvalidNumber,
+#[derive(Debug, PartialEq,Clone)]
+pub struct LexerError{
+    pub error: LexerErrorType,
+    pub message: String,
+    pub position: Position,
+}
+
+//
+#[derive(Debug, PartialEq,Clone)]
+pub enum LexerErrorType{
+    InvalidCharacter(char),
+    InvalidToken(String),
+    InvalidFloat(String),
+    InvalidInteger(String),
+    InvalidHexadecimal(String),
     UnterminatedString,
-    InvalidCharacter,
+    UnterminatedComment,
+    InvaliIndentation,
 }
 
-///implementation de la structure LexerErrorType
+#[allow(dead_code)]
+impl Position{
+    fn new() -> Self{
+        Position{line:1,column:1}
+    }
+    fn advance(&mut self, ch:char){
+        self.column += 1;
+        if ch == '\n' {
+            self.line += 1;
+            self.column = 1;
+        }
+    }
+    fn move_left(&mut self) {
+        self.column -= 1;
+    }
+
+    // pub fn new_with_position(line: usize, column: usize) -> Self {
+    //     Position { line, column }
+    // }
+}
+
+
+
+
+
+
+impl Display for Position{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f,"line {}, column {}",self.line,self.column)
+    }
+}
+
+
+
+impl Display for LexerError{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f,"LexerError: {} at {}",self.message,self.position)
+    }
+}
 
 impl Display for LexerErrorType {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            LexerErrorType::StringError => write!(f, "String Error"),
-            LexerErrorType::CommentError => write!(f, "Comment Error"),
-            LexerErrorType::IndentationError => write!(f, "Indentation Error"),
-            LexerErrorType::NestingError => write!(f, "Nesting Error"),
-            LexerErrorType::TabError => write!(f, "Tab Error"),
-            LexerErrorType::TabAndSpaceError => write!(f, "Tab and Space Error"),
-            LexerErrorType::DefaultArgumentError => write!(f, "Default Argument Error"),
-            LexerErrorType::PositionalArgumentError => write!(f, "Positional Argument Error"),
-            LexerErrorType::DuplicateArgumentError => write!(f, "Duplicate Argument Error"),
-            LexerErrorType::InvalidTokenError { token } => write!(f, "Invalid Token Error: {}", token),
-            LexerErrorType::FStringError(err) => write!(f, "FString Error: {:?}", err),
-            LexerErrorType::LineContinuationError => write!(f, "Line Continuation Error"),
-            LexerErrorType::EofError => write!(f, "EOF Error"),
-            LexerErrorType::OtherError(msg) => write!(f, "Other Error: {}", msg),
-            LexerErrorType::InvalidNumber => write!(f, "Invalid Number"),
-            LexerErrorType::UnterminatedString => write!(f, "Unterminated String"),
-            LexerErrorType::InvalidCharacter => write!(f, "Invalid Character"),
-        }
-    }
-}
-#[derive(Debug,PartialEq)]
-pub struct FStringError{
-    pub error: FStringErrorType,
-   // pub location: Location,
-}
-
-#[derive(Debug,PartialEq)]
-pub enum FStringErrorType{
-    UncolosedLbrace,
-    UnopenedRbrace,
-    ExpectedRbrace,
-    InvalidExpression,
-    InvalidConversion,
-    EmptyExpression,
-    MismatchDelimiters,
-    ExpressionNestedTooDeep,
-
-}
-
-impl Display for FStringErrorType {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            FStringErrorType::UncolosedLbrace => write!(f, "Unclosed Left Brace"),
-            FStringErrorType::UnopenedRbrace => write!(f, "Unopened Right Brace"),
-            FStringErrorType::ExpectedRbrace => write!(f, "Expected Right Brace"),
-            FStringErrorType::InvalidExpression => write!(f, "Invalid Expression"),
-            FStringErrorType::InvalidConversion => write!(f, "Invalid Conversion"),
-            FStringErrorType::EmptyExpression => write!(f, "Empty Expression"),
-            FStringErrorType::MismatchDelimiters => write!(f, "Mismatch Delimiters"),
-            FStringErrorType::ExpressionNestedTooDeep => write!(f, "Expression Nested Too Deep"),
-
+            LexerErrorType::InvalidCharacter(c) => write!(f, "Invalid character: {}", c),
+            LexerErrorType::InvalidToken(t) => write!(f, "Invalid token: {}", t),
+            LexerErrorType::InvalidFloat(fl) => write!(f, "Invalid float: {}", fl),
+            LexerErrorType::InvalidInteger(i) => write!(f, "Invalid integer: {}", i),
+            LexerErrorType::InvalidHexadecimal(h) => write!(f, "Invalid hexadecimal: {}", h),
+            LexerErrorType::UnterminatedString => write!(f, "Unterminated string"),
+            LexerErrorType::UnterminatedComment => write!(f, "Unterminated comment"),
+            LexerErrorType::InvaliIndentation => write!(f, "Invalid indentation"),
         }
     }
 }
 
 
-////////////////////////////////////////IMPLEMENTATION Position /////////////////////////
-
-#[derive(Debug, PartialEq,Copy,Clone,Eq)]
-pub struct Position {
-    pub(crate) line: usize,
-    pub (crate) column: usize,
-}
-
-impl Display for Position {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "line {}, column {}", self.line, self.column)
-    }
-}
-
-impl Position{
-    pub fn visualize<'a> (&self,line: &'a str,
-    desc: impl Display + 'a) {
-        struct Visualise<'a,D: Display>{
-            loc:Position,
-            line:&'a str,
-            desc:D,
+impl LexerError{
+    pub fn new(error: LexerErrorType, message: String,position: Position) -> Self{
+        LexerError{
+            error,
+            message,
+            position,
         }
-        impl <D: Display> Display for Visualise<'_,D>{
-            fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-                write!(f,"{}\n{}{arrow:>pad$}",self.desc,self.line,pad=self.loc.column,arrow="^",)
-            }
-        }
-        Visualise {
-            loc: *self,
-            line,
-            desc,
-        };
-    }
-}
 
-// implementation de Position {
-impl Position{
-    pub fn new(line:usize,column:usize) -> Self{
-        Position{line,column}
     }
-    pub fn line(&self) -> usize{
-        self.line
+    pub fn invalid_character(c: char, position: Position) -> Self{
+        Self::new(LexerErrorType::InvalidCharacter(c),format!("Invalid character: {}",c),position)
     }
-    pub fn column(&self) -> usize{
-        self.column
+    pub fn invalid_token(t: &str, position: Position) -> Self{
+        Self::new(LexerErrorType::InvalidToken(t.to_string()),format!("Invalid token: {}",t),position)
     }
-    pub fn reset(&mut self){
-        self.line = 1;
-        self.column = 1;
+    pub fn invalid_integer(i: &str, position: Position) -> Self{
+        Self::new(LexerErrorType::InvalidInteger(i.to_string()),format!("Invalid integer: {}",i),position)
     }
-    pub fn right(&mut self){
-        self.column += 1;
+    pub fn invalid_float(f: &str, position: Position) -> Self{
+        Self::new(LexerErrorType::InvalidFloat(f.to_string()),format!("Invalid float: {}",f),position)
     }
-    pub fn left(&mut self){
-        self.column -= 1;
+
+    pub fn invalid_hexadecimal(h: &str, position: Position) -> Self{
+        Self::new(LexerErrorType::InvalidHexadecimal(h.to_string()),format!("Invalid hexadecimal: {}",h),position)
     }
-    pub fn newline(&mut self){
-        self.line += 1;
-        self.column = 1;
+    pub fn unterminated_string(position: Position) -> Self{
+        Self::new(LexerErrorType::UnterminatedString,"Unterminated string".to_string(),position)
     }
+    pub fn unterminated_comment(position: Position) -> Self{
+        Self::new(LexerErrorType::UnterminatedComment,"Unterminated comment".to_string(),position)
+    }
+    pub fn invalid_indentation(position: Position) -> Self{
+        Self::new(LexerErrorType::InvaliIndentation,"Invalid indentation".to_string(),position)
+    }
+
 }
 
 
 
 
+
+
+
+
+//use std::fmt;
+// use std::fmt::{Display, Formatter};
+//
+//
+// #[derive(Debug,PartialEq)]
+// pub  struct LexerError{
+//     pub(crate) error: LexerErrorType,
+//    // location: Location,
+// }
+//
+// #[derive(Debug,PartialEq)]
+// pub enum LexerErrorType {
+//     StringError,
+//     CommentError,
+//     IndentationError,
+//     NestingError,
+//     TabError,
+//     TabAndSpaceError,
+//     DefaultArgumentError,
+//     PositionalArgumentError,
+//     DuplicateArgumentError,
+//     InvalidTokenError {token: char},
+//     FStringError(FStringErrorType),
+//     LineContinuationError,
+//     EofError,
+//     OtherError(String),
+//
+//     InvalidNumber,
+//     UnterminatedString,
+//     InvalidCharacter,
+// }
+//
+// ///Implementation de la structure LexerErrorType
+//
+// impl Display for LexerErrorType {
+//     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+//         match self {
+//             LexerErrorType::StringError => write!(f, "String Error"),
+//             LexerErrorType::CommentError => write!(f, "Comment Error"),
+//             LexerErrorType::IndentationError => write!(f, "Indentation Error"),
+//             LexerErrorType::NestingError => write!(f, "Nesting Error"),
+//             LexerErrorType::TabError => write!(f, "Tab Error"),
+//             LexerErrorType::TabAndSpaceError => write!(f, "Tab and Space Error"),
+//             LexerErrorType::DefaultArgumentError => write!(f, "Default Argument Error"),
+//             LexerErrorType::PositionalArgumentError => write!(f, "Positional Argument Error"),
+//             LexerErrorType::DuplicateArgumentError => write!(f, "Duplicate Argument Error"),
+//             LexerErrorType::InvalidTokenError { token } => write!(f, "Invalid Token Error: {}", token),
+//             LexerErrorType::FStringError(err) => write!(f, "FString Error: {:?}", err),
+//             LexerErrorType::LineContinuationError => write!(f, "Line Continuation Error"),
+//             LexerErrorType::EofError => write!(f, "EOF Error"),
+//             LexerErrorType::OtherError(msg) => write!(f, "Other Error: {}", msg),
+//             LexerErrorType::InvalidNumber => write!(f, "Invalid Number"),
+//             LexerErrorType::UnterminatedString => write!(f, "Unterminated String"),
+//             LexerErrorType::InvalidCharacter => write!(f, "Invalid Character"),
+//         }
+//     }
+// }
+// #[derive(Debug,PartialEq)]
+// pub struct FStringError{
+//     pub error: FStringErrorType,
+//    // pub location: Location,
+// }
+//
+// #[derive(Debug,PartialEq)]
+// pub enum FStringErrorType{
+//     UncolosedLbrace,
+//     UnopenedRbrace,
+//     ExpectedRbrace,
+//     InvalidExpression,
+//     InvalidConversion,
+//     EmptyExpression,
+//     MismatchDelimiters,
+//     ExpressionNestedTooDeep,
+//
+// }
+//
+// impl Display for FStringErrorType {
+//     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+//         match self {
+//             FStringErrorType::UncolosedLbrace => write!(f, "Unclosed Left Brace"),
+//             FStringErrorType::UnopenedRbrace => write!(f, "Unopened Right Brace"),
+//             FStringErrorType::ExpectedRbrace => write!(f, "Expected Right Brace"),
+//             FStringError Type::InvalidExpression => write!(f, "Invalid Expression"),
+//             FStringErrorType::InvalidConversion => write!(f, "Invalid Conversion"),
+//             FStringErrorType::EmptyExpression => write!(f, "Empty Expression"),
+//             FStringErrorType::MismatchDelimiters => write!(f, "Mismatch Delimiters"),
+//             FStringErrorType::ExpressionNestedTooDeep => write!(f, "Expression Nested Too Deep"),
+//
+//         }
+//     }
+// }
+//
+//
+// ////////////////////////////////////////IMPLEMENTATION Position /////////////////////////
+//
+// #[derive(Debug, PartialEq,Copy,Clone,Eq)]
+// pub struct Position {
+//     pub(crate) line: usize,
+//     pub (crate) column: usize,
+// }
+//
+// impl Display for Position {
+//     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+//         write!(f, "line {}, column {}", self.line, self.column)
+//     }
+// }
+//
+// impl Position{
+//     pub fn visualize<'a> (&self,line: &'a str,
+//     desc: impl Display + 'a) {
+//         struct Visualise<'a,D: Display>{
+//             loc:Position,
+//             line:&'a str,
+//             desc:D,
+//         }
+//         impl <D: Display> Display for Visualise<'_,D>{
+//             fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+//                 write!(f,"{}\n{}{arrow:>pad$}",self.desc,self.line,pad=self.loc.column,arrow="^",)
+//             }
+//         }
+//         Visualise {
+//             loc: *self,
+//             line,
+//             desc,
+//         };
+//     }
+// }
+//
+// // implementation de Position {
+// impl Position{
+//     pub fn new(line:usize,column:usize) -> Self{
+//         Position{line,column}
+//     }
+//     pub fn line(&self) -> usize{
+//         self.line
+//     }
+//     pub fn column(&self) -> usize{
+//         self.column
+//     }
+//     pub fn reset(&mut self){
+//         self.line = 1;
+//         self.column = 1;
+//     }
+//     pub fn right(&mut self){
+//         self.column += 1;
+//     }
+//     pub fn left(&mut self){
+//         self.column -= 1;
+//     }
+//     pub fn newline(&mut self){
+//         self.line += 1;
+//         self.column = 1;
+//     }
+// }
+//
+
+
+///////////////////////////////////////////////////////////////////////////////////
 
 
 

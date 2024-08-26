@@ -1,39 +1,54 @@
+#![allow(dead_code)]
+#![allow(unused)]
+
 //use ymcrust::{type_of};
 
 
 
 //mod lex;
 
-use pyrust::lex::{Lexer, Token};
-use pyrust::lexer::token::TokenType;
+
+use pyrust::lex::{lox, Lexer, SyntaxMode};
 
 fn main() {
 
     println!("Start Lexer");
 
-    let code = r#"
-    def add(a, b):
-        return a + b
-
-    x = 5
-    y = 10
-    result = add(x, y)
-    "#;
-
-    let mut lexer = Lexer::new(code);
-    match lexer.tokenize() {
-        Ok(tokens) => {
-            for token in tokens {
-                println!("{:?}", token);
+    //let code = "( { [ ] } )";
+    let code2 = r#"
+            let x = 42.0;
+            let y = x + 5.0;
+            /* This is a
+               multi-line comment */
+            let z = y * 2;
+            # This is a single-line comment
+            if z > 10 {
+                print("z is greater than 10");
+            } else {
+            def foo(x: int, y: int) -> int {
+                return x + y;
             }
-        }
-        Err(e) => {
-            eprintln!("Lexer error: {:?}", e);
-        }
+            for i in range(10):
+                print(i);
+
+        "#;
+    let source = "def example():\n    if condition:\n        do_something()\n    else:\n        do_something_else()";
+
+
+
+    let mut  nova = Lexer::new(source,SyntaxMode::Braces);
+    let tokens = Lexer::tokenize(&mut nova);
+    for token in tokens {
+        println!("{:?}", token);
     }
+    // while let Some(token) = nova.get_token() {
+    //     println!("{:?}", token);
+    // }
 
 
+    println!("Done");
     println!("Pyrust Compiler ");
     println!("By YmC")
 }
+
 
