@@ -114,3 +114,8 @@ pub enum StringKind{
     FORMATTED,
     UNICODE,
 }
+
+
+//by YmC
+
+
