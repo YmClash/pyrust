@@ -677,6 +677,32 @@ mod tests {
             assert_eq!(lexer.get_token(), Some(TokenType::EOF));
         }
 
+    #[test]
+    fn test_indentation_with_empty_lines() {
+        let source = r#"
+def func():
+    if True:
+
+        print("Hello")
+
+    print("World")
+        "#;
+
+        let mut lexer = Lexer::new(source, SyntaxMode::Indentation);
+        let tokens = lexer.tokenize();
+
+        // Vérifiez que les lignes vides n'affectent pas l'indentation
+        let indent_dedent_sequence: Vec<TokenType> = tokens.iter()
+            .filter(|t| matches!(t.token_type, TokenType::INDENT | TokenType::DEDENT))
+            .map(|t| t.token_type.clone())
+            .collect();
+
+        assert_eq!(
+            indent_dedent_sequence,
+            vec![TokenType::INDENT, TokenType::INDENT, TokenType::DEDENT, TokenType::DEDENT]
+        );
+    }
+
 
 
     }
@@ -783,6 +809,9 @@ mod tests {
         // Vérifie qu'il n'y a plus de tokens
         assert_eq!(lexer.get_token(), Some(TokenType::EOF));
     }
+
+
+
 
 
 

@@ -10,8 +10,8 @@ use crate::error::{LexerError, LexerErrorType, Position};
 //#[allow(dead_code)]
 #[derive(Debug,PartialEq,Clone)]
 pub enum SyntaxMode{
-    Indentation,        //python syntax mode
-    Braces,             //Rust syntax mode
+    Indentation,        //Python Like Syntax mode
+    Braces,             //Rust Like Syntax mode
 }
 
 
@@ -50,6 +50,7 @@ pub struct Lexer<'a>{
     syntax_mode: SyntaxMode,
     indent_level: Vec<usize>,
     at_line_start:bool,
+    nesting :usize
 }
 
 /// Implementation du lexer avec tous les methodes pour classer les tokens
@@ -69,54 +70,103 @@ impl<'a> Lexer<'a> {
             syntax_mode,
             indent_level: vec![0],
             at_line_start: true,
+            nesting: 0,
         };
         lexer
 
     }
     // je vais d'abord gere les different mode de syntaxe
 
-    fn handle_indentation(&mut self) -> Vec<TokenType> {
-        let mut tokens = Vec::new();
-        if self.syntax_mode == SyntaxMode::Indentation {
-            let current_indent = self.count_indent();
-            let previous_indent = *self.indent_level.last().unwrap_or(&0);
+    fn handle_indentation(&mut self) -> Option<TokenType> {
+        let current_indent = self.count_indentation();
+        let previous_indent = *self.indent_level.last().unwrap_or(&0);
 
-            if current_indent > previous_indent {
-                self.indent_level.push(current_indent);
-                tokens.push(TokenType::INDENT);
-            } else if current_indent < previous_indent {
-                while current_indent < *self.indent_level.last().unwrap_or(&0) {
-                    self.indent_level.pop();
-                    tokens.push(TokenType::DEDENT);
-                }
-                if current_indent != *self.indent_level.last().unwrap_or(&0) {
-                    return vec![TokenType::ERROR(LexerError::invalid_indentation(
-                        Position {
-                            line: self.current_line,
-                            column: self.current_column,
-                        },
-                    ))];
-                }
+        if current_indent > previous_indent {
+            self.indent_level.push(current_indent);
+            return Some(TokenType::INDENT);
+        } else if current_indent < previous_indent {
+            while current_indent < *self.indent_level.last().unwrap_or(&0) {
+                self.indent_level.pop();
+                return Some(TokenType::DEDENT);
+            }
+            if current_indent != *self.indent_level.last().unwrap_or(&0) {
+                return Some(TokenType::ERROR(LexerError::invalid_indentation(
+                    Position {
+                        line: self.current_line,
+                        column: self.current_column,
+                    },
+                )));
             }
         }
-        tokens
+        None
     }
 
-    fn count_indent(&mut self) -> usize {
+    // fn handle_indentation(&mut self) -> Vec<TokenType> {
+    //     let mut tokens = Vec::new();
+    //     let current_indent = self.count_indent();
+    //     let previous_indent = *self.indent_level.last().unwrap_or(&0);
+    //
+    //     if current_indent > previous_indent {
+    //         self.indent_level.push(current_indent);
+    //         tokens.push(TokenType::INDENT);
+    //     } else if current_indent < previous_indent {
+    //         while current_indent < *self.indent_level.last().unwrap_or(&0) {
+    //             self.indent_level.pop();
+    //             tokens.push(TokenType::DEDENT);
+    //         }
+    //         if current_indent != *self.indent_level.last().unwrap_or(&0) {
+    //             tokens.push(TokenType::ERROR(LexerError::invalid_indentation(
+    //                 Position {
+    //                     line: self.current_line,
+    //                     column: self.current_column,
+    //                 },
+    //             )));
+    //         }
+    //     }
+    //
+    //     tokens
+    // }
+
+
+
+    fn count_indentation(&mut self) -> usize {
         let mut count = 0;
+        let tab_size = 8; // Vous pouvez ajuster cette valeur selon vos besoins
+
         while let Some(&ch) = self.source.peek() {
-            if ch == ' ' {
-                count += 1;
-                self.advance();
-            } else if ch == '\t' {
-                count += 8; // 8 espaces pour un tab
-                self.advance();
-            } else {
-                break;
+            match ch {
+                ' ' => {
+                    count += 1;
+                    self.advance();
+                }
+                '\t' => {
+                    count = (count + tab_size) & !(tab_size - 1);
+                    self.advance();
+                }
+                _ => break,
             }
         }
+
         count
     }
+
+
+
+    // fn count_indentation(&mut self) -> usize {
+    //     let mut count = 0;
+    //     while let Some(&ch) = self.source.peek() {
+    //         if ch == ' ' {
+    //             count += 1;
+    //             self.advance();
+    //         } else if ch == '\t' {
+    //             count += 4; // Considérer une tabulation comme 4 espaces
+    //             self.advance();
+    //         } else {
+    //             break;
+    //         }
+    //     }
+    //     count
+    // }
 
 
 
@@ -253,8 +303,10 @@ impl<'a> Lexer<'a> {
         if ch == '\n' {
             self.current_line += 1;
             self.current_column = 1;
+            self.at_line_start = true;
         } else {
             self.current_column += 1;
+            self.at_line_start = false;
         }
         Some(ch)
     }
@@ -277,46 +329,224 @@ impl<'a> Lexer<'a> {
     /// Renvoie une Option<TokenType> représentant un seul token.
 
     /// methode pour obtenir le token
+    // pub fn get_token(&mut self) -> Option<TokenType> {
+    //     if self.at_line_start && self.syntax_mode == SyntaxMode::Indentation {
+    //         self.at_line_start = false;
+    //         let count = self.count_indentation();
+    //
+    //         if self.nesting == 0 {
+    //             let current_indentation = * self.indent_level.last().unwrap();
+    //             if count > current_indentation {
+    //                 self.indent_level.push(count);
+    //                 return Some(TokenType::INDENT);
+    //             }else if count < current_indentation {
+    //                 while count < *self.indent_level.last().unwrap(){
+    //                     self.indent_level.pop();
+    //                     return Some(TokenType::DEDENT);
+    //                 }
+    //             }
+    //
+    //             if count != * self.indent_level.last().unwrap(){
+    //                 return Some(TokenType::ERROR(LexerError::InvalidIndentation(
+    //                     Position{
+    //                         line:self.current_line,
+    //                         column: self.current_column,
+    //                     },
+    //                 )))
+    //             }
+    //         }
+    //
+    //
+    //
+    //         let mut indent_tokens = self.handle_indentation();
+    //         if !indent_tokens.is_empty() {
+    //             return Some(indent_tokens.remove(0));
+    //         }
+    //     }
+    //
+    //     self.at_line_start = false;
+    //
+    //     self.skip_whitespace();
+    //
+    //     match self.peek_char() {
+    //         Some('0'..='9') => Some(self.lex_number()),
+    //         Some('a'..='z') | Some('A'..='Z') | Some('_') => Some(self.lex_identifier_or_keyword()),
+    //         Some('"') | Some('\'') => Some(self.lex_string()),
+    //         Some('#') => Some(self.lex_comment()),
+    //         Some('/') => {
+    //             if let Some(next_char) = self.peek_next_char() {
+    //                 match next_char {
+    //                     '/' => Some(self.lex_comment()),  // Toujours traiter `//` comme un commentaire
+    //                     '*' => Some(self.lex_comment()),  // Traiter `/* ... */` comme un commentaire multi-ligne
+    //                     _ => self.lex_operator(),
+    //                 }
+    //             } else {
+    //                 self.lex_operator()
+    //             }
+    //         }
+    //
+    //
+    //         Some('\n') if self.syntax_mode == SyntaxMode::Indentation =>{
+    //             self.advance();
+    //             self.at_line_start = true;
+    //             Some(TokenType::NEWLINE)
+    //
+    //         },
+    //
+    //         Some(ch) if self.delimiters.contains_key(&ch.to_string()) => Some(self.lex_delimiter()),
+    //         Some(ch) if !ch.is_alphanumeric() => self.lex_operator(),
+    //         None => Some(TokenType::EOF),
+    //         _ => Some(self.lex_unknown()),
+    //     }
+    // }
+
+    // pub fn get_token(&mut self) -> Option<TokenType> {
+    //     if self.at_line_start && self.syntax_mode == SyntaxMode::Indentation {
+    //         // Nous commençons une nouvelle ligne. Nous devons vérifier l'indentation.
+    //         let current_indent = self.count_indentation();
+    //         let previous_indent = *self.indent_level.last().unwrap_or(&0);
+    //
+    //         if current_indent > previous_indent {
+    //             // Indentation accrue, nous poussons une nouvelle indentation
+    //             self.indent_level.push(current_indent);
+    //             return Some(TokenType::INDENT);
+    //         } else if current_indent < previous_indent {
+    //             // Indentation diminuée, nous devons déduire
+    //             while current_indent < *self.indent_level.last().unwrap_or(&0) {
+    //                 self.indent_level.pop();
+    //                 return Some(TokenType::DEDENT);
+    //             }
+    //             // Si nous arrivons ici, il y a un problème d'indentation
+    //             if current_indent != *self.indent_level.last().unwrap_or(&0) {
+    //                 return Some(TokenType::ERROR(LexerError::invalid_indentation(
+    //                     Position {
+    //                         line: self.current_line,
+    //                         column: self.current_column,
+    //                     },
+    //                 )));
+    //             }
+    //         }
+    //     }
+    //     self.skip_whitespace();
+    //
+    //     match self.peek_char() {
+    //         Some('0'..='9') => Some(self.lex_number()),
+    //         Some('a'..='z') | Some('A'..='Z') | Some('_') => Some(self.lex_identifier_or_keyword()),
+    //         Some('"') | Some('\'') => Some(self.lex_string()),
+    //         Some('#') => Some(self.lex_comment()),
+    //         Some('\n') => {
+    //             return Some(self.handle_newline());
+    //         },
+    //         Some('/') => {
+    //             if let Some(next_char) = self.peek_next_char() {
+    //                 match next_char {
+    //                     '/' => Some(self.lex_comment()),
+    //                     '*' => Some(self.lex_comment()),
+    //                     _ => self.lex_operator(),
+    //                 }
+    //             } else {
+    //                 self.lex_operator()
+    //             }
+    //         }
+    //         Some(ch) if self.delimiters.contains_key(&ch.to_string()) => Some(self.lex_delimiter()),
+    //         Some(ch) if !ch.is_alphanumeric() => self.lex_operator(),
+    //         None => {
+    //             // Gérer les DEDENT restants à la fin du fichier
+    //             if !self.indent_level.is_empty() && *self.indent_level.last().unwrap() > 0 {
+    //                 self.indent_level.pop();
+    //                 Some(TokenType::DEDENT)
+    //             } else {
+    //                 Some(TokenType::EOF)
+    //             }
+    //         },
+    //         _ => Some(self.lex_unknown()),
+    //     }
+    // }
+
+
     pub fn get_token(&mut self) -> Option<TokenType> {
+        // Vérifier si on est au début d'une nouvelle ligne et en mode d'indentation
         if self.at_line_start && self.syntax_mode == SyntaxMode::Indentation {
-            let mut indent_tokens = self.handle_indentation();
-            if !indent_tokens.is_empty() {
-                return Some(indent_tokens.remove(0));
+            self.at_line_start = false; // On n'est plus au début de la ligne après cette vérification
+
+            // Appeler la fonction pour gérer l'indentation
+            if let Some(indent_token) = self.handle_indentation() {
+                return Some(indent_token);
             }
         }
 
-        self.at_line_start = false;
-
+        // Sauter les espaces et tabulations
         self.skip_whitespace();
 
+        // Vérifier le prochain caractère
         match self.peek_char() {
-            Some('0'..='9') => Some(self.lex_number()),
-            Some('a'..='z') | Some('A'..='Z') | Some('_') => Some(self.lex_identifier_or_keyword()),
-            Some('"') | Some('\'') => Some(self.lex_string()),
-            Some('#') => Some(self.lex_comment()),
+            Some('\n') => {
+                // Gestion du retour à la ligne
+                return Some(self.handle_newline());
+            }
+            Some('0'..='9') => {
+                // Token de type nombre
+                return Some(self.lex_number());
+            }
+            Some('a'..='z') | Some('A'..='Z') | Some('_') => {
+                // Token de type identifiant ou mot-clé
+                return Some(self.lex_identifier_or_keyword());
+            }
+            Some('"') | Some('\'') => {
+                // Token de type chaîne de caractères
+                return Some(self.lex_string());
+            }
+            Some('#') => {
+                // Token de type commentaire
+                return Some(self.lex_comment());
+            }
             Some('/') => {
+                // Peut être un commentaire ou un opérateur
                 if let Some(next_char) = self.peek_next_char() {
                     match next_char {
-                        '/' => Some(self.lex_comment()),  // Toujours traiter `//` comme un commentaire
-                        '*' => Some(self.lex_comment()),  // Traiter `/* ... */` comme un commentaire multi-ligne
-                        _ => self.lex_operator(),
+                        '/' | '*' => {
+                            // Gestion des commentaires
+                            return Some(self.lex_comment());
+                        }
+                        _ => {
+                            // Gestion des opérateurs
+                            return self.lex_operator();
+                        }
                     }
                 } else {
-                    self.lex_operator()
+                    // Gestion des opérateurs
+                    return self.lex_operator();
                 }
             }
-            Some('\n') if self.syntax_mode == SyntaxMode::Indentation =>{
-                self.advance();
-                self.at_line_start = true;
-                Some(TokenType::NEWLINE)
-
-            },
-            Some(ch) if self.delimiters.contains_key(&ch.to_string()) => Some(self.lex_delimiter()),
-            Some(ch) if !ch.is_alphanumeric() => self.lex_operator(),
-            None => Some(TokenType::EOF),
-            _ => Some(self.lex_unknown()),
+            Some(ch) if self.delimiters.contains_key(&ch.to_string()) => {
+                // Token de type délimiteur
+                return Some(self.lex_delimiter());
+            }
+            Some(ch) if !ch.is_alphanumeric() => {
+                // Gestion des opérateurs ou caractères spéciaux
+                return self.lex_operator();
+            }
+            None => {
+                // Fin du fichier (EOF)
+                if !self.indent_level.is_empty() && *self.indent_level.last().unwrap() > 0 {
+                    // Gérer les niveaux d'indentation restants
+                    self.indent_level.pop();
+                    return Some(TokenType::DEDENT);
+                } else {
+                    return Some(TokenType::EOF);
+                }
+            }
+            _ => {
+                // Token inconnu ou non reconnu
+                return Some(self.lex_unknown());
+            }
         }
     }
+
+
+
+
+
 
     fn lex_number(&mut self) -> TokenType {
         self.current_token_text.clear();
@@ -511,16 +741,6 @@ impl<'a> Lexer<'a> {
 
 
     /// Methode pour les differents types de token de Type Delimiter
-    // fn lex_delimiter(&mut self) -> TokenType {
-    //     self.current_token_text.clear();
-    //     let ch = self.advance();
-    //     if let Some(delimiter) = self.delimiters.get(&ch.to_string()) {
-    //         TokenType::DELIMITER(delimiter.clone())
-    //     } else {
-    //         return TokenType::UNKNOWN;
-    //     }
-    //     // TokenType::DELIMITER(self.delimiters[&ch.to_string()].clone())
-    // }
     fn lex_delimiter(&mut self) -> TokenType {
         let ch = self.advance();
         if let Some(delimiter) = self.delimiters.get(&ch.to_string()) {
@@ -677,7 +897,6 @@ impl<'a> Lexer<'a> {
     }
 
 
-
     /// methode pour les differents types de token de Type Unknown
 
     fn lex_unknown(&mut self) -> TokenType{
@@ -698,10 +917,18 @@ impl<'a> Lexer<'a> {
             position
         ))
     }
+
+    fn handle_newline(&mut self) -> TokenType {
+        self.advance(); // Consomme le '\n'
+        self.at_line_start = true;
+        TokenType::NEWLINE
+    }
 }
 
 
 //by YmC
+
+
 
 
 
