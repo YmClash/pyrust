@@ -50,7 +50,7 @@ pub struct Lexer<'a>{
     syntax_mode: SyntaxMode,
     indent_level: Vec<usize>,
     at_line_start:bool,
-    nesting :usize
+   // nesting :usize
 }
 
 /// Implementation du lexer avec tous les methodes pour classer les tokens
@@ -70,7 +70,7 @@ impl<'a> Lexer<'a> {
             syntax_mode,
             indent_level: vec![0],
             at_line_start: true,
-            nesting: 0,
+          //  nesting: 0,
         };
         lexer
 
@@ -118,12 +118,6 @@ impl<'a> Lexer<'a> {
         }
         count
     }
-
-
-
-
-
-
 
 
     /// Creation d'une hashmap pour les mots cles

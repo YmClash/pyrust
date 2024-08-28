@@ -15,16 +15,21 @@ fn main() {
     println!("Start Lexer");
 
     let code = r#"
-def fonction():
-    print("Hello")
-    if true:
+def example_function():
+    if True:
         print("Indented")
-    print("Back")
+    else:
+        print("Also indented")
+        if False:
+            print("More indentation")
+    print("Back to first indentation level")
+
+print("No indentation")
 "#;
 
 
 
-    let mut  nova = Lexer::new(code,SyntaxMode::Braces);
+    let mut  nova = Lexer::new(code,SyntaxMode::Indentation);
     let tokens = Lexer::tokenize(&mut nova);
     for token in tokens {
         println!("{:?}", token);
