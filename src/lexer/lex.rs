@@ -75,6 +75,8 @@ impl<'a> Lexer<'a> {
         lexer
 
     }
+
+    /// La Logique de la Methode pour compter l'indentation a ete trasferer dans la methode get_token()
     // je vais d'abord gere les different mode de syntaxe
 
     // fn handle_indentation(&mut self) -> Option<TokenType> {
@@ -435,17 +437,17 @@ impl<'a> Lexer<'a> {
             }
         }
 
-    self.current_token_text = hex_number.clone();
+        self.current_token_text = hex_number.clone();
 
-    if hex_number.len() == 2 { // Seulement "0x" ou "0X"
-        self.create_error(LexerErrorType::InvalidHexadecimal(hex_number))
-    } else {
-        match u64::from_str_radix(&hex_number[2..], 16) { // Skip "0x"
-            Ok(value) => TokenType::HEXADECIMAL { value },
-            Err(_) => self.create_error(LexerErrorType::InvalidHexadecimal(hex_number)),
+        if hex_number.len() == 2 { // Seulement "0x" ou "0X"
+            self.create_error(LexerErrorType::InvalidHexadecimal(hex_number))
+        } else {
+            match u64::from_str_radix(&hex_number[2..], 16) { // Skip "0x"
+                Ok(value) => TokenType::HEXADECIMAL { value },
+                Err(_) => self.create_error(LexerErrorType::InvalidHexadecimal(hex_number)),
+            }
         }
     }
-}
 
 
 

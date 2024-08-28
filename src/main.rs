@@ -24,7 +24,7 @@ def fonction():
 
 
 
-    let mut  nova = Lexer::new(code,SyntaxMode::Indentation);
+    let mut  nova = Lexer::new(code,SyntaxMode::Braces);
     let tokens = Lexer::tokenize(&mut nova);
     for token in tokens {
         println!("{:?}", token);
