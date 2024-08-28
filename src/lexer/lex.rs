@@ -331,16 +331,19 @@ impl<'a> Lexer<'a> {
             }
             Some(ch) if self.delimiters.contains_key(&ch.to_string()) => Some(self.lex_delimiter()),
             Some(ch) if !ch.is_alphanumeric() => self.lex_operator(),
-            // None => {
-            //     // Fin du fichier (EOF)
-            //     if !self.indent_level.is_empty() && *self.indent_level.last().unwrap() > 0 {
-            //         self.indent_level.pop();
-            //         return Some(TokenType::DEDENT);
-            //     } else {
-            //         return Some(TokenType::EOF);
-            //     }
-            // }
-            None => Some(TokenType::EOF),   //Ajouter nouvelement
+            None => {
+                ////////////à surveiller si c'est correct et pas redondant
+                // Fin du fichier (EOF)
+                if !self.indent_level.is_empty() && *self.indent_level.last().unwrap() > 0 {
+                    self.indent_level.pop();
+                    return Some(TokenType::DEDENT);
+                } else {
+                    return Some(TokenType::EOF);
+                }
+            }
+            ////////////à surveiller si c'est correct et pas redondant
+
+            //None => Some(TokenType::EOF),   //Ajouter nouvelement
             _ => Some(self.lex_unknown()),
         }
     }
