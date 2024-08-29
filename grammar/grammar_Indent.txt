@@ -1,0 +1,90 @@
+<program> ::= <statement_list>
+
+<statement_list> ::= <statement>
+                   | <statement_list> <statement>
+
+<statement> ::= <variable_declaration>
+              | <function_declaration>
+              | <function_call>
+              | <print_statement>
+              | <comment>
+              | <control_statement>
+              | <loop_statement>
+              | <import_statement>
+
+<comment> ::= "#" <text>
+
+<variable_declaration> ::= "let" <identifier> "=" <expression>
+                         | "let mut" <identifier> "=" <expression>
+
+<function_declaration> ::= "fn" <identifier> "(" <parameter_list> ")" ":" <statement_list> "return" <expression>
+
+<parameter_list> ::= <identifier>
+                   | <parameter_list> "," <identifier>
+                   | ""
+
+<function_call> ::= <identifier> "(" <argument_list> ")"
+
+<argument_list> ::= <expression>
+                  | <argument_list> "," <expression>
+                  | ""
+
+<print_statement> ::= "print" "(" <argument_list> ")"
+
+<expression> ::= <identifier>
+               | <number>
+               | <string>
+               | <expression> <binary_operator> <expression>
+               | <unary_operator> <expression>
+               | <function_call>
+               | "(" <expression> ")"
+
+<identifier> ::= <letter> { <letter> | <digit> }*
+
+<number> ::= <digit> { <digit> }*
+
+<string> ::= "\"" <text> "\""
+
+<binary_operator> ::= "==" | "!=" | "<" | ">" | "<=" | ">="
+                    | "+" | "-" | "*" | "/" | "%"
+                    | "&&" | "||"
+                    | "&" | "|" | "^" | "<<" | ">>"
+
+<unary_operator> ::= "-" | "!" | "~"
+
+<control_statement> ::= "if" <expression> ":" <statement_list>
+                      | "elif" <expression> ":" <statement_list>
+                      | "else" ":" <statement_list>
+                      | "match" <expression> "{" <case_list> "}"
+
+<case_list> ::= <case>
+              | <case_list> <case>
+
+<case> ::= <expression> "=>" <statement_list>
+
+<loop_statement> ::= "for" <identifier> "in" <expression> ":" <statement_list>
+                   | "while" <expression> ":" <statement_list>
+                   | "loop" ":" <statement_list>
+                   | "continue"
+                   | "break"
+
+<import_statement> ::= "import" <identifier>
+                     | "from" <identifier> "import" <identifier>
+
+<keywords> ::= "and" | "as" | "async" | "await" | "break" | "const"
+             | "class" | "continue" | "def" | "del" | "elif" | "else"
+             | "enum" | "except" | "false" | "fn" | "for" | "from"
+             | "if" | "impl" | "import" | "in" | "is" | "lambda"
+             | "let" | "loop" | "match" | "mod" | "mut" | "none"
+             | "not" | "or" | "pub" | "pass" | "raise" | "return"
+             | "self" | "static" | "struct" | "super" | "true"
+             | "try" | "type" | "typeof" | "use" | "with" | "while"
+             | "yield"
+
+<delimiter> ::= "(" | ")" | "[" | "]" | "{" | "}" | ":" | "," | ";" | "."
+              | "..." | "::"
+
+<letter> ::= "a" | "b" | "c" | ... | "z" | "A" | "B" | "C" | ... | "Z"
+<digit>  ::= "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+<text> ::= { any character except newline }
+

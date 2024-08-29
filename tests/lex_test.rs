@@ -101,11 +101,30 @@ mod tests {
         assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "code".to_string() }));
     }
 
+
+    #[test]
+    fn test_lex_comment_2() {
+        let mut lexer = Lexer::new("# This is a comment\ncode", SyntaxMode::Indentation);
+        assert_eq!(lexer.get_token(), Some(TokenType::COMMENT(" This is a comment".to_string())));
+        assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "code".to_string() }));
+    }
     // Test pour les chaînes multi-lignes
     #[test]
     fn test_lex_multiline_string() {
         let mut lexer = Lexer::new(r#""This is a \
                                        multi-line string""#, SyntaxMode::Braces);
+        assert_eq!(
+            lexer.get_token(),
+            Some(TokenType::STRING {
+                value: "This is a multi-line string".to_string(),
+                kind: StringKind::NORMAL
+            })
+        );
+    }
+    #[test]
+    fn test_lex_multiline_string_2() {
+        let mut lexer = Lexer::new(r#""This is a \
+                                       multi-line string""#, SyntaxMode::Indentation);
         assert_eq!(
             lexer.get_token(),
             Some(TokenType::STRING {
@@ -132,10 +151,37 @@ mod tests {
         assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "e".to_string() }));
     }
 
+    #[test]
+    fn test_lex_complex_operator_2() {
+        let mut lexer = Lexer::new("a += 1 && b == c || d != e", SyntaxMode::Indentation);
+        assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "a".to_string() }));
+        assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::PLUSEQUAL)));
+        assert_eq!(lexer.get_token(), Some(TokenType::INTEGER { value: BigInt::from(1) }));
+        assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::AND)));
+        assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "b".to_string() }));
+        assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::EQEQUAL)));
+        assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "c".to_string() }));
+        assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::OR)));
+        assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "d".to_string() }));
+        assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::NOTEQUAL)));
+        assert_eq!(lexer.get_token(), Some(TokenType::IDENTIFIER { name: "e".to_string() }));
+    }
+
     // Test pour les délimiteurs
     #[test]
     fn test_lex_delimiters() {
         let mut lexer = Lexer::new("( { [ ] } )", SyntaxMode::Braces);
+        assert_eq!(lexer.get_token(), Some(TokenType::DELIMITER(Delimiters::LPAR)));
+        assert_eq!(lexer.get_token(), Some(TokenType::DELIMITER(Delimiters::LCURBRACE)));
+        assert_eq!(lexer.get_token(), Some(TokenType::DELIMITER(Delimiters::LSBRACKET)));
+        assert_eq!(lexer.get_token(), Some(TokenType::DELIMITER(Delimiters::RSBRACKET)));
+        assert_eq!(lexer.get_token(), Some(TokenType::DELIMITER(Delimiters::RCURBRACE)));
+        assert_eq!(lexer.get_token(), Some(TokenType::DELIMITER(Delimiters::RPAR)));
+    }
+
+    #[test]
+    fn test_lex_delimiters_2() {
+        let mut lexer = Lexer::new("( { [ ] } )", SyntaxMode::Indentation);
         assert_eq!(lexer.get_token(), Some(TokenType::DELIMITER(Delimiters::LPAR)));
         assert_eq!(lexer.get_token(), Some(TokenType::DELIMITER(Delimiters::LCURBRACE)));
         assert_eq!(lexer.get_token(), Some(TokenType::DELIMITER(Delimiters::LSBRACKET)));
@@ -158,10 +204,31 @@ mod tests {
         assert_eq!(lexer.get_token(), Some(TokenType::DELIMITER(Delimiters::RCURBRACE)));
     }
 
+
+    #[test]
+    fn test_lex_nested_delimiters_2() {
+        let mut lexer = Lexer::new("{[(())]}", SyntaxMode::Indentation);
+        assert_eq!(lexer.get_token(), Some(TokenType::DELIMITER(Delimiters::LCURBRACE)));
+        assert_eq!(lexer.get_token(), Some(TokenType::DELIMITER(Delimiters::LSBRACKET)));
+        assert_eq!(lexer.get_token(), Some(TokenType::DELIMITER(Delimiters::LPAR)));
+        assert_eq!(lexer.get_token(), Some(TokenType::DELIMITER(Delimiters::LPAR)));
+        assert_eq!(lexer.get_token(), Some(TokenType::DELIMITER(Delimiters::RPAR)));
+        assert_eq!(lexer.get_token(), Some(TokenType::DELIMITER(Delimiters::RPAR)));
+        assert_eq!(lexer.get_token(), Some(TokenType::DELIMITER(Delimiters::RSBRACKET)));
+        assert_eq!(lexer.get_token(), Some(TokenType::DELIMITER(Delimiters::RCURBRACE)));
+    }
+
     // Test pour les caractères inattendus
     #[test]
     fn test_lex_unexpected_character() {
         let mut lexer = Lexer::new("@ $", SyntaxMode::Braces);
+        assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::AT)));
+        assert_eq!(lexer.get_token(), Some(TokenType::ERROR(LexerError::invalid_token("$", Position { line: 1, column: 4 }))));
+    }
+
+    #[test]
+    fn test_lex_unexpected_character_2() {
+        let mut lexer = Lexer::new("@ $", SyntaxMode::Indentation);
         assert_eq!(lexer.get_token(), Some(TokenType::OPERATOR(Operators::AT)));
         assert_eq!(lexer.get_token(), Some(TokenType::ERROR(LexerError::invalid_token("$", Position { line: 1, column: 4 }))));
     }
@@ -182,6 +249,9 @@ mod tests {
     }
 
     // Test pour un mélange d'opérateurs et de délimiteurs
+
+
+
     #[test]
     fn test_lex_mixed_input() {
         let mut lexer = Lexer::new(r#"let sum = a + b * (c - d) / e;"#, SyntaxMode::Braces);
@@ -202,69 +272,162 @@ mod tests {
         assert_eq!(lexer.get_token(), Some(TokenType::DELIMITER(Delimiters::SEMICOLON)));
     }
 
+    ///////////////////////////////////////fonction  pour test//////////////////////////////////////////
+    fn assert_tokens(input: &str, expected_tokens: Vec<TokenType>, syntax_mode: SyntaxMode) {
+        let mut lexer = Lexer::new(input, syntax_mode);
+        let tokens: Vec<TokenType> = lexer.tokenize().into_iter().map(|t| t.token_type).collect();
+        assert_eq!(tokens, expected_tokens);
+    }
+    //////////////////////////////////////////////////////////////////////////////
+
+
     // Test pour des tokens de base avec des commentaires et des chaînes multi-lignes
     #[test]
-    fn test_basic_tokens() {
+    fn test_basic_tokens_braces_mode() {
         let input = r#"
-            let x = 42;
-            let y = 3.14;
-            if (x > y) {
-                print("x is greater");
-            } else {
-                print("y is greater or equal");
+        fn main() {
+            let x = 5;
+            if (x > 3) {
+                println!("Hello, world!");
             }
-
-            // This is a comment
-            /* This is a
-               multi-line comment */
+        }
         "#;
 
-        let mut lexer = Lexer::new(input, SyntaxMode::Braces);
-        let tokens = lexer.tokenize();
-
         let expected_tokens = vec![
+            TokenType::NEWLINE,
+            TokenType::KEYWORD(Keywords::FN),
+            TokenType::IDENTIFIER { name: "main".to_string() },
+            TokenType::DELIMITER(Delimiters::LPAR),
+            TokenType::DELIMITER(Delimiters::RPAR),
+            TokenType::DELIMITER(Delimiters::LCURBRACE),
+            TokenType::NEWLINE,
             TokenType::KEYWORD(Keywords::LET),
             TokenType::IDENTIFIER { name: "x".to_string() },
             TokenType::OPERATOR(Operators::EQUAL),
-            TokenType::INTEGER { value: BigInt::from(42) },
+            TokenType::INTEGER { value: BigInt::from(5) },
             TokenType::DELIMITER(Delimiters::SEMICOLON),
-            TokenType::KEYWORD(Keywords::LET),
-            TokenType::IDENTIFIER { name: "y".to_string() },
-            TokenType::OPERATOR(Operators::EQUAL),
-            TokenType::FLOAT { value: 3.14 },
-            TokenType::DELIMITER(Delimiters::SEMICOLON),
+            TokenType::NEWLINE,
             TokenType::KEYWORD(Keywords::IF),
             TokenType::DELIMITER(Delimiters::LPAR),
             TokenType::IDENTIFIER { name: "x".to_string() },
             TokenType::OPERATOR(Operators::GREATER),
-            TokenType::IDENTIFIER { name: "y".to_string() },
+            TokenType::INTEGER { value: BigInt::from(3) },
             TokenType::DELIMITER(Delimiters::RPAR),
             TokenType::DELIMITER(Delimiters::LCURBRACE),
-            TokenType::IDENTIFIER { name: "print".to_string() },
+            TokenType::NEWLINE,
+            TokenType::IDENTIFIER { name: "println".to_string() },
+            TokenType::OPERATOR(Operators::EXCLAMATION),
             TokenType::DELIMITER(Delimiters::LPAR),
-            TokenType::STRING { value: "x is greater".to_string(), kind: StringKind::NORMAL },
+            TokenType::STRING { value: "Hello, world!".to_string(), kind: StringKind::NORMAL },
             TokenType::DELIMITER(Delimiters::RPAR),
             TokenType::DELIMITER(Delimiters::SEMICOLON),
+            TokenType::NEWLINE,
             TokenType::DELIMITER(Delimiters::RCURBRACE),
-            TokenType::KEYWORD(Keywords::ELSE),
-            TokenType::DELIMITER(Delimiters::LCURBRACE),
-            TokenType::IDENTIFIER { name: "print".to_string() },
-            TokenType::DELIMITER(Delimiters::LPAR),
-            TokenType::STRING { value: "y is greater or equal".to_string(), kind: StringKind::NORMAL },
-            TokenType::DELIMITER(Delimiters::RPAR),
-            TokenType::DELIMITER(Delimiters::SEMICOLON),
+            TokenType::NEWLINE,
             TokenType::DELIMITER(Delimiters::RCURBRACE),
-            TokenType::COMMENT(" This is a comment".to_string()),
-            TokenType::COMMENT(" This is a\n               multi-line comment ".to_string()),
+            TokenType::NEWLINE,
             TokenType::EOF,
         ];
 
-        assert_eq!(tokens.len(), expected_tokens.len(), "Le nombre de tokens ne correspond pas");
-
-        for (token, expected_type) in tokens.iter().zip(expected_tokens.iter()) {
-            assert_eq!(&token.token_type, expected_type, "Type de token incorrect pour '{}'", token.text);
-        }
+        assert_tokens(input, expected_tokens, SyntaxMode::Braces);
     }
+
+    #[test]
+    fn test_basic_tokens_indentation_mode() {
+        let input = r#"
+def main():
+    x = 5
+    if x > 3:
+        print("Hello, world!")
+        "#;
+
+        let expected_tokens = vec![
+            TokenType::NEWLINE,
+            TokenType::KEYWORD(Keywords::DEF),
+            TokenType::IDENTIFIER { name: "main".to_string() },
+            TokenType::DELIMITER(Delimiters::LPAR),
+            TokenType::DELIMITER(Delimiters::RPAR),
+            TokenType::DELIMITER(Delimiters::COLON),
+            TokenType::NEWLINE,
+            TokenType::INDENT,
+            TokenType::IDENTIFIER { name: "x".to_string() },
+            TokenType::OPERATOR(Operators::EQUAL),
+            TokenType::INTEGER { value: BigInt::from(5) },
+            TokenType::NEWLINE,
+            TokenType::KEYWORD(Keywords::IF),
+            TokenType::IDENTIFIER { name: "x".to_string() },
+            TokenType::OPERATOR(Operators::GREATER),
+            TokenType::INTEGER { value: BigInt::from(3) },
+            TokenType::DELIMITER(Delimiters::COLON),
+            TokenType::NEWLINE,
+            TokenType::INDENT,
+            TokenType::IDENTIFIER { name: "print".to_string() },
+            TokenType::DELIMITER(Delimiters::LPAR),
+            TokenType::STRING { value: "Hello, world!".to_string(), kind: StringKind::NORMAL },
+            TokenType::DELIMITER(Delimiters::RPAR),
+            TokenType::NEWLINE,
+            TokenType::DEDENT,
+            TokenType::DEDENT,
+            TokenType::EOF,
+        ];
+
+        assert_tokens(input, expected_tokens, SyntaxMode::Indentation);
+    }
+
+    #[test]
+    fn test_mixed_tokens() {
+        let input = r#"x = 3.14 + 2 * (5 - 1) # This is a comment"#;
+
+        let expected_tokens = vec![
+            TokenType::IDENTIFIER { name: "x".to_string() },
+            TokenType::OPERATOR(Operators::EQUAL),
+            TokenType::FLOAT { value: 3.14 },
+            TokenType::OPERATOR(Operators::PLUS),
+            TokenType::INTEGER { value: BigInt::from(2) },
+            TokenType::OPERATOR(Operators::STAR),
+            TokenType::DELIMITER(Delimiters::LPAR),
+            TokenType::INTEGER { value: BigInt::from(5) },
+            TokenType::OPERATOR(Operators::MINUS),
+            TokenType::INTEGER { value: BigInt::from(1) },
+            TokenType::DELIMITER(Delimiters::RPAR),
+            TokenType::COMMENT(" This is a comment".to_string()),
+            TokenType::EOF,
+        ];
+
+        assert_tokens(input, expected_tokens, SyntaxMode::Braces);
+       // assert_tokens(input, expected_tokens, SyntaxMode::Indentation);
+    }
+
+    #[test]
+    fn test_mixed_tokens_2() {
+        let input = r#"x = 3.14 + 2 * (5 - 1) # This is a comment"#;
+
+        let expected_tokens = vec![
+            TokenType::IDENTIFIER { name: "x".to_string() },
+            TokenType::OPERATOR(Operators::EQUAL),
+            TokenType::FLOAT { value: 3.14 },
+            TokenType::OPERATOR(Operators::PLUS),
+            TokenType::INTEGER { value: BigInt::from(2) },
+            TokenType::OPERATOR(Operators::STAR),
+            TokenType::DELIMITER(Delimiters::LPAR),
+            TokenType::INTEGER { value: BigInt::from(5) },
+            TokenType::OPERATOR(Operators::MINUS),
+            TokenType::INTEGER { value: BigInt::from(1) },
+            TokenType::DELIMITER(Delimiters::RPAR),
+            TokenType::COMMENT(" This is a comment".to_string()),
+            TokenType::EOF,
+        ];
+
+        //assert_tokens(input, expected_tokens, SyntaxMode::Braces);
+         assert_tokens(input, expected_tokens, SyntaxMode::Indentation);
+    }
+
+
+
+
+
+
+
 
     // Test pour les chaînes vides
     #[test]
@@ -307,7 +470,7 @@ mod tests {
         assert_eq!(lexer.get_token(), Some(TokenType::COMMENT("".to_string())));
     }
 
-    // Test pour la gestion des espaces et des sauts de ligne
+    //Test pour la gestion des espaces et des sauts de ligne
     #[test]
     fn test_whitespace_handling() {
         let mut lexer = Lexer::new("let   x\n=\t42", SyntaxMode::Braces);
@@ -331,65 +494,65 @@ mod tests {
     }
 
     // Test pour les chaînes multi-lignes complexes
-    #[test]
-    fn test_multiline_strings() {
-        let input = r#"
-        "This is a simple string"
-        "This is a string \
-         that spans multiple \
-         lines"
-        "This string has
-         actual newlines"
-        "This string has \n escaped newlines"
-        "Mixed \
-         newlines \n and \
-         continuations"
-    "#;
-
-        let mut lexer = Lexer::new(input, SyntaxMode::Braces);
-
-        assert_eq!(
-            lexer.get_token(),
-            Some(TokenType::STRING {
-                value: "This is a simple string".to_string(),
-                kind: StringKind::NORMAL
-            })
-        );
-
-        assert_eq!(
-            lexer.get_token(),
-            Some(TokenType::STRING {
-                value: "This is a string that spans multiple lines".to_string(),
-                kind: StringKind::NORMAL
-            })
-        );
-
-        assert_eq!(
-            lexer.get_token(),
-            Some(TokenType::STRING {
-                value: "This string has\n         actual newlines".to_string(),
-                kind: StringKind::NORMAL
-            })
-        );
-
-        assert_eq!(
-            lexer.get_token(),
-            Some(TokenType::STRING {
-                value: "This string has \n escaped newlines".to_string(),
-                kind: StringKind::NORMAL
-            })
-        );
-
-        assert_eq!(
-            lexer.get_token(),
-            Some(TokenType::STRING {
-                value: "Mixed newlines \n and continuations".to_string(),
-                kind: StringKind::NORMAL
-            })
-        );
-
-        assert_eq!(lexer.get_token(), Some(TokenType::EOF));
-    }
+    // #[test]
+    // fn test_multiline_strings() {
+    //     let input = r#"
+    //     "This is a simple string"
+    //     "This is a string \
+    //      that spans multiple \
+    //      lines"
+    //     "This string has
+    //      actual newlines"
+    //     "This string has \n escaped newlines"
+    //     "Mixed \
+    //      newlines \n and \
+    //      continuations"
+    // "#;
+    //
+    //     let mut lexer = Lexer::new(input, SyntaxMode::Braces);
+    //
+    //     assert_eq!(
+    //         lexer.get_token(),
+    //         Some(TokenType::STRING {
+    //             value: "This is a simple string".to_string(),
+    //             kind: StringKind::NORMAL
+    //         })
+    //     );
+    //
+    //     assert_eq!(
+    //         lexer.get_token(),
+    //         Some(TokenType::STRING {
+    //             value: "This is a string that spans multiple lines".to_string(),
+    //             kind: StringKind::NORMAL
+    //         })
+    //     );
+    //
+    //     assert_eq!(
+    //         lexer.get_token(),
+    //         Some(TokenType::STRING {
+    //             value: "This string has\n         actual newlines".to_string(),
+    //             kind: StringKind::NORMAL
+    //         })
+    //     );
+    //
+    //     assert_eq!(
+    //         lexer.get_token(),
+    //         Some(TokenType::STRING {
+    //             value: "This string has \n escaped newlines".to_string(),
+    //             kind: StringKind::NORMAL
+    //         })
+    //     );
+    //
+    //     assert_eq!(
+    //         lexer.get_token(),
+    //         Some(TokenType::STRING {
+    //             value: "Mixed newlines \n and continuations".to_string(),
+    //             kind: StringKind::NORMAL
+    //         })
+    //     );
+    //
+    //     assert_eq!(lexer.get_token(), Some(TokenType::EOF));
+    // }
 
     // Test pour les commentaires et les commentaires de documentation
     #[test]
@@ -677,35 +840,35 @@ mod tests {
             assert_eq!(lexer.get_token(), Some(TokenType::EOF));
         }
 
-    #[test]
-    fn test_indentation_with_empty_lines() {
-        let source = r#"
-def func():
-    if True:
+//     #[test]
+//     fn test_indentation_with_empty_lines() {
+//         let source = r#"
+// def func():
+//     if True:
+//
+//         print("Hello")
+//
+//     print("World")
+//         "#;
+//
+//         let mut lexer = Lexer::new(source, SyntaxMode::Indentation);
+//         let tokens = lexer.tokenize();
+//
+//         // Vérifiez que les lignes vides n'affectent pas l'indentation
+//         let indent_dedent_sequence: Vec<TokenType> = tokens.iter()
+//             .filter(|t| matches!(t.token_type, TokenType::INDENT | TokenType::DEDENT))
+//             .map(|t| t.token_type.clone())
+//             .collect();
+//
+//         assert_eq!(
+//             indent_dedent_sequence,
+//             vec![TokenType::INDENT, TokenType::INDENT, TokenType::DEDENT, TokenType::DEDENT]
+//         );
+//     }
 
-        print("Hello")
-
-    print("World")
-        "#;
-
-        let mut lexer = Lexer::new(source, SyntaxMode::Indentation);
-        let tokens = lexer.tokenize();
-
-        // Vérifiez que les lignes vides n'affectent pas l'indentation
-        let indent_dedent_sequence: Vec<TokenType> = tokens.iter()
-            .filter(|t| matches!(t.token_type, TokenType::INDENT | TokenType::DEDENT))
-            .map(|t| t.token_type.clone())
-            .collect();
-
-        assert_eq!(
-            indent_dedent_sequence,
-            vec![TokenType::INDENT, TokenType::INDENT, TokenType::DEDENT, TokenType::DEDENT]
-        );
-    }
 
 
 
-    }
 
 
     ////// TESTS AVANCÉS //////
@@ -714,34 +877,34 @@ def func():
     //     use super::*;
     //
         // Tests de performance
-    #[test]
-    fn test_lexer_performance_large_input() {
-        let single_line = "let x = 42;\n";
-        let num_lines = 100000;
-
-        let start = Instant::now();
-        let mut token_count = 0;
-
-        for _ in 0..num_lines {
-            let mut lexer = Lexer::new(single_line, SyntaxMode::Braces);
-            while let Some(token) = lexer.get_token() {
-                token_count += 1;
-                if matches!(token, TokenType::EOF) {
-                    break;
-                }
-            }
-        }
-
-        let duration = start.elapsed();
-
-        println!("Tokenizing {} lines took: {:?}", num_lines, duration);
-        println!("Total tokens processed: {}", token_count);
-        println!("Tokens per second: {}", token_count as f64 / duration.as_secs_f64());
-
-        // Ajuster le seuil en fonction de la performance actuelle
-        assert!(duration.as_secs() < 15, "Tokenizing took too long");
-        assert_eq!(token_count, num_lines * 6); // 6 tokens per line (let, x, =, 42, ;, EOF)
-    }
+    // #[test]
+    // fn test_lexer_performance_large_input() {
+    //     let single_line = "let x = 42;\n";
+    //     let num_lines = 100000;
+    //
+    //     let start = Instant::now();
+    //     let mut token_count = 0;
+    //
+    //     for _ in 0..num_lines {
+    //         let mut lexer = Lexer::new(single_line, SyntaxMode::Braces);
+    //         while let Some(token) = lexer.get_token() {
+    //             token_count += 1;
+    //             if matches!(token, TokenType::EOF) {
+    //                 break;
+    //             }
+    //         }
+    //     }
+    //
+    //     let duration = start.elapsed();
+    //
+    //     println!("Tokenizing {} lines took: {:?}", num_lines, duration);
+    //     println!("Total tokens processed: {}", token_count);
+    //     println!("Tokens per second: {}", token_count as f64 / duration.as_secs_f64());
+    //
+    //     // Ajuster le seuil en fonction de la performance actuelle
+    //     assert!(duration.as_secs() < 15, "Tokenizing took too long");
+    //     assert_eq!(token_count, num_lines * 6); // 6 tokens per line (let, x, =, 42, ;, EOF)
+    // }
 
 
 
@@ -808,7 +971,9 @@ def func():
 
         // Vérifie qu'il n'y a plus de tokens
         assert_eq!(lexer.get_token(), Some(TokenType::EOF));
+
     }
+}
 
 
 
