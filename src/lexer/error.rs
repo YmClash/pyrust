@@ -4,8 +4,6 @@
 use std::fmt::{Display, Formatter};
 use std::fmt;
 
-
-
 /// Enumeration des erreurs du compilateur
 // #[derive(Debug, PartialEq,Clone)]
 // pub enum CompilerError{
