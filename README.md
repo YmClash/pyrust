@@ -33,7 +33,7 @@ a venir
 ## Exemples
 
 Voici un exemple de programme simple en PyRust :
-les keywords peuvent changer a l'avenir 
+les keywords peuvent changer à l'avenir 
 
 ```pyrust
 #Syntaxe_mode = Indentation
