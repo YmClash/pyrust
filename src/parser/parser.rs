@@ -1,9 +1,88 @@
+use crate::error::LexerError;
+use crate::lex::{SyntaxMode, Token};
+use crate::parser::ast::ASTNode;
+use crate::parser::error::ParserError;
 //
 // use crate::lex::{SyntaxMode, Token};
 // use crate::tok::{Delimiters, Keywords, Operators, TokenType};
 // use std::collections::HashMap;
 // use num_bigint::BigInt;
-//
+use crate::tok::{Delimiters, TokenType};
+
+
+#[allow(dead_code)]
+pub struct Parser<'a> {
+    tokens: Vec<Token>,
+    current_token: Option<&'a Token>,
+    position: usize,
+    syntax_mode: SyntaxMode,
+}
+
+impl <'a> Parser<'a> {
+    pub fn new(tokens: Vec<Token>, syntax_mode: SyntaxMode) -> Self {
+        let mut parser = Parser{
+            tokens,
+            current_token: None,
+            position: 0,
+            syntax_mode,
+        };
+        parser.advance();   //on avance le curseur pour initalise current_token
+        parser
+
+    }
+
+    pub fn parse_mode_indentation(&mut self) -> Result<ASTNode,ParserError>{
+        self.expect(TokenType::INDENT)?;
+        let statements = self.parse_statements()?;
+        self.expect(TokenType::DEDENT)?;
+        Ok(ASTNode::Block(statements))
+    }
+
+    pub fn parse_mode_brace(&mut self) -> Result<ASTNode,ParserError>{
+        self.expect(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
+        let statements = self.parse_statements()?;
+        self.expect(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+        Ok(ASTNode::Block(statements))
+    }
+
+
+
+    pub fn parse(&mut self) -> Result<ASTNode,ParserError> {
+        match self.syntax_mode {
+            SyntaxMode::Indentation => self.parse_mode_indentation(),
+            SyntaxMode::Braces => self.parse_mode_brace(),
+        }
+
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //
 //
 // #[allow(dead_code)]

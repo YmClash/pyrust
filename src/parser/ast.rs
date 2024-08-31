@@ -1,8 +1,50 @@
-// use num_bigint::BigInt;
-// use crate::lexer::tok::TokenType;
-// use crate::parser::parser::LiteralValue;
-// use crate::tok::Operators;
-//
+use num_bigint::BigInt;
+use crate::lexer::tok::TokenType;
+//use crate::parser::parser::LiteralValue;
+use crate::tok::Operators;
+
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub enum ASTNode{
+    Programm(Vec<ASTNode>),
+    Declaration(Declaration),
+    Expression(Expression),
+    Statement(Statement),
+    Block(Block),
+    Function(Function),
+    IfStatement(IfStatement),
+    ForStatement(ForStatement),
+    WhileStatement(WhileStatement),
+    ReturnStatement(ReturnStatement),
+    BinaryOperation(BinaryOperation),
+    UnaryOperation(UnaryOperation),
+    Identifier(String),
+}
+
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub enum Declaration{
+    VariableDeclaration{
+        mutable: bool,
+        name: String,
+        variable_type: Option<String>,
+        value: Expression,
+    },
+    FunctionDeclaration{
+        name: String,
+        parameters: Vec<Parameter>,
+        return_type: Option<String>,
+        body: Box<ASTNode>, //   on va utiliser BOx pour une allocation dynamique
+    },
+
+}
+
+
+
+
+
+
+
 // #[allow(dead_code)]
 // #[derive(Debug)]
 // pub enum ASTNode{
