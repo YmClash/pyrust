@@ -15,7 +15,7 @@
 //
 // // impl PartialEq<TokenType> for &TokenType {
 // //     fn eq(&self, other: &TokenType) -> bool {
-// //         todo!()
+// //         odo!()
 // //     }
 // // }
 // /*

@@ -1,12 +1,33 @@
 # Ceci est un commentaire
 
 # Importation
-import math
+use math
 from utils import helper_function
 
 # Déclaration de variables
 let x: int = 5
 let mut y = 10
+
+// Déclaration de structure
+struct Point {
+    x: int,
+    y: int
+}
+
+// Création d'une instance de structure
+let point: Point = Point(1, 2);
+print("Point: (", point.x, ", ", point.y, ")");
+
+// Lambda expression
+let square = |x: int| -> int {
+    return x * x;
+};
+
+let result: int = square(4);
+print("Le carré de 4 est: ", result);
+Ce pseudo-code montre comment utiliser différentes constructions de votre grammaire, y compris les déclarations de variables, les déclarations de fonctions, les appels de fonctions, les instructions de contrôle, les boucles, les instructions de correspondance, les importations de modules, les déclarations de structures, et les expressions lambda.
+
+
 
 # Déclaration de fonction
 fn calculate_area(length: float, width: float) : float:

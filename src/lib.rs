@@ -3,6 +3,7 @@ pub mod lexer;
 mod semantic;
 mod utils;
 mod codegen;
+mod parser;
 
 //mod ast;
 #[allow(dead_code)]

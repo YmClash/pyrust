@@ -21,14 +21,56 @@ pub struct ParserError{
 #[allow(dead_code)]
 #[derive(Debug,PartialEq,Clone)]
 pub enum  ParserErrorType{
-    UnexpectedToken,
+    UnexpectedToken(String),
     UnexpectedEOF,
 
 }
 
+// implement de la position
+#[allow(dead_code)]
+impl Position{
+    fn new() -> Self{ Position{line: 1, column: 1}}
+    fn advance(&mut self, ch:char){
+        self.column +=1;
+        if ch == '\n'{
+            self.line +=1;
+            self.column = 1;
+        }
+    }
+    fn move_left(&mut self){
+        self.column -=1;
+    }
+}
+
+//implement de l'affichage de la position
+
+impl  Display for Position{
+    fn fmt(&self, f:&mut Formatter<'_>) -> fmt::Result{
+        write!(f, "line: {}, column: {}", self.line, self.column)
+    }
+}
+
+//implement de l'affichage de l'erreur
+
+impl Display for ParserError{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f,"ParserError: {} at {}",self.message,self.position)
+    }
+}
+
+//implement de l'affichage du type d'erreur du parseur
+
+impl Display for ParserErrorType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            ParserErrorType::UnexpectedToken(t) => write!(f, "UnexpectedToken {}", t),
+            ParserErrorType::UnexpectedEOF => write!(f, "UnexpectedEOF"),
+        }
+    }
+}
 
 
-//implementation des  message d'ereur du parseur
+//implementation du message d'erreur du parseur
 impl ParserError{
     pub fn new(error: ParserErrorType, message: String, position: Position) -> Self{
         ParserError{
@@ -39,7 +81,7 @@ impl ParserError{
     }
 
     pub fn unexpected_token(t:&str ,position: Position) -> Self {
-        Self::new(ParserErrorType::UnexpectedToken, format!("Unexpected token: {}", t), position)
+        Self::new(ParserErrorType::UnexpectedToken(t.to_string()), format!("Unexpected token: {}", t), position)
     }
     pub fn unexpected_eof(position: Position) -> Self {
         Self::new(ParserErrorType::UnexpectedEOF, "Unexpected EOF".to_string(), position)
