@@ -1,0 +1,107 @@
+// Définition d'un module
+module math {
+    // Exportation d'une fonction
+    export fn add(a: int, b: int) -> int {
+        return a + b;
+    }
+
+    // Fonction privée du module
+    fn subtract(a: int, b: int) -> int {
+        return a - b;
+    }
+}
+
+// Importation depuis un autre module
+import { log } from "console";
+
+// Définition d'un trait (interface)
+trait Printable {
+    fn to_string(self) -> string;
+}
+
+// Définition d'une structure générique
+struct Pair<T, U> {
+    first: T,
+    second: U,
+}
+
+// Implémentation du trait pour la structure
+impl<T: Printable, U: Printable> Printable for Pair<T, U> {
+    fn to_string(self) -> string {
+        return "(" + self.first.to_string() + ", " + self.second.to_string() + ")";
+    }
+}
+
+// Fonction générique avec contrainte de trait
+fn<T: Printable> print_value(value: T) {
+    log(value.to_string());
+}
+
+// Définition d'un type algébrique (enum)
+enum Option<T> {
+    Some(T),
+    None,
+}
+
+// Fonction principale asynchrone
+async fn main() {
+    let pair = Pair { first: 10, second: "Hello" };
+    print_value(pair);
+
+    // Utilisation de pattern matching
+    let opt = Option::Some(42);
+    match opt {
+        Option::Some(x) if x > 0 => log("Positive number: " + x.to_string()),
+        Option::Some(0) => log("Zero"),
+        Option::Some(_) => log("Negative number"),
+        Option::None => log("No value"),
+    }
+
+    // Gestion des erreurs avec try-except
+    try {
+        let result = divide(10, 0);
+        log("Result: " + result.to_string());
+    } except DivisionByZeroError as e {
+        log("Error: " + e.message);
+    } finally {
+        log("Calculation attempted");
+    }
+
+    // Utilisation de closures
+    let numbers = [1, 2, 3, 4, 5];
+    let squares = numbers.map(|x| x * x);
+
+    // Programmation asynchrone
+    let data = await fetch_data("https://api.example.com/data");
+    log("Fetched data: " + data);
+}
+
+// Fonction asynchrone
+async fn fetch_data(url: string) -> string {
+    // Simulation d'une requête réseau
+    await sleep(1000);
+    return "Data from " + url;
+}
+
+// Définition d'un type personnalisé
+type IntOrFloat = int | float;
+
+// Fonction utilisant le type personnalisé
+fn process_number(num: IntOrFloat) -> string {
+    match num {
+        int => "Integer: " + num.to_string(),
+        float => "Float: " + num.to_string(),
+    }
+}
+
+// Macro (si supportée)
+macro_rules! create_function {
+    ($func_name:ident) => {
+        fn $func_name() {
+            log(stringify!($func_name) + " was called!");
+        }
+    }
+}
+
+create_function!(hello_world);
+hello_world();  // Affiche: "hello_world was called!"

@@ -1,3 +1,75 @@
+// use num_bigint::BigInt;
+// use crate::lexer::tok::TokenType;
+// use crate::parser::parser::LiteralValue;
+// use crate::tok::Operators;
+//
+// #[allow(dead_code)]
+// #[derive(Debug)]
+// pub enum ASTNode{
+//     Program(Vec<ASTNode>),
+//     FunctionDeclaration{
+//         name: String,
+//         parameters: Vec<ASTNode>,
+//         body: Vec<ASTNode>
+//     },
+//     VariableDeclaration{
+//         name: String,
+//         value: Box<ASTNode>
+//     },
+//     IfStatement{
+//         condition: Box<ASTNode>,
+//         then_block: Vec<ASTNode>,
+//         elif_blocks: Vec<(Box<ASTNode>, Vec<ASTNode>)>,
+//         else_block: Option<Box<ASTNode>>,
+//     },
+//     ElifStatement{
+//         condition: Box<ASTNode>,
+//         block:Vec<ASTNode>
+//     },
+//     ElseStatement{
+//         block: Vec<ASTNode>
+//     },
+//     WhiileStatment{
+//         condition: Box<ASTNode>,
+//         body: Vec<ASTNode>
+//     },
+//     ForStatement{
+//         variable: String,
+//         iterable: Box<ASTNode>,
+//         body: Vec<ASTNode>
+//     },
+//     ReturnStatement{
+//         value: Option<Box<ASTNode>>
+//     },
+//     Block(Vec<ASTNode>),
+//     BinaryOperation{
+//         left: Box<ASTNode>,
+//         operators: Operators,
+//         right: Box<ASTNode>
+//     },
+//     Identifier(String),
+//     Literal(LiteralValue),
+//     //UnaryOperation { operator: , operand: Box<ASTNode> },
+// }
+//
+// #[allow(dead_code)]
+// #[derive(Debug)]
+// pub enum LiteralValue{
+//     Integer{value:BigInt},
+//     Float{value:f64},
+//     String(String),
+//     Boolean(bool),
+// }
+//
+//
+
+
+
+
+
+
+
+
 //
 //
 //

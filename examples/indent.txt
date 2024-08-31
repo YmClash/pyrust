@@ -1,0 +1,65 @@
+# Ceci est un commentaire
+
+# Importation
+import math
+from utils import helper_function
+
+# Déclaration de variables
+let x: int = 5
+let mut y = 10
+
+# Déclaration de fonction
+fn calculate_area(length: float, width: float) : float:
+    let area = length * width
+    return area
+
+# Appel de fonction
+let rectangle_area = calculate_area(5.0, 3.0)
+
+# Instruction d'impression
+print("L'aire du rectangle est:", rectangle_area)
+
+# Structure de contrôle
+if rectangle_area > 10:
+    print("Grande surface")
+elif rectangle_area > 5:
+    print("Surface moyenne")
+else:
+    print("Petite surface")
+
+# Boucle
+for i in range(5):
+    print("Itération", i)
+
+# Boucle while
+let mut counter = 0
+while counter < 5:
+    print("Compteur:", counter)
+    counter = counter + 1
+
+# Structure match (similaire à switch dans d'autres langages)
+match x:
+    1 => print("Un")
+    2 => print("Deux")
+    3 => print("Trois")
+    _ => print("Autre")
+
+# Boucle infinie avec break
+loop:
+    print("Boucle infinie")
+    if some_condition:
+        break
+
+# Fonction avec type de retour
+fn is_even(num: int) : bool:
+    return num % 2 == 0
+
+# Utilisation d'opérateurs logiques
+if is_even(x) && y > 5:
+    print("x est pair et y est supérieur à 5")
+
+# Utilisation d'opérateurs bit à bit
+let z = x & y
+
+# Déclaration de variable mutuelle avec type inféré
+let mut result = calculate_area(7.5, 2.0)

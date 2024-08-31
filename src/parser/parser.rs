@@ -1,76 +1,294 @@
-// use crate::lexer::{Token, TokenType, SyntaxMode, Keywords, Operators, Delimiters};
+//
+// use crate::lex::{SyntaxMode, Token};
+// use crate::tok::{Delimiters, Keywords, Operators, TokenType};
+// use std::collections::HashMap;
+// use num_bigint::BigInt;
 //
 //
-// #[derive(Debug)]
+//
+// #[allow(dead_code)]
 // pub struct Parser{
-//     tokens: Vec<tok>,
+//     tokens: Vec<Token>,
 //     current_token: usize,
+//     syntax_mode: SyntaxMode,
 // }
 //
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
+// // impl PartialEq<TokenType> for &TokenType {
+// //     fn eq(&self, other: &TokenType) -> bool {
+// //         todo!()
+// //     }
+// // }
+// /*
 // impl Parser{
-//     pub fn new(tokens: Vec<token>) -> Self{
+//     pub fn new(tokens: Vec<Token>,syntax_mode: SyntaxMode) -> Self{
 //         Parser{
 //             tokens,
 //             current_token: 0,
+//             syntax_mode,
 //         }
 //     }
 //
-//     pub fn parse(&mut self) -> Result<Vec<Node>,String> {
+//     //methode principale
+//     pub fn parse(&mut self) -> Result<ASTNode, String> {
 //         let mut program = Vec::new();
-//         while !self.is_EndOfFile() {
+//         while !self.is_at_end() {
 //             match self.parse_declaration() {
-//                 OK(Node) => program.push(Node),
+//                 Ok(node) => program.push(node),
 //                 Err(e) => return Err(e),
 //             }
 //         }
-//         Ok(program)
+//         Ok(ASTNode::Program(program))
 //     }
 //
-//     fn parse_variable_declaration(){}
+//     fn parse_declaration(&mut self) -> Result<ASTNode, String> {
+//         if self.match_token(&[TokenType::KEYWORD(Keywords::DEF)]) {
+//             self.parse_function_declaration()
+//         } else if self.match_token(&[TokenType::KEYWORD(Keywords::LET)]) {
+//             self.parse_variable_declaration()
+//         } else {
+//             self.parse_statement()
+//         }
+//     }
+//     fn parse_fonction_declaration(&mut self) -> Result<ASTNode, String> {
+//         let name = self.consuume_identifier("Expected function name")?;
+//         self.consume(TokenType::DELIMITER(Delimiters::LPAR), "Expected '(' after function name")?;
+//         let parameters = self.parse_parameters()?;
+//         self.consume(TokenType::DELIMITER(Delimiters::RPAR), "Expected ')' after function parameters")?;
+//
+//         let body = if self.syntax_mode == SyntaxMode::Braces{
+//             self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE), "Expected '{' before function body")?;
+//             let body = self.parse_block()?;
+//             self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE), "Expected '}' after function body")?;
+//             body
+//         } else {
+//             self.consume(TokenType::DELIMITER(Delimiters::COLON), "Expected ':' before function return type")?;
+//             self.parse_block()?
+//         };
+//
+//         Ok(ASTNode::FunctionDeclaration {
+//             name,
+//             parameters,
+//             body,
+//         })
+//
+//     }
+//     fn parse_parameters(&mut self) ->Result<Vec<String>,String> {
+//         todo!("Implémentation de la logique pour parser les paramètres")
+//     }
+//     fn parse_variable_declaration(&mut self) -> Result<ASTNode,String>{
+//         let name = self.consume_identifier("Expected variable name")?;
+//         self.consume(TokenType::OPERATOR(Operators::EQUAL), "Expected '=' after variable name")?;
+//         let value = self.parse_expression()?;
+//         self.consume_statement_end("Expect ';' or newline after declaration ")?;
+//
+//         Ok(ASTNode::VariableDeclaration {
+//             name: String::from(name),//////a revoir
+//             value:Box::new(value),
+//         })
+//     }
+//     //
+//     fn parse_statement(&mut self) ->Result<ASTNode,String>{
+//         if self.match_keyword(&[Keywords::IF]){
+//             self.parse_if_statement()
+//         }else if self.match_keyword(&[Keywords::WHILE]){
+//             self.parse_while_statement()        //ansi de suite
+//         }else {
+//             self.parse_expression_statement()
+//         }
+//     }
+//     fn parse_if_statement(&mut self) -> Result<ASTNode,String>{
+//         //implémentation de la logique pour parser une instruction if
+//         todo!()
+//     }
+//     fn parse_while_statement(&mut self) -> Result<ASTNode,String> {
+//         //implémentation de la logique pour parser une instruction while
+//         todo!()
+//     }
+//     fn parse_expression_statement(&mut self) -> Result<ASTNode,String> {
+//         let expression = self.parse_expression()?;
+//         self.consume_statement_end("Expect ';' or newline after expression")?;
+//         Ok(expression)
+//
+//     }
+//
+//     fn parse_expression(&mut self) -> Result<ASTNode,String>{
+//         //implémentation de la logique pour parser une expression
+//         self.parse_binary_operation()
+//     }
+//     fn parse_binary_expression(&mut self) -> Result<ASTNode, String> {
+//         let mut expr = self.parse_unary_expression()?;
+//
+//         while let Some(op) = self.match_operator(&[Operators::PLUS,
+//             Operators::MINUS,
+//             Operators::STAR,
+//             Operators::SLASH/* autres opérateurs */]) {
+//             let right = self.parse_unary_expression()?;
+//             expr = ASTNode::BinaryOperation {
+//                 left: Box::new(expr),
+//                 operators: op,
+//                 right: Box::new(right),
+//             };
+//         }
+//
+//         Ok(expr)
+//     }
+//
+//     fn parse_unary_expression(&mut self) -> Result<ASTNode, String> {
+//         if let Some(op) = self.match_operator(&[Operators::MINUS, Operators::NOTEQUAL]) {
+//             let expr = self.parse_unary_expression()?;
+//             Ok(ASTNode::UnaryOperation {
+//                 operator: op,
+//                 operand: Box::new(expr),
+//             })
+//         } else {
+//             self.parse_primary_expression()
+//         }
+//     }
+//
+//     fn parse_primary_expression(&mut self) -> Result<ASTNode,String> {
+//         if let Some(TokenType::INTEGER { value }) = self.peek().map(|t| &t.token_type) {
+//             self.advance();
+//             Ok(ASTNode::Literal(LiteralValue::Integer(*value)))
+//         } else if let Some(TokenType::IDENTIFIER { name }) = self.peek().map(|t| &t.token_type) {
+//             self.advance();
+//             Ok(ASTNode::Identifier(name.clone()))
+//         } else {
+//             Err("Unexpected token in expression".to_string())
+//         }
+//     }
+//
+//     fn parse_block(&mut self) -> Result<ASTNode,String>{
+//         let mut statements = Vec::new();
+//         if self.syntax_mode == SyntaxMode::Indentation{
+//             self.consume(TokenType::INDENT,"Expected indentation before block")?;
+//             while !self.check(&TokenType::DEDENT) && !self.is_at_end(){
+//                 statements.push(self.parse_declaration()?);
+//             }
+//             self.consume(TokenType::DEDENT,"Expected dedentation after block")?;
+//         } else {
+//             while !self.check(&TokenType::DELIMITER(Delimiters::RCURBRACE)) && !self.is_at_end(){
+//                 statements.push(self.parse_declaration()?);
+//             }
+//         }
+//         Ok(ASTNode::Block(statements))
+//     }
+//
+//     //methode utilitaire et de support
+//     fn match_keyword(&mut self, keywords: &[Keywords; 1]) ->bool{
+//         for &keyword in keywords{
+//             if self.check(&TokenType::KEYWORD(keyword)){
+//                 self.advance();
+//                 return true;
+//             }
+//         }
+//         return false;
+//     }
+//
+//     fn match_token(&mut self, types: &[TokenType]) -> bool {
+//         for t in types {
+//             if self.check(t) {
+//                 self.advance();
+//                 return true;
+//             }
+//         }
+//         false
+//     }
+//
+//
+//     fn consume(&mut self,token_type: TokenType,message:&str) -> Result<(),String>{
+//         if self.check(&token_type) {
+//             self.advance();
+//             Ok(())
+//         } else {
+//             Err(message.to_string())
+//         }
+//     }
+//
+//
+//     fn consume_identifier(&mut self, message:&str) -> Result<(),String>{
+//         if let Some(TokenType::IDENTIFIER { name }) = self.peek().map(|t| &t.token_type) {
+//             let name = name.clone();
+//             self.advance();
+//             Ok(name)
+//         }else {
+//             Err(message.to_string())
+//         }
+//
+//     }
+//     fn consume_statement_end(&mut self, message: &str) -> Result<(), String> {
+//         if self.syntax_mode == SyntaxMode::Braces{
+//             self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON), message)
+//         } else {
+//             self.consume(TokenType::NEWLINE, message)
+//         }
+//     }
+//
+//     fn check(&self,TokenType:&TokenType) ->bool{
+//         *self.peek().map_or(false,|t| &t.token_type == *TokenType)
+//     }
+//     fn advance(&mut self) -> Option<&Token>{
+//         if !self.is_at_end(){
+//             self.current_token += 1;
+//         }
+//         self.previous()
+//     }
+//     fn is_at_end(&self)-> bool{
+//         self.peek().map_or(true,|t| matches!(t.token_type,TokenType::EOF))
+//     }
+//     fn peek(&self) ->Option<&Token>{
+//         self.tokens.get(self.current_token)
+//     }
+//     fn previous(&self) ->Option<&Token>{
+//         self.tokens.get(self.current_token - 1)
+//     }
+//
+//
+//
+// }
+// */
+//
+//
+//
+//
+//
+//
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//
+//
 //
 //     fn parse_declaration(){}
-//     fn parse_fonction_declaration(){}
 //
 //
 //
-//     fn parse_statement(){}
 //
-//     fn parse_if_statement(){}
 //
-//     fn parse_while_statement(){}
+//
+//
+//
+//
 //
 //     fn parse_return_statement(){}
 //
 //     fn parse_expression_statement(){}
 //
-//     fn parse_expression(){}
+//
 //
 //     fn parse_for_statement(){}
 //

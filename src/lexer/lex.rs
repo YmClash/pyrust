@@ -10,8 +10,8 @@ use crate::error::{LexerError, LexerErrorType, Position};
 //#[allow(dead_code)]
 #[derive(Debug,PartialEq,Clone)]
 pub enum SyntaxMode{
-    Indentation,        //python syntax mode
-    Braces,             //Rust syntax mode
+    Indentation,        //Python Like Syntax mode
+    Braces,             //Rust Like Syntax mode
 }
 
 
@@ -50,6 +50,7 @@ pub struct Lexer<'a>{
     syntax_mode: SyntaxMode,
     indent_level: Vec<usize>,
     at_line_start:bool,
+   // nesting :usize
 }
 
 /// Implementation du lexer avec tous les methodes pour classer les tokens
@@ -69,56 +70,54 @@ impl<'a> Lexer<'a> {
             syntax_mode,
             indent_level: vec![0],
             at_line_start: true,
+          //  nesting: 0,
         };
         lexer
 
     }
+
+    /// La Logique de la Methode pour compter l'indentation a ete trasferer dans la methode get_token()
     // je vais d'abord gere les different mode de syntaxe
 
-    fn handle_indentation(&mut self) -> Vec<TokenType> {
-        let mut tokens = Vec::new();
-        if self.syntax_mode == SyntaxMode::Indentation {
-            let current_indent = self.count_indent();
-            let previous_indent = *self.indent_level.last().unwrap_or(&0);
+    // fn handle_indentation(&mut self) -> Option<TokenType> {
+    //     let current_indent = self.count_indentation();
+    //     let previous_indent = *self.indent_level.last().unwrap_or(&0);
+    //
+    //     if current_indent > previous_indent {
+    //         self.indent_level.push(current_indent);
+    //         return Some(TokenType::INDENT);
+    //     } else if current_indent < previous_indent {
+    //         while current_indent < *self.indent_level.last().unwrap_or(&0) {
+    //             self.indent_level.pop();
+    //             return Some(TokenType::DEDENT);
+    //         }
+    //         if current_indent != *self.indent_level.last().unwrap_or(&0) {
+    //             return Some(TokenType::ERROR(LexerError::invalid_indentation(
+    //                 Position {
+    //                     line: self.current_line,
+    //                     column: self.current_column,
+    //                 },
+    //             )));
+    //         }
+    //     }
+    //     None
+    // }
 
-            if current_indent > previous_indent {
-                self.indent_level.push(current_indent);
-                tokens.push(TokenType::INDENT);
-            } else if current_indent < previous_indent {
-                while current_indent < *self.indent_level.last().unwrap_or(&0) {
-                    self.indent_level.pop();
-                    tokens.push(TokenType::DEDENT);
-                }
-                if current_indent != *self.indent_level.last().unwrap_or(&0) {
-                    return vec![TokenType::ERROR(LexerError::invalid_indentation(
-                        Position {
-                            line: self.current_line,
-                            column: self.current_column,
-                        },
-                    ))];
-                }
-            }
-        }
-        tokens
-    }
+    /// Methode pour compter l'indentation
 
-    fn count_indent(&mut self) -> usize {
+
+    fn count_indentation(&mut self) -> usize {
         let mut count = 0;
         while let Some(&ch) = self.source.peek() {
-            if ch == ' ' {
-                count += 1;
-                self.advance();
-            } else if ch == '\t' {
-                count += 8; // 8 espaces pour un tab
-                self.advance();
-            } else {
-                break;
+            match ch {
+                ' ' => count += 1,
+                '\t' => count += 4, // ou une autre valeur selon votre convention
+                _ => break,
             }
+            self.advance();
         }
         count
     }
-
-
 
 
     /// Creation d'une hashmap pour les mots cles
@@ -253,8 +252,10 @@ impl<'a> Lexer<'a> {
         if ch == '\n' {
             self.current_line += 1;
             self.current_column = 1;
+            self.at_line_start = true;
         } else {
             self.current_column += 1;
+            self.at_line_start = false;
         }
         Some(ch)
     }
@@ -277,19 +278,43 @@ impl<'a> Lexer<'a> {
     /// Renvoie une Option<TokenType> représentant un seul token.
 
     /// methode pour obtenir le token
+
     pub fn get_token(&mut self) -> Option<TokenType> {
+        //Gérer l'indentation au début d'une nouvelle ligne
         if self.at_line_start && self.syntax_mode == SyntaxMode::Indentation {
-            let mut indent_tokens = self.handle_indentation();
-            if !indent_tokens.is_empty() {
-                return Some(indent_tokens.remove(0));
+            self.at_line_start = false;
+            let current_indent = self.count_indentation();
+            let previous_indent = *self.indent_level.last().unwrap_or(&0);
+
+            if current_indent > previous_indent {
+                self.indent_level.push(current_indent);
+                return Some(TokenType::INDENT);
+            } else if current_indent < previous_indent {
+                while current_indent < *self.indent_level.last().unwrap_or(&0) {
+                    self.indent_level.pop();
+                    return Some(TokenType::DEDENT);
+                }
+                if current_indent != *self.indent_level.last().unwrap_or(&0) {
+                    return Some(TokenType::ERROR(LexerError::invalid_indentation(
+                        Position {
+                            line: self.current_line,
+                            column: self.current_column,
+                        },
+                    )));
+                }
             }
+            // Si l'indentation est la même, on ne fait rien de spécial
         }
 
-        self.at_line_start = false;
+        self.skip_whitespace(); // Sauter les espaces et tabulations
 
-        self.skip_whitespace();
-
+        // Vérifier le prochain caractère
         match self.peek_char() {
+            Some('\n') => {
+                self.advance(); // Consomme le '\n'
+                self.at_line_start = true;
+                return Some(TokenType::NEWLINE);
+            }
             Some('0'..='9') => Some(self.lex_number()),
             Some('a'..='z') | Some('A'..='Z') | Some('_') => Some(self.lex_identifier_or_keyword()),
             Some('"') | Some('\'') => Some(self.lex_string()),
@@ -297,26 +322,37 @@ impl<'a> Lexer<'a> {
             Some('/') => {
                 if let Some(next_char) = self.peek_next_char() {
                     match next_char {
-                        '/' => Some(self.lex_comment()),  // Toujours traiter `//` comme un commentaire
-                        '*' => Some(self.lex_comment()),  // Traiter `/* ... */` comme un commentaire multi-ligne
+                        '/' | '*' => Some(self.lex_comment()),
                         _ => self.lex_operator(),
                     }
                 } else {
                     self.lex_operator()
                 }
             }
-            Some('\n') if self.syntax_mode == SyntaxMode::Indentation =>{
-                self.advance();
-                self.at_line_start = true;
-                Some(TokenType::NEWLINE)
-
-            },
             Some(ch) if self.delimiters.contains_key(&ch.to_string()) => Some(self.lex_delimiter()),
             Some(ch) if !ch.is_alphanumeric() => self.lex_operator(),
-            None => Some(TokenType::EOF),
+            None => {
+                ////////////à surveiller si c'est correct et pas redondant
+                // Fin du fichier (EOF)
+                if !self.indent_level.is_empty() && *self.indent_level.last().unwrap() > 0 {
+                    self.indent_level.pop();
+                    return Some(TokenType::DEDENT);
+                } else {
+                    return Some(TokenType::EOF);
+                }
+            }
+            ////////////à surveiller si c'est correct et pas redondant
+
+            //None => Some(TokenType::EOF),   //Ajouter nouvelement
             _ => Some(self.lex_unknown()),
         }
     }
+
+
+
+
+
+
 
     fn lex_number(&mut self) -> TokenType {
         self.current_token_text.clear();
@@ -398,17 +434,17 @@ impl<'a> Lexer<'a> {
             }
         }
 
-    self.current_token_text = hex_number.clone();
+        self.current_token_text = hex_number.clone();
 
-    if hex_number.len() == 2 { // Seulement "0x" ou "0X"
-        self.create_error(LexerErrorType::InvalidHexadecimal(hex_number))
-    } else {
-        match u64::from_str_radix(&hex_number[2..], 16) { // Skip "0x"
-            Ok(value) => TokenType::HEXADECIMAL { value },
-            Err(_) => self.create_error(LexerErrorType::InvalidHexadecimal(hex_number)),
+        if hex_number.len() == 2 { // Seulement "0x" ou "0X"
+            self.create_error(LexerErrorType::InvalidHexadecimal(hex_number))
+        } else {
+            match u64::from_str_radix(&hex_number[2..], 16) { // Skip "0x"
+                Ok(value) => TokenType::HEXADECIMAL { value },
+                Err(_) => self.create_error(LexerErrorType::InvalidHexadecimal(hex_number)),
+            }
         }
     }
-}
 
 
 
@@ -432,6 +468,8 @@ impl<'a> Lexer<'a> {
             TokenType::IDENTIFIER { name: self.current_token_text.clone() }
         }
     }
+
+
     fn lex_string(&mut self) -> TokenType {
         self.current_token_text.clear();
 
@@ -504,23 +542,7 @@ impl<'a> Lexer<'a> {
         Some(TokenType::ERROR(LexerError::invalid_token(&self.current_token_text, Position { line: self.current_line, column: self.current_column })))
     }
 
-
-
-
-
-
-
     /// Methode pour les differents types de token de Type Delimiter
-    // fn lex_delimiter(&mut self) -> TokenType {
-    //     self.current_token_text.clear();
-    //     let ch = self.advance();
-    //     if let Some(delimiter) = self.delimiters.get(&ch.to_string()) {
-    //         TokenType::DELIMITER(delimiter.clone())
-    //     } else {
-    //         return TokenType::UNKNOWN;
-    //     }
-    //     // TokenType::DELIMITER(self.delimiters[&ch.to_string()].clone())
-    // }
     fn lex_delimiter(&mut self) -> TokenType {
         let ch = self.advance();
         if let Some(delimiter) = self.delimiters.get(&ch.to_string()) {
@@ -630,13 +652,13 @@ impl<'a> Lexer<'a> {
 
     /// Methode pour sauter les espaces
     fn skip_whitespace(&mut self) {
-        while let Some(&ch) = self.source.peek() {
-            if ch.is_whitespace() {
-                self.advance();
-            } else {
-                break;
-            }
+    while let Some(&ch) = self.source.peek() {
+        if ch.is_whitespace() && ch != '\n' {
+        self.advance();
+        } else {
+        break;
         }
+    }
     }
 
     /// C'est la deuxième methode principal avec get_token() pour obtenir les tokens
@@ -677,7 +699,6 @@ impl<'a> Lexer<'a> {
     }
 
 
-
     /// methode pour les differents types de token de Type Unknown
 
     fn lex_unknown(&mut self) -> TokenType{
@@ -698,11 +719,16 @@ impl<'a> Lexer<'a> {
             position
         ))
     }
+
+    fn handle_newline(&mut self) -> TokenType {
+    self.advance(); // Consomme le '\n'
+    self.at_line_start = true;
+    TokenType::NEWLINE
+}
 }
 
 
-
-
+//by YmC
 
 
 
