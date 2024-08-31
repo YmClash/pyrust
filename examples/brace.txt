@@ -1,0 +1,131 @@
+// Déclaration de variables avec typage optionnel
+let x: int = 10;
+let mut y: int = 20;
+
+// Déclaration de fonction avec typage optionnel
+fn add<T>(a: T, b: T) -> T {
+    let result: T = a + b;
+    return result;
+}
+
+// Appel de fonction
+let sum: int = add(x, y);
+
+// Impression de résultat
+print("La somme est: ", sum);
+
+// Structure de contrôle
+if x > y {
+    print("x est plus grand que y");
+} elif x < y {
+    print("x est plus petit que y");
+} else {
+    print("x est égal à y");
+}
+
+// Boucle for
+for i in 5 {
+    print("i vaut: ", i);
+}
+
+// Boucle while
+let count: int = 0;
+while count < 5 {
+    print("count vaut: ", count);
+    let count = count + 1;
+}
+
+// Boucle loop
+loop {
+    print("Boucle infinie");
+    break;
+}
+
+// Instruction match
+match x {
+    10 => print("x vaut 10");
+    20 => print("x vaut 20");
+    _ => print("x vaut autre chose");
+}
+
+// Importation de module
+import math;
+from math import sqrt;
+
+// Utilisation de l'importation
+let root: float = sqrt(16);
+print("La racine carrée de 16 est: ", root);
+
+// Déclaration de structure
+struct Point {
+    x: int,
+    y: int
+}
+
+// Création d'une instance de structure
+let point: Point = Point(1, 2);
+print("Point: (", point.x, ", ", point.y, ")");
+
+// Lambda expression
+let square = |x: int| -> int {
+    return x * x;
+};
+
+let result: int = square(4);
+print("Le carré de 4 est: ", result);
+
+
+
+
+
+// Déclaration de tableau
+let array: array<int> = [1, 2, 3, 4, 5];
+print("Tableau: ", array);
+
+// Accès aux éléments du tableau
+let first_element: int = array[0];
+print("Premier élément: ", first_element);
+
+// Déclaration de dictionnaire
+let dict: dict<string, int> = {
+    "un": 1,
+    "deux": 2,
+    "trois": 3
+};
+print("Dictionnaire: ", dict);
+
+// Accès aux éléments du dictionnaire
+let value: int = dict["deux"];
+print("Valeur de 'deux': ", value);
+
+// Boucle sur les éléments du tableau
+for elem in array {
+    print("Élément: ", elem);
+}
+
+// Boucle sur les éléments du dictionnaire
+for key in dict {
+    print("Clé: ", key, " Valeur: ", dict[key]);
+}
+
+
+// Déclaration de type personnalisé
+struct Vector {
+    x: float,
+    y: float,
+    z: float
+}
+
+// Déclaration de fonction générique
+fn add_vectors<T>(a: Vector, b: Vector) -> Vector {
+    let result: Vector = Vector(a.x + b.x, a.y + b.y, a.z + b.z);
+    return result;
+}
+
+// Création d'instances de type personnalisé
+let v1: Vector = Vector(1.0, 2.0, 3.0);
+let v2: Vector = Vector(4.0, 5.0, 6.0);
+
+// Appel de fonction générique
+let v3: Vector = add_vectors(v1, v2);
+print("Vecteur résultant: (", v3.x, ", ", v3.y, ", ", v3.z, ")");

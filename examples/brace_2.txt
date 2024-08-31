@@ -1,0 +1,79 @@
+# Définition d'une structure
+struct Point {
+    x: float,
+    y: float
+}
+
+# Définition d'une fonction générique
+fn<T> print_twice(value: T) {
+    print(value);
+    print(value);
+}
+
+# Définition d'une fonction avec type de retour
+fn calculate_distance(p1: Point, p2: Point) -> float {
+    let dx = p2.x - p1.x;
+    let dy = p2.y - p1.y;
+    return (dx * dx + dy * dy).sqrt();
+}
+
+# Définition d'une constante
+const PI: float = 3.14159;
+
+# Création d'objets
+let p1 = Point(0.0, 0.0);
+let p2 = Point(3.0, 4.0);
+
+# Appel de fonction
+let distance = calculate_distance(p1, p2);
+
+# Utilisation de if-elif-else
+if distance < 1.0 {
+    print("Points are close");
+} elif distance < 5.0 {
+    print("Points are at medium distance");
+} else {
+    print("Points are far apart");
+}
+
+# Boucle while
+let mut i = 0;
+while i < 5 {
+    print(i);
+    i = i + 1;
+}
+
+# Boucle for
+for num in [1, 2, 3, 4, 5] {
+    print_twice(num);
+}
+
+# Création et utilisation d'un dictionnaire
+let dict = {"a": 1, "b": 2, "c": 3};
+print(dict["b"]);
+
+# Expression lambda
+let double = |x: int| -> int { x * 2 };
+print(double(5));
+
+# Emprunt mutable
+let mut value = 10;
+{
+    let borrowed = &mut value;
+    *borrowed = 20;
+}
+print(value);
+
+# Comparaison de chaînes
+if "hello" == "world" {
+    print("This won't be printed");
+}
+
+# Commentaires multi-lignes
+/*
+Ceci est un commentaire
+sur plusieurs lignes
+*/
+
+# Commentaires de style Python
+# Ceci est un commentaire de style Python
