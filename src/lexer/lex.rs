@@ -4,7 +4,7 @@ use std::str::Chars;
 use std::collections::HashMap;
 use crate::tok::{TokenType, Keywords, Delimiters, Operators, StringKind};
 use crate::error::{LexerError, LexerErrorType, Position};
-use crate::lexer::error::{LexerError, LexerErrorType, Position};
+//use crate::lexer::error::{LexerError, LexerErrorType, Position};
 
 //#[allow(dead_code)]
 #[derive(Debug, PartialEq, Clone, Copy)]

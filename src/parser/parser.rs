@@ -1,146 +1,152 @@
+// use crate::error::Position;
+// use crate::lex::{SyntaxMode, Token};
+// use crate::parser::ast::{ASTNode, Block, Statement, };
+// use crate::parser::error::{ParserError, Position};
+// use crate::tok::{Delimiters, TokenType};
+//
+//
+// #[allow(dead_code)]
+// pub struct Parser<'a> {
+//     tokens: Vec<Token>,
+//     current: usize,
+//     syntax_mode: SyntaxMode,
+// }
+//
+//
+// impl <'a> Parser<'a> {
+//     pub fn new(tokens: Vec<Token>, syntax_mode: SyntaxMode) -> Self {
+//         Parser {
+//             tokens,
+//             current: 0,
+//             syntax_mode,
+//         }
+//     }
+//
+//     pub fn parse_block(&mut self) -> Result<Block,ParserError> {
+//         match self.syntax_mode {
+//             SyntaxMode::Indentation => self.parse_mode_indentation(),
+//             SyntaxMode::Braces => self.parse_mode_brace(),
+//         }
+//
+//     }
+//
+//     fn parse_mode_indentation(&mut self) -> Result<Block, ParserError> {
+//         self.expect(TokenType::INDENT)?;
+//         let statements = self.parse_statements()?;
+//         self.expect(TokenType::DEDENT)?;
+//         Ok(Block {
+//             statements,
+//             indent_level: Some(self.current_indent_level()),
+//             opening_brace: None,
+//             closing_brace: None,
+//         })
+//     }
+//     fn current_indent_level(&self) -> usize {
+//         todo!("Implémentez la logique pour calculer le niveau d'indentation actuel")
+//     }
+//     fn parse_mode_brace(&mut self) -> Result<Block, ParserError> {
+//         let opening_brace = self.expect(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
+//         let statements = self.parse_statements()?;
+//         let closing_brace = self.expect(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+//         Ok(Block {
+//             statements,
+//             indent_level: None,
+//             opening_brace: Some(opening_brace.clone()),
+//             closing_brace: Some(closing_brace.clone()),
+//         })
+//     }
+//
+//     pub fn parse(&mut self) -> Result<ASTNode, ParserError> {
+//         let mut statements = Vec::new();
+//         while !self.is_at_end() {
+//             statements.push(self.parse_declaration()?);
+//         }
+//         Ok(ASTNode::Program(statements))
+//     }
+//     fn parse_declaration(&mut self) -> Result<ASTNode,ParserError> {
+//         todo!("Implémentez la logique pour parser une déclaration")
+//     }
+//
+//     fn parse_statement(&mut self) -> Result<Statement,ParserError>{
+//         todo!("Implémentez la logique pour parser une instruction")
+//     }
+//
+//
+//
+//     pub fn parse_statements(&mut self) -> Result<Vec<ASTNode>,ParserError> {
+//         let mut statements = Vec::new();
+//         while !self.check(TokenType::DEDENT) && !self.check(TokenType::DELIMITER(Delimiters::RCURBRACE)){
+//             statements.push(self.parse_declaration()?);
+//         }
+//         Ok(statements)
+//     }
+//
+//
+//
+//
+//
+//
+//     /////////////////////////////////////////////
+//     // Méthodes utilitaires
+//
+//     fn advance(&mut self) -> &Token {
+//         if !self.is_at_end() {
+//             self.current += 1;
+//         }
+//         self.previous()
+//     }
+//
+//     fn is_at_end(&self) -> bool {
+//         self.peek().token_type == TokenType::EOF
+//     }
+//
+//     fn peek(&self) -> &Token {
+//         &self.tokens[self.current]
+//     }
+//
+//     fn previous(&self) -> &Token {
+//         &self.tokens[self.current - 1]
+//     }
+//
+//     fn check(&self, token_type: TokenType) -> bool {
+//         if self.is_at_end() {
+//             false
+//         } else {
+//             self.peek().token_type == token_type
+//         }
+//     }
+//
+//     fn match_token(&mut self, token_type: TokenType) -> bool {
+//         if self.check(token_type) {
+//             self.advance();
+//             true
+//         } else {
+//             false
+//         }
+//     }
+//
+//     fn expect(&mut self, token_type: TokenType) -> Result<&Token, ParserError> {
+//         if self.check(token_type) {
+//             Ok(self.advance())
+//         } else {
+//             Err(self.create_error(ParserError::unexpected_token(token_type, Position {})))
+//         }
+//     }
+//
+//     fn create_error(&self, error: ParserError) -> ParserError {
+//         let position = Position {
+//             line: self.peek(),
+//             column: self.peek().column,
+//         };
+//         ParserError::new(error, position)
+//     }
+//
+//
+//
+// }
 
-use crate::error::Position;
-use crate::lex::{SyntaxMode, Token};
-use crate::parser::ast::{ASTNode, Block, Statement};
-use crate::parser::error::ParserError;
-use crate::tok::{Delimiters, TokenType};
 
-
-#[allow(dead_code)]
-pub struct Parser<'a> {
-    tokens: Vec<Token>,
-    current_token: Option<&'a Token>,
-
-    position: usize,
-    syntax_mode: SyntaxMode,
-}
-
-
-impl <'a> Parser<'a> {
-    pub fn new(tokens: Vec<Token>, syntax_mode: SyntaxMode) -> Self {
-        let mut parser = Parser{
-            tokens,
-            current_token: None,
-            position: 0,
-            syntax_mode,
-        };
-        parser.advance();   //on avance le curseur pour initalise current_token
-        parser
-
-    }
-
-    pub fn parse(&mut self) -> Result<ASTNode,ParserError> {
-        match self.syntax_mode {
-            SyntaxMode::Indentation => self.parse_mode_indentation(),
-            SyntaxMode::Braces => self.parse_mode_brace(),
-        }
-
-    }
-
-    fn parse_mode_indentation(&mut self) -> Result<ASTNode,ParserError>{
-        //implementation de la logique pour parser le programme
-        self.expect(TokenType::INDENT)?;
-        let statements = self.parse_statements()?;
-        self.expect(TokenType::DEDENT)?;
-        Ok(ASTNode::Block(vec![]))
-
-    }
-    fn parse_mode_brace(&mut self) -> Result<ASTNode,ParserError> {
-        //implementation de la logique pour parser le programme
-        self.expect(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
-        let statements = self.parse_statements()?;
-        self.expect(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
-        Ok(ASTNode::Block(vec![]))
-    }
-
-
-
-
-
-
-   // methode pour creeune erreur
-
-    fn create_error(&self, error:ParserError) -> ParserError{
-        let position = Position {
-            line: self.current_line,
-            column: self.current_column,
-        };
-        error.clone(),
-        error.to_string(),
-        position
-    }
-
-    //methode utilitaire
-    fn match_token(&mut self, token_type: TokenType) -> bool {
-        if let Some(Token) = self.current_token() {
-            if Token.token_type == token_type{
-                self.advance();
-                return true;
-            }
-        }
-        false
-    }
-
-
-
-    fn advance(&mut self) {
-        if self.position < self.tokens.len(){
-            self.current_token = Some(&self.tokens[self.position]);
-            self.position += 1;
-        }else{
-            self.current_token = None;
-        }
-    }
-
-    fn check(&self,token_type: TokenType) -> bool {
-        if self.is_at_end(){
-            false
-        } else {
-            &self.peek().token_type == token_type
-        }
-
-    }
-    fn peek(&self) -> &Token {
-        &self.tokens[self.current_token]
-    }
-
-        fn is_at_end(&self) -> bool{
-        self.peek().token_type == TokenType::EOF
-    }
-
-
-    fn current_token(&self) -> Option<&Token> {
-        self.current_token
-    }
-
-    fn previous_token(&self) -> &Token{
-        self.tokens[self.current_token - 1]
-    }
-
-    fn consume(&mut self, token_type: TokenType, message: &str) -> Result<&Token, ParserError> {
-        if self.check(&token_type) {
-            Ok(self.advance())
-        } else {
-            Err(self.create_error(ParserError::unexpected_token(token_type)))
-            //Err(ParserError::new(self.peek().clone(), String::from(message)))
-        }
-    }
-
-    fn expect(&mut self, token_type: TokenType) -> Result<&Token,ParserError> {
-        if self.match_token(token_type){
-            Ok(self.previous_token())
-        }else{
-            Err(self.create_error(ParserError::unexpected_token(token_type)))
-            //Err(self.create_error(ParserError::unexpected_token(token_type)))
-        }
-    }
-
-
-
-}
-
-
-
+///////////////////////////////////////////
 
 
 
