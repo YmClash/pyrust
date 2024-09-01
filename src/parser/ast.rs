@@ -1,16 +1,14 @@
 use num_bigint::BigInt;
-use crate::lexer::tok::TokenType;
-//use crate::parser::parser::LiteralValue;
-use crate::tok::Operators;
+use crate::lex::Token;
 
 #[allow(dead_code)]
-#[derive(Debug,Clone)]
+#[derive(Debug,Clone,)]
 pub enum ASTNode{
-    Programm(Vec<ASTNode>),
+    Program(Vec<ASTNode>),
+    Block(Block),
     Declaration(Declaration),
     Expression(Expression),
     Statement(Statement),
-    Block(Block),
     Function(Function),
     IfStatement(IfStatement),
     ForStatement(ForStatement),
@@ -18,28 +16,187 @@ pub enum ASTNode{
     ReturnStatement(ReturnStatement),
     BinaryOperation(BinaryOperation),
     UnaryOperation(UnaryOperation),
-    Identifier(String),
+    Identifier(Identifier),
 }
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+struct Block{
+    statements: Vec<ASTNode>,
+    // pour le mode syntaxe Indentation
+    indent_level: Option<usize>,
+    // pour le mode syntaxe Brace
+    opening_brace: Option<Token>,
+    closing_brace: Option<Token>,
+}
+
 
 #[allow(dead_code)]
 #[derive(Debug,Clone)]
 pub enum Declaration{
-    VariableDeclaration{
-        mutable: bool,
-        name: String,
-        variable_type: Option<String>,
-        value: Expression,
-    },
-    FunctionDeclaration{
-        name: String,
-        parameters: Vec<Parameter>,
-        return_type: Option<String>,
-        body: Box<ASTNode>, //   on va utiliser BOx pour une allocation dynamique
-    },
+    Variable(VariableDeclaration),
+    Function(FunctionDeclaration),
+    Constante(ConstanteDeclaration),
+    Structure(StructDeclaration),
+}
 
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct VariableDeclaration{
+    pub mutable: bool,
+    pub name: String,
+    pub variable_type: Option<String>,
+    pub value: Option<Expression>,
+}
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct FunctionDeclaration{
+    pub name:String,
+    pub parameter: Vec<Parameters>,
+    pub return_type: Option<String>,
+    pub body: Vec<Block>
+}
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct ConstanteDeclaration{
+    pub name: String,
+    pub constant_type: Option<String>,
+    pub value: Expression,
+}
+
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct StructDeclaration{
+    pub name: String,
+    pub fields: Vec<Parameters>,
 }
 
 
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub enum Expression{
+    Literal(Literal),
+    Identifier(String),
+    BinaryOperation(BinaryOperation),
+    UnaryOperation(UnaryOperation),
+    FunctioCall(FunctionCall),
+    ArrayAccess(ArrayAccess),
+    MemberAccess(MemberAccess),
+
+}
+
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub enum Literal{
+    Integer{value:BigInt},
+    Float{value:f64},
+    String(String),
+    Boolean(bool),
+    Array(Vec<Expression>),
+}
+
+//fonction parametre
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct Parameters{
+    pub name: String,
+    parameter_type: Option<String>,
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Debug)]
+pub struct BinaryOperation{
+    pub left: Box<ASTNode>,
+    pub operator: String,////////////////////////// a changer
+    pub right: Box<ASTNode>,
+}
+#[allow(dead_code)]
+#[derive(Clone, Debug)]
+pub struct UnaryOperation{
+    pub operator: String,
+    pub operand: Box<ASTNode>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct FunctionCall{
+    pub name: String,
+    pub arguments: Vec<Expression>
+}
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct ArrayAccess{
+    pub array: Box<Expression>,
+    pub index: Box<Expression>
+}
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct MemberAccess{
+    pub object: Box<Expression>,
+    pub member: String,
+}
+
+
+
+#[allow(dead_code)]
+#[derive(Clone, Debug)]
+pub enum Statement{
+    Expression(Expression),
+    Return(ReturnStatement),
+    If(IfStatement),
+    ElseIf(ElifStatement),
+    While(WhileStatement),
+    For(ForStatement),
+    Break,
+    Continue,
+
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Debug)]
+pub struct ReturnStatement{
+    pub value: Option<Expression>
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Debug)]
+pub struct IfStatement{
+    pub condition: Expression,
+    pub elif_blocks: Vec<(Expression, Block)>,
+    pub else_block:Option<Box<Statement>>,
+    body: Block,
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Debug)]
+pub struct ElifStatement{
+    pub condition: Expression,
+    pub body: Block,
+}
+#[allow(dead_code)]
+#[derive(Clone, Debug)]
+pub struct WhileStatement{
+    pub condition: Expression,
+    pub body: Block,
+}
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct ForStatement{
+    pub variable_iter: String,
+    pub iterable: Expression,
+    pub body: Block,
+}
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct Function{
+    pub declaration: FunctionDeclaration,
+    pub body: Block,
+}
+
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct Identifier{
+    pub name: String,
+}
 
 
 

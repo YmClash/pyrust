@@ -23,7 +23,8 @@ pub struct ParserError{
 pub enum  ParserErrorType{
     UnexpectedToken(String),
     UnexpectedEOF,
-
+    IndentationError,
+    BraceError,
 }
 
 // implement de la position
@@ -65,6 +66,8 @@ impl Display for ParserErrorType {
         match self {
             ParserErrorType::UnexpectedToken(t) => write!(f, "UnexpectedToken {}", t),
             ParserErrorType::UnexpectedEOF => write!(f, "UnexpectedEOF"),
+            ParserErrorType::IndentationError => write!(f, "IndentationError"),
+            ParserErrorType::BraceError => write!(f, "BraceError"),
         }
     }
 }
@@ -85,5 +88,11 @@ impl ParserError{
     }
     pub fn unexpected_eof(position: Position) -> Self {
         Self::new(ParserErrorType::UnexpectedEOF, "Unexpected EOF".to_string(), position)
+    }
+    pub fn indentation_error(position: Position) -> Self {
+        Self::new(ParserErrorType::IndentationError, "Indentation Error".to_string(), position)
+    }
+    pub fn brace_error(position: Position) -> Self {
+        Self::new(ParserErrorType::BraceError, "Brace Error".to_string(), position)
     }
 }

@@ -1,6 +1,7 @@
-use crate::error::LexerError;
+use std::cmp::PartialEq;
+use crate::error::Position;
 use crate::lex::{SyntaxMode, Token};
-use crate::parser::ast::ASTNode;
+use crate::parser::ast::{ASTNode};
 use crate::parser::error::ParserError;
 //
 // use crate::lex::{SyntaxMode, Token};
@@ -14,9 +15,11 @@ use crate::tok::{Delimiters, TokenType};
 pub struct Parser<'a> {
     tokens: Vec<Token>,
     current_token: Option<&'a Token>,
+
     position: usize,
     syntax_mode: SyntaxMode,
 }
+
 
 impl <'a> Parser<'a> {
     pub fn new(tokens: Vec<Token>, syntax_mode: SyntaxMode) -> Self {
@@ -31,22 +34,6 @@ impl <'a> Parser<'a> {
 
     }
 
-    pub fn parse_mode_indentation(&mut self) -> Result<ASTNode,ParserError>{
-        self.expect(TokenType::INDENT)?;
-        let statements = self.parse_statements()?;
-        self.expect(TokenType::DEDENT)?;
-        Ok(ASTNode::Block(statements))
-    }
-
-    pub fn parse_mode_brace(&mut self) -> Result<ASTNode,ParserError>{
-        self.expect(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
-        let statements = self.parse_statements()?;
-        self.expect(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
-        Ok(ASTNode::Block(statements))
-    }
-
-
-
     pub fn parse(&mut self) -> Result<ASTNode,ParserError> {
         match self.syntax_mode {
             SyntaxMode::Indentation => self.parse_mode_indentation(),
@@ -54,6 +41,107 @@ impl <'a> Parser<'a> {
         }
 
     }
+
+    fn parse_mode_indentation(&mut self) -> Result<ASTNode,ParserError>{
+        //implementation de la logique pour parser le programme
+        self.expect(TokenType::INDENT)?;
+        let statements = self.parse_statements()?;
+        self.expect(TokenType::DEDENT)?;
+        Ok(ASTNode::Block(vec![]))
+
+    }
+    fn parse_mode_brace(&mut self) -> Result<ASTNode,ParserError> {
+        //implementation de la logique pour parser le programme
+        self.expect(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
+        let statements = self.parse_statements()?;
+        self.expect(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+        Ok(ASTNode::Block(vec![]))
+    }
+
+
+
+
+
+
+   // methode pour creeune erreur
+
+    fn create_error(&self, error:ParserError) -> ParserError{
+        let position = Position {
+            line: self.current_line,
+            column: self.current_column,
+        };
+        error.clone(),
+        error.to_string(),
+        position
+    }
+
+    //methode utilitaire
+    fn match_token(&mut self, token_type: TokenType) -> bool {
+        if let Some(Token) = self.current_token() {
+            if Token.token_type == token_type{
+                self.advance();
+                return true;
+            }
+        }
+        false
+    }
+
+
+
+    fn advance(&mut self) {
+        if self.position < self.tokens.len(){
+            self.current_token = Some(&self.tokens[self.position]);
+            self.position += 1;
+        }else{
+            self.current_token = None;
+        }
+    }
+
+    fn check(&self,token_type: TokenType) -> bool {
+        if self.is_at_end(){
+            false
+        } else {
+            &self.peek().token_type == token_type
+        }
+
+    }
+    fn peek(&self) -> &Token {
+        &self.tokens[self.current_token]
+    }
+
+        fn is_at_end(&self) -> bool{
+        self.peek().token_type == TokenType::EOF
+    }
+
+
+    fn current_token(&self) -> Option<&Token> {
+        self.current_token
+    }
+
+    fn previous_token(&self) -> &Token{
+        self.tokens[self.current_token - 1]
+    }
+
+    fn consume(&mut self, token_type: TokenType) -> Result<&Token,ParserError> {
+        if self.check(token_type){
+            Ok(self.advance())
+        }
+        else{
+            Err(self.create_error(ParserError::unexpected_token(token_type)))
+        }
+    }
+
+    // fn expect(&mut self, token_type: TokenType) -> Result<&Token,ParserError> {
+    //     if self.match_token(token_type){
+    //         Ok(self.previous_token())
+    //     }else{
+    //         Err(self.create_error(ParserError::unexpected_token(token_type)))
+    //     }
+    // }
+
+
+
+
 }
 
 
