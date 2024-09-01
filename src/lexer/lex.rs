@@ -4,11 +4,10 @@ use std::str::Chars;
 use std::collections::HashMap;
 use crate::tok::{TokenType, Keywords, Delimiters, Operators, StringKind};
 use crate::error::{LexerError, LexerErrorType, Position};
-
-
+use crate::lexer::error::{LexerError, LexerErrorType, Position};
 
 //#[allow(dead_code)]
-#[derive(Debug,PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum SyntaxMode{
     Indentation,        //Python Like Syntax mode
     Braces,             //Rust Like Syntax mode
@@ -20,7 +19,7 @@ pub enum SyntaxMode{
 /// Structure Token,
 /// elle contient le text du token, le type du token, la ligne et la colonne
 #[allow(dead_code)]
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub struct Token{
     pub text: String,
     pub token_type: TokenType,

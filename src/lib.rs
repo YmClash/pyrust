@@ -3,12 +3,12 @@ pub mod lexer;
 mod semantic;
 mod utils;
 mod codegen;
-mod parser;
+pub mod parser;
 
 //mod ast;
 #[allow(dead_code)]
 pub use lexer::*;
-//pub use parser::*;
+pub use parser::*;
 
 
 

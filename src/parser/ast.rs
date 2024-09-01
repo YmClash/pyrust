@@ -1,5 +1,8 @@
+use std::fmt;
+use std::fmt::Formatter;
 use num_bigint::BigInt;
 use crate::lex::Token;
+use crate::parser::error::ParserError;
 
 #[allow(dead_code)]
 #[derive(Debug,Clone,)]
@@ -10,13 +13,65 @@ pub enum ASTNode{
     Expression(Expression),
     Statement(Statement),
     Function(Function),
-    IfStatement(IfStatement),
-    ForStatement(ForStatement),
-    WhileStatement(WhileStatement),
-    ReturnStatement(ReturnStatement),
-    BinaryOperation(BinaryOperation),
-    UnaryOperation(UnaryOperation),
-    Identifier(Identifier),
+    // IfStatement(IfStatement),
+    // ForStatement(ForStatement),
+    // WhileStatement(WhileStatement),
+    // ReturnStatement(ReturnStatement),
+    // BinaryOperation(BinaryOperation),
+    // UnaryOperation(UnaryOperation),
+    // Identifier(Identifier),
+    // Literal(Literal),
+    // Operator(Operator),
+    Error(ParserError),
+}
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct ParseError {
+    message: String,
+    position: Position,
+}
+
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct Position{
+    pub line: usize,
+    pub column: usize,
+}
+#[allow(dead_code)]
+#[derive(Debug,PartialEq,Clone)]
+pub enum Operator{
+    Addition,
+    Substraction,
+    Multiplication,
+    Division,
+    Modulo,
+    Equal,
+    NotEqual,
+    LessThan,
+    GreaterThan,
+    And,
+    Or,
+    LesshanOrEqual,
+    GreaterThanOrEqual,
+}
+#[derive(Debug,Clone)]
+pub enum UnaryOperator{
+    Negate,
+    Not,
+    Increment,
+    Decrement,
+    Reference,
+    Dereference,
+    // AddressOf,
+    // SizeOf,
+    // TypeOf,
+    // Cast,
+    BitwiseNot,
+    LogicalNot,
+    Positive,
+    Negative,
+
+
 }
 #[allow(dead_code)]
 #[derive(Debug,Clone)]
@@ -78,9 +133,13 @@ pub enum Expression{
     Identifier(String),
     BinaryOperation(BinaryOperation),
     UnaryOperation(UnaryOperation),
-    FunctioCall(FunctionCall),
+    FunctionCall(FunctionCall),
     ArrayAccess(ArrayAccess),
     MemberAccess(MemberAccess),
+    LambdaExpression(LambdaExpression),
+    MatchExpression(MatchExpression),
+    MatchArms(MatchArms),
+
 
 }
 
@@ -105,15 +164,15 @@ pub struct Parameters{
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct BinaryOperation{
-    pub left: Box<ASTNode>,
-    pub operator: String,////////////////////////// a changer
-    pub right: Box<ASTNode>,
+    pub left: Box<Expression>,
+    pub operator: Operator,////////////////////////// a changer
+    pub right: Box<Expression>,
 }
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct UnaryOperation{
-    pub operator: String,
-    pub operand: Box<ASTNode>,
+    pub operator: UnaryOperator,
+    pub operand: Box<Expression>,
 }
 
 #[allow(dead_code)]
@@ -141,14 +200,13 @@ pub struct MemberAccess{
 #[derive(Clone, Debug)]
 pub enum Statement{
     Expression(Expression),
-    Return(ReturnStatement),
+    Return(Option<Expression>),
     If(IfStatement),
     ElseIf(ElifStatement),
     While(WhileStatement),
     For(ForStatement),
     Break,
     Continue,
-
 }
 
 #[allow(dead_code)]
@@ -198,7 +256,65 @@ pub struct Identifier{
     pub name: String,
 }
 
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct LambdaExpression{
+    pub parameters: Vec<Parameters>,
+    pub body: Block,
+}
 
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct MatchExpression{
+    pub expression: Box<Expression>,
+    pub arms: Vec<MatchArms>
+}
+
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct MatchArms{
+    pub pattern: Pattern,
+    pub expression: Expression
+}
+
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub enum Pattern{
+    Literal(Literal),
+    Identifier(String),
+    Wildcard,
+}
+
+
+
+impl fmt::Display for ASTNode{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            ASTNode::Program(Statements) => {
+                for statement in Statements{
+                    write!(f, "{}", statement)?;
+                }
+                Ok(())
+            }
+            ASTNode::Declaration(decl) => write!(f, "{}", decl),
+            ASTNode::Expression(expr) => write!(f, "{}", expr),
+            ASTNode::Statement(stmt) => write!(f, "{}", stmt),
+            ASTNode::Function(func) => write!(f, "{}", func),
+            ASTNode::Block(block) => write!(f, "{}", block),
+            // ASTNode::IfStatement(ifstmt) => write!(f, "{}", ifstmt),
+            // ASTNode::ForStatement(forstmt) => write!(f, "{}", forstmt),
+            // ASTNode::WhileStatement(whilestmt) => write!(f, "{}", whilestmt),
+            // ASTNode::ReturnStatement(retstmt) => write!(f, "{}", retstmt),
+            // ASTNode::BinaryOperation(binop) => write!(f, "{}", binop),
+            // ASTNode::UnaryOperation(unop) => write!(f, "{}", unop),
+            // ASTNode::Identifier(ident) => write!(f, "{}", ident),
+            // ASTNode::Literal(lit) => write!(f, "{}", lit),
+            // ASTNode::Operator(op) => write!(f, "{}", op),
+            ASTNode::Error(err) => write!(f, "{}", err),
+
+        }
+    }
+}
 
 
 

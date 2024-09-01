@@ -1,13 +1,8 @@
-use std::cmp::PartialEq;
+
 use crate::error::Position;
 use crate::lex::{SyntaxMode, Token};
-use crate::parser::ast::{ASTNode};
+use crate::parser::ast::{ASTNode, Block, Statement};
 use crate::parser::error::ParserError;
-//
-// use crate::lex::{SyntaxMode, Token};
-// use crate::tok::{Delimiters, Keywords, Operators, TokenType};
-// use std::collections::HashMap;
-// use num_bigint::BigInt;
 use crate::tok::{Delimiters, TokenType};
 
 
@@ -122,23 +117,23 @@ impl <'a> Parser<'a> {
         self.tokens[self.current_token - 1]
     }
 
-    fn consume(&mut self, token_type: TokenType) -> Result<&Token,ParserError> {
-        if self.check(token_type){
+    fn consume(&mut self, token_type: TokenType, message: &str) -> Result<&Token, ParserError> {
+        if self.check(&token_type) {
             Ok(self.advance())
-        }
-        else{
+        } else {
             Err(self.create_error(ParserError::unexpected_token(token_type)))
+            //Err(ParserError::new(self.peek().clone(), String::from(message)))
         }
     }
 
-    // fn expect(&mut self, token_type: TokenType) -> Result<&Token,ParserError> {
-    //     if self.match_token(token_type){
-    //         Ok(self.previous_token())
-    //     }else{
-    //         Err(self.create_error(ParserError::unexpected_token(token_type)))
-    //     }
-    // }
-
+    fn expect(&mut self, token_type: TokenType) -> Result<&Token,ParserError> {
+        if self.match_token(token_type){
+            Ok(self.previous_token())
+        }else{
+            Err(self.create_error(ParserError::unexpected_token(token_type)))
+            //Err(self.create_error(ParserError::unexpected_token(token_type)))
+        }
+    }
 
 
 

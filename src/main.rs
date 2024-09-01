@@ -1,12 +1,6 @@
 #![allow(dead_code)]
 #![allow(unused)]
-
-//use ymcrust::{type_of};
-
-
-
-//mod lex;
-
+use pyrust::parser::parser::Parser;
 
 use pyrust::lex::{lox, Lexer, SyntaxMode};
 
@@ -14,40 +8,27 @@ fn main() {
 
     println!("Start Lexer");
 
-    let code = r#"
-def example_function():
-    if True:
-        print("Indented")
-    else:
-        print("Also indented")
-        if False:
-            print("More indentation")
-    print("Back to first indentation level")
+    let source_code = "fn example() { ... }"; // Exemple de code source
+    let syntax_mode = SyntaxMode::Braces; // Ou SyntaxMode::Indentation
+    let mut lexer = Lexer::new(source_code, syntax_mode);
+    let tokens = lexer.tokenize();
+    let mut parser = Parser::new(tokens, syntax_mode);
 
-print("No indentation")
-"#;
-
-
-
-    let mut  nova = Lexer::new(code,SyntaxMode::Indentation);
-    let tokens = Lexer::tokenize(&mut nova);
-    for token in tokens {
-        println!("{:?}", token);
+    match parser.parse() {
+        Ok(ast) => println!("{:?}", ast),
+        Err(e) => eprintln!("Error parsing: {}", e),
     }
+
+
+
+
+    // let mut  nova = Lexer::new(code,SyntaxMode::Indentation);
+    // let tokens = Lexer::tokenize(&mut nova);
+    // for token in tokens {
+    //     println!("{:?}", token);
+    // }
 
     println!("Done");
     println!("Pyrust Compiler ");
     println!("By YmC")
 }
-//
-//
-//
-//     let code2 = r#"
-// def example():
-//     let x = 10
-//     if x > 5:
-//         print("Greater than 5")
-//     else:
-//         print("Less or equal to 5")
-//     let y = 20
-// "#;
