@@ -23,8 +23,8 @@ pub enum SyntaxMode{
 pub struct Token{
     pub text: String,
     pub token_type: TokenType,
-    line: usize,
-    column: usize,
+    pub(crate) line: usize,
+    pub(crate) column: usize,
 }
 
 /// Implementation de la structure Token

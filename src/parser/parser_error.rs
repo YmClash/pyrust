@@ -1,7 +1,7 @@
 #[allow(dead_code)]
 use std::fmt::{Display, Formatter};
 use std::fmt;
-
+use crate::tok::TokenType;
 
 #[allow(dead_code)]
 #[derive(Debug,PartialEq,Clone)]
@@ -21,11 +21,18 @@ pub struct ParserError{
 #[allow(dead_code)]
 #[derive(Debug,PartialEq,Clone)]
 pub enum  ParserErrorType{
-    UnexpectedToken(String),
+    UnexpectedToken{ expected: TokenType, found: TokenType },
     UnexpectedEOF,
     IndentationError,
     BraceError,
 }
+
+// #[allow(dead_code)]
+// #[derive(Debug,PartialEq,Clone)]
+// struct TokExpected{
+//     expected: TokenType,
+//     found: TokenType,
+// }
 
 // implement de la position
 #[allow(dead_code)]
@@ -64,7 +71,7 @@ impl Display for ParserError{
 impl Display for ParserErrorType {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            ParserErrorType::UnexpectedToken(t) => write!(f, "UnexpectedToken {}", t),
+            ParserErrorType::UnexpectedToken{expected,found} => write!(f, "Expected Toke {:?}, but Found: {:?}", expected, found),
             ParserErrorType::UnexpectedEOF => write!(f, "UnexpectedEOF"),
             ParserErrorType::IndentationError => write!(f, "IndentationError"),
             ParserErrorType::BraceError => write!(f, "BraceError"),
@@ -74,25 +81,21 @@ impl Display for ParserErrorType {
 
 
 //implementation du message d'erreur du parseur
-impl ParserError{
-    pub fn new(error: ParserErrorType, message: String, position: Position) -> Self{
-        ParserError{
+impl ParserError {
+    pub fn new(error: ParserErrorType, position: Position) -> Self {
+        let message = match &error {
+            ParserErrorType::UnexpectedToken { expected, found } =>
+                format!("Expected {:?}, but found {:?}", expected, found),
+            ParserErrorType::UnexpectedEOF => "Unexpected end of file".to_string(),
+            ParserErrorType::IndentationError => "Indentation error".to_string(),
+            ParserErrorType::BraceError => "Mismatched braces".to_string(),
+            //ParserErrorType::InvalidExpression => "Invalid expression".to_string(),
+        };
+
+        ParserError {
             error,
             message,
-            position
+            position,
         }
-    }
-
-    pub fn unexpected_token(t:&str ,position: Position) -> Self {
-        Self::new(ParserErrorType::UnexpectedToken(t.to_string()), format!("Unexpected token: {}", t), position)
-    }
-    pub fn unexpected_eof(position: Position) -> Self {
-        Self::new(ParserErrorType::UnexpectedEOF, "Unexpected EOF".to_string(), position)
-    }
-    pub fn indentation_error(position: Position) -> Self {
-        Self::new(ParserErrorType::IndentationError, "Indentation Error".to_string(), position)
-    }
-    pub fn brace_error(position: Position) -> Self {
-        Self::new(ParserErrorType::BraceError, "Brace Error".to_string(), position)
     }
 }

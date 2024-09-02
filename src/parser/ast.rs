@@ -3,6 +3,7 @@ use std::fmt::Formatter;
 use num_bigint::BigInt;
 use crate::lexer::lex::Token;
 use crate::parser::parser_error::ParserError;
+use crate::SyntaxMode;
 
 #[allow(dead_code)]
 #[derive(Debug,Clone,)]
@@ -13,17 +14,20 @@ pub enum ASTNode{
     Expression(Expression),
     Statement(Statement),
     Function(Function),
-    // IfStatement(IfStatement),
-    // ForStatement(ForStatement),
-    // WhileStatement(WhileStatement),
-    // ReturnStatement(ReturnStatement),
-    // BinaryOperation(BinaryOperation),
-    // UnaryOperation(UnaryOperation),
-    // Identifier(Identifier),
-    // Literal(Literal),
-    // Operator(Operator),
     Error(ParserError),
 }
+
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct Block{
+    pub statements: Vec<Statement>,
+    pub syntax_mode: SyntaxMode,
+    pub indent_level: Option<usize>,  // Pour le mode Indentation
+    pub braces: Option<(Token, Token)>,  // Pour le mode Braces (ouverture, fermeture)
+    // pub opening_brace: Option<Token>,  // pour le mode syntaxe Brace
+    // pub closing_brace: Option<Token>,
+}
+
 #[allow(dead_code)]
 #[derive(Debug,Clone)]
 pub struct ParseError {
@@ -62,10 +66,6 @@ pub enum UnaryOperator{
     Decrement,
     Reference,
     Dereference,
-    // AddressOf,
-    // SizeOf,
-    // TypeOf,
-    // Cast,
     BitwiseNot,
     LogicalNot,
     Positive,
@@ -73,15 +73,6 @@ pub enum UnaryOperator{
 
 
 }
-#[allow(dead_code)]
-#[derive(Debug,Clone)]
-pub struct Block{
-    pub statements: Vec<ASTNode>, // pour le mode syntaxe Indentation
-    pub indent_level: Option<usize>,
-    pub opening_brace: Option<Token>,  // pour le mode syntaxe Brace
-    pub closing_brace: Option<Token>,
-}
-
 
 #[allow(dead_code)]
 #[derive(Debug,Clone)]
@@ -90,6 +81,8 @@ pub enum Declaration{
     Function(FunctionDeclaration),
     Constante(ConstanteDeclaration),
     Structure(StructDeclaration),
+    Class(ClassDeclaration),
+    Enum(EnumDeclaration),
 }
 
 #[allow(dead_code)]
@@ -106,7 +99,7 @@ pub struct FunctionDeclaration{
     pub name:String,
     pub parameter: Vec<Parameters>,
     pub return_type: Option<String>,
-    pub body: Vec<Block>
+    pub block: Block,
 }
 #[allow(dead_code)]
 #[derive(Debug,Clone)]
@@ -121,6 +114,21 @@ pub struct ConstanteDeclaration{
 pub struct StructDeclaration{
     pub name: String,
     pub fields: Vec<Parameters>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct ClassDeclaration{
+    pub name: String,
+    pub fields: Vec<Parameters>,
+    pub methods: Vec<FunctionDeclaration>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct EnumDeclaration{
+    pub name: String,
+    pub variants: Vec<String>,
 }
 
 
@@ -198,13 +206,22 @@ pub struct MemberAccess{
 #[derive(Clone, Debug)]
 pub enum Statement{
     Expression(Expression),
-    Return(Option<Expression>),
+    Return(ReturnStatement),
+    Use(UseStatement),
+    Import(ImportStatement),
+    Raise(RaiseStatement),
+    Del(DelStatement),
     If(IfStatement),
     ElseIf(ElifStatement),
     While(WhileStatement),
     For(ForStatement),
     Break,
     Continue,
+    Try(TryStatement),
+    With(WithStatement),
+    Yield(YieldStatement),
+
+
 }
 
 #[allow(dead_code)]
@@ -217,35 +234,79 @@ pub struct ReturnStatement{
 #[derive(Clone, Debug)]
 pub struct IfStatement{
     pub condition: Expression,
+    pub block: Block,
     pub elif_blocks: Vec<(Expression, Block)>,
-    pub else_block:Option<Box<Statement>>,
-    body: Block,
+    pub else_block:Option<Block>,
+
 }
 
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct ElifStatement{
     pub condition: Expression,
-    pub body: Block,
+    pub block: Block
 }
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct WhileStatement{
     pub condition: Expression,
-    pub body: Block,
+    pub block: Block
 }
 #[allow(dead_code)]
 #[derive(Debug,Clone)]
 pub struct ForStatement{
     pub variable_iter: String,
     pub iterable: Expression,
-    pub body: Block,
+    pub block: Block
 }
+
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct UseStatement{
+    pub module: String,
+    pub alias: Option<String>,
+}
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct ImportStatement{
+    pub module: String,
+    pub alias: Option<String>,
+}
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct RaiseStatement{
+    pub exception: Expression,
+}
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct DelStatement{
+    pub target: Expression,
+}
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct TryStatement{
+    pub block: Block,
+    pub except: Vec<(Option<String>, Block)>,
+    pub else_block: Option<Block>,
+    pub finally_block: Option<Block>,
+}
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct WithStatement{
+    pub target: Expression,
+    pub block: Block,
+}
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct YieldStatement{
+    pub value: Option<Expression>,
+}
+
 #[allow(dead_code)]
 #[derive(Debug,Clone)]
 pub struct Function{
     pub declaration: FunctionDeclaration,
-    pub body: Block,
+    pub block: Block,
 }
 
 #[allow(dead_code)]
@@ -258,7 +319,7 @@ pub struct Identifier{
 #[derive(Debug,Clone)]
 pub struct LambdaExpression{
     pub parameters: Vec<Parameters>,
-    pub body: Block,
+    pub block: Block
 }
 
 #[allow(dead_code)]
@@ -314,6 +375,8 @@ impl fmt::Display for ASTNode{
     }
 }
 
+
+// by YmC
 
 ////////////////////////////////////////////////////////////////
 
