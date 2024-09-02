@@ -2,7 +2,7 @@
 
 pub mod ast;
 
-pub mod error;
+pub mod parser_error;
 
 pub mod parser;
 

@@ -9,7 +9,7 @@ pub mod parser;
 #[allow(dead_code)]
 pub use lexer::lex::Lexer;
 pub use lexer::tok;
-pub use lexer::error;
+pub use lexer::lexer_error;
 pub use crate::lexer::lex::SyntaxMode;
 
 

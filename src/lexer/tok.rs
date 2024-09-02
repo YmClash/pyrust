@@ -1,5 +1,5 @@
 use num_bigint::BigInt;
-use crate::error::LexerError;
+use crate::lexer_error::LexerError;
 
 
 

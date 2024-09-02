@@ -1,7 +1,7 @@
 pub mod lex;
 
 
-pub mod error;
+pub mod lexer_error;
 //mod syntax_mode;
 pub mod tok;
 
