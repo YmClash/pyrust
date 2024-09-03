@@ -105,7 +105,7 @@ impl<'a> Lexer<'a> {
     /// Methode pour compter l'indentation
 
 
-    fn count_indentation(&mut self) -> usize {
+    pub fn count_indentation(&mut self) -> usize {
         let mut count = 0;
         while let Some(&ch) = self.source.peek() {
             match ch {

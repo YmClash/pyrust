@@ -111,8 +111,8 @@ pub enum Delimiters {
 #[derive(Debug, PartialEq, Clone)]
 pub enum StringKind{
     NORMAL,
-    FORMATTED,
-    UNICODE,
+    FORMATTED, // f-string implementation plus tard
+    UNICODE, // u-string implementation plus tard
 }
 
 

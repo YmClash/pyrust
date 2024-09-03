@@ -1,6 +1,7 @@
+#[allow(dead_code)]
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::lexer::lex::{Token, SyntaxMode};
-use crate::parser::ast::{ASTNode, Block, Statement, Expression, VariableDeclaration, Declaration, Function, IfStatement, WhileStatement, ForStatement, ReturnStatement, BinaryOperation, UnaryOperation, FunctionDeclaration, Parameters};
+use crate::parser::ast::{ASTNode, Block, Statement, Expression, VariableDeclaration, Declaration,/* Function, IfStatement, WhileStatement, ForStatement, ReturnStatement,  UnaryOperation,*/BinaryOperation ,FunctionDeclaration, Parameters, Operator};
 use crate::tok::{TokenType, Keywords, Operators, Delimiters};
 
 pub struct Parser {
@@ -35,78 +36,67 @@ impl Parser {
     }
 
     fn parse_indented_block(&mut self) -> Result<Block, ParserError> {
-        // Implémentez la logique pour un bloc indenté ici
-        todo!("Implement indented block parsing")
+        self.expect(TokenType::INDENT)?;
+        let indent_level = self.current_indent_level();
+        self.indent_stack.push(indent_level);
+
+        let mut statements = Vec::new();
+        while !self.check(&TokenType::DEDENT) && !self.is_at_end() {
+            statements.push(self.parse_statement()?);
+        }
+
+        self.expect(TokenType::DEDENT)?;
+        self.indent_stack.pop();
+
+        Ok(Block {
+            statements,
+            syntax_mode: SyntaxMode::Indentation,
+            indent_level: Some(indent_level),
+            braces: None,
+        })
     }
 
+    fn current_indent_level(&self) -> usize {
+        *self.indent_stack.last().unwrap_or(&0)
+    }
     fn parse_braced_block(&mut self) -> Result<Block, ParserError> {
-        // Implémentez la logique pour un bloc avec accolades ici
-        todo!("Implement braced block parsing")
-    }
+        self.expect(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
 
-    // fn parse_mode_indentation(&mut self) -> Result<Block, ParserError> {
-    //     todo!();
-    //
-    //     self.expect(TokenType::INDENT)?;
-    //     let indent_level = self.current_indent_level();
-    //     self.indent_stack.push(indent_level);
-    //
-    //     let mut statements = Vec::new();
-    //     while !self.check(TokenType::DEDENT) && !self.is_at_end() {
-    //         statements.push(self.parse_declaration()?);
-    //     }
-    //
-    //     self.expect(TokenType::DEDENT)?;
-    //     self.indent_stack.pop();
-    //
-    //     Ok(Block {
-    //         statements,
-    //         syntax_mode: SyntaxMode::Indentation,
-    //         indent_level: Some(indent_level),
-    //         braces: None,
-    //     })
-    // }
-    //
-    // fn parse_mode_brace(&mut self) -> Result<Block, ParserError> {
-    //
-    //
-    //
-    //     let opening_brace = self.expect(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
-    //     let mut statements = Vec::new();
-    //
-    //     while !self.check(TokenType::DELIMITER(Delimiters::RCURBRACE)) && !self.is_at_end() {
-    //         statements.push(self.parse_declaration()?);
-    //     }
-    //
-    //     let closing_brace = self.expect(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
-    //
-    //     Ok(Block {
-    //         statements,
-    //         syntax_mode: SyntaxMode::Braces,
-    //         indent_level: None,
-    //         braces: Some((opening_brace.clone(), closing_brace.clone())),
-    //     })
-    // }
+        let mut statements = Vec::new();
+        while !self.check(&TokenType::DELIMITER(Delimiters::RCURBRACE)) && !self.is_at_end() {
+            statements.push(self.parse_statement()?);
+        }
+
+        self.expect(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+
+        Ok(Block {
+            statements,
+            syntax_mode: SyntaxMode::Braces,
+            indent_level: None,
+            braces: None, // Nous ne stockons plus les tokens ici
+        })
+    }
 
     fn parse_parameters(&mut self) -> Result<Vec<Parameters>, ParserError> {
         let mut parameters = Vec::new();
 
-        if !self.check(&TokenType::DELIMITER(Delimiters::RPAR)) {
-            loop {
-                let name = self.consume(TokenType::IDENTIFIER, "Expected Parameter Name")?;
-                let type_annotation = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
-                    Some(self.consume(TokenType::IDENTIFIER, "Expected Parameter Type")?.text.clone())
-                } else {
-                    None
-                };
-                parameters.push(Parameters {
-                    name: name.text.clone(),
-                    parameter_type: type_annotation,
-                });
+        while !self.check(&TokenType::DELIMITER(Delimiters::RPAR)) {
+            let name = self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expected Parameter Name")?;
+            let name_text = name.text.clone();
 
-                if !self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]) {
-                    break;
-                }
+            let type_annotation = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
+                Some(self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expected Parameter Type")?.text.clone())
+            } else {
+                None
+            };
+
+            parameters.push(Parameters {
+                name: name_text,
+                parameter_type: type_annotation,
+            });
+
+            if !self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]) {
+                break;
             }
         }
 
@@ -134,7 +124,7 @@ impl Parser {
         } else if self.match_token(&[TokenType::KEYWORD(Keywords::STRUCT)]){
             self.parse_struct_declaration()
         } else if self.match_token(&[TokenType::KEYWORD(Keywords::CLASS)]){
-            self.parse_Class_declaration()
+            self.parse_class_declaration()
         } else {
             self.parse_statement().map(ASTNode::Statement)
         }
@@ -142,12 +132,14 @@ impl Parser {
     }
 
     fn parse_variable_declaration(&mut self) -> Result<ASTNode, ParserError> {
-        let name = self.consume(TokenType::IDENTIFIER, "Expected variable name")?;
-        let mut type_annotation = None;
+        let name = self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expected variable name")?;
+        let name_text = name.text.clone();
 
-        if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
-            type_annotation = Some(self.consume(TokenType::IDENTIFIER, "Expected type annotation")?.text.clone());
-        }
+        let type_annotation = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
+            Some(self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expected type annotation")?.text.clone())
+        } else {
+            None
+        };
 
         let initializer = if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
             Some(self.parse_expression()?)
@@ -155,24 +147,26 @@ impl Parser {
             None
         };
 
-        self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON), "Expected ';' after variable declaration")?;
+        self.consume(&TokenType::DELIMITER(Delimiters::SEMICOLON), "Expected ';' after variable declaration")?;
 
         Ok(ASTNode::Declaration(Declaration::Variable(VariableDeclaration {
-            name: name.text.clone(),
+            name: name_text,
             variable_type: type_annotation,
             value: initializer,
-            mutable: false, // Vous pouvez ajouter la gestion de la mutabilité plus tard
+            mutable: false,
         })))
     }
 
     fn parse_function_declaration(&mut self) -> Result<ASTNode, ParserError> {
-        let name = self.consume(TokenType::IDENTIFIER, "Expect function name.")?;
-        self.consume(TokenType::DELIMITER(Delimiters::LPAR), "Expect '(' after function name.")?;
+        let name = self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expect function name.")?;
+        let name_text = name.text.clone();
+
+        self.consume(&TokenType::DELIMITER(Delimiters::LPAR), "Expect '(' after function name.")?;
         let parameters = self.parse_parameters()?;
-        self.consume(TokenType::DELIMITER(Delimiters::RPAR), "Expect ')' after parameters.")?;
+        self.consume(&TokenType::DELIMITER(Delimiters::RPAR), "Expect ')' after parameters.")?;
 
         let return_type = if self.match_token(&[TokenType::OPERATOR(Operators::RARROW)]) {
-            Some(self.consume(TokenType::IDENTIFIER, "Expect return type after '->'.")?.text.clone())
+            Some(self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expect return type after '->'.")?.text.clone())
         } else {
             None
         };
@@ -180,7 +174,7 @@ impl Parser {
         let body = self.parse_block()?;
 
         Ok(ASTNode::Declaration(Declaration::Function(FunctionDeclaration {
-            name: name.text.clone(),
+            name: name_text,
             parameter: parameters,
             return_type,
             block: body,
@@ -190,7 +184,7 @@ impl Parser {
     fn parse_struct_declaration(&mut self) -> Result<ASTNode, ParserError> {
         todo!()
     }
-    fn parse_Class_declaration(&mut self) -> Result<ASTNode, ParserError> {
+    fn parse_class_declaration(&mut self) -> Result<ASTNode, ParserError> {
         todo!()
     }
 
@@ -199,7 +193,17 @@ impl Parser {
     }
 
     fn parse_statement(&mut self) -> Result<Statement, ParserError> {
-        todo!()
+        Ok(if self.match_token(&[TokenType::KEYWORD(Keywords::IF)]) {
+            self.parse_if_statement()
+        } else if self.match_token(&[TokenType::KEYWORD(Keywords::WHILE)]) {
+            self.parse_while_statement()
+        } else if self.match_token(&[TokenType::KEYWORD(Keywords::FOR)]) {
+            self.parse_for_statement()
+        } else if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]) {
+            self.parse_return_statement()
+        } else {
+            self.parse_expression_statement()
+        }.expect("Error parsing statement"))
     }
 
     fn parse_if_statement(&mut self) -> Result<Statement, ParserError> {
@@ -226,7 +230,7 @@ impl Parser {
     fn parse_expression_statement(&mut self) -> Result<Statement, ParserError> {
         todo!()
         // let expr = self.parse_expression()?;
-        // self.expect(TokenType::DELIMITER(Delimiters::SEMICOLON))?;
+        // self.expect(TokenType:: DELIMITER(Delimiters::SEMICOLON))?;
         // Ok(Statement::Expression(expr))
     }
 
@@ -236,12 +240,30 @@ impl Parser {
 
 
     fn parse_expression(&mut self) -> Result<Expression, ParserError> {
-        let token = self.consume(TokenType::IDENTIFIER, "Expect expression.")?;
-        Ok(Expression::Identifier(token.text.clone()))
+        self.parse_assignment()
+        // let token = self.consume(TokenType::IDENTIFIER, "Expect expression.")?;
+        // Ok(Expression::Identifier(token.text.clone()))
     }
 
     fn parse_assignment(&mut self) -> Result<Expression, ParserError> {
-       todo!()
+        let expr = self.parse_or()?;
+
+        if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
+            let value = self.parse_assignment()?;
+            // Vérifiez si l'expression de gauche est une variable valide
+            match expr {
+                Expression::Identifier(name) => {
+                    Ok(Expression::BinaryOperation(BinaryOperation {
+                        left: Box::new(Expression::Identifier(name)),
+                        operator: Operator::Equal,
+                        right: Box::new(value),
+                    }))
+                },
+                _ => Err(self.create_error(ParserErrorType::InvalidAssignmentTarget)),
+            }
+        } else {
+            Ok(expr)
+        }
     }
 
     fn parse_or(&mut self) -> Result<Expression, ParserError> {
@@ -277,9 +299,23 @@ impl Parser {
         todo!()
     }
 
-    fn parse_primary(&mut self) -> Result<Expression, ParserError> {
-     todo!()
-    }
+    // fn parse_primary(&mut self) -> Result<Expression, ParserError> {
+    //     if self.match_token(&[TokenType::INTEGER]) {
+    //         // Gérez les littéraux entiers
+    //     } else if self.match_token(&[TokenType::FLOAT]) {
+    //         // Gérez les littéraux flottants
+    //     } else if self.match_token(&[TokenType::STRING]) {
+    //         // Gérez les littéraux de chaîne
+    //     } else if self.match_token(&[TokenType::IDENTIFIER]) {
+    //         Ok(Expression::Identifier(self.previous().text.clone()))
+    //     } else if self.match_token(&[TokenType::DELIMITER(Delimiters::LPAR)]) {
+    //         let expr = self.parse_expression()?;
+    //         self.consume(TokenType::DELIMITER(Delimiters::RPAR), "Expect ')' after expression.")?;
+    //         Ok(expr)
+    //     } else {
+    //         Err(self.create_error(ParserErrorType::ExpectedExpression))
+    //     }
+    // }
 
 
     // Methode Utilitaire
@@ -325,17 +361,16 @@ impl Parser {
         false
     }
 
-
-    // fn expect(&mut self, token_type: TokenType) -> Result<&Token, ParserError> {
-    //     if self.check(token_type.clone()) {
-    //         Ok(self.advance())
-    //     } else {
-    //         Err(self.create_error(ParserErrorType::UnexpectedToken {
-    //             expected: token_type,
-    //             found: self.peek().token_type.clone(),
-    //         }))
-    //     }
-    // }
+    fn expect(&mut self, token_type: TokenType) -> Result<&Token, ParserError> {
+        if self.check(&token_type) {
+            Ok(self.advance())
+        } else {
+            Err(self.create_error(ParserErrorType::UnexpectedToken {
+                expected: token_type,
+                found: self.peek().token_type.clone(),
+            }))
+        }
+    }
 
     fn create_error(&self, error_type: ParserErrorType) -> ParserError {
         ParserError::new(
@@ -355,12 +390,12 @@ impl Parser {
         self.create_error(ParserErrorType::IndentationError)
     }
 
-    fn consume(&mut self, token_type: TokenType, message: &str) -> Result<&Token, ParserError> {
-        if self.check(&token_type) {
+    fn consume(&mut self, token_type: &TokenType, _message: &str) -> Result<&Token, ParserError> {
+        if self.check(token_type) {
             Ok(self.advance())
         } else {
             Err(self.create_error(ParserErrorType::UnexpectedToken {
-                expected: token_type,
+                expected: token_type.clone(),
                 found: self.peek().token_type.clone(),
             }))
         }

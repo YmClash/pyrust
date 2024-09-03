@@ -25,6 +25,8 @@ pub enum  ParserErrorType{
     UnexpectedEOF,
     IndentationError,
     BraceError,
+    InvalidAssignmentTarget,
+    ExpectedExpression,
 }
 
 // #[allow(dead_code)]
@@ -75,6 +77,8 @@ impl Display for ParserErrorType {
             ParserErrorType::UnexpectedEOF => write!(f, "UnexpectedEOF"),
             ParserErrorType::IndentationError => write!(f, "IndentationError"),
             ParserErrorType::BraceError => write!(f, "BraceError"),
+            ParserErrorType::InvalidAssignmentTarget => write!(f, "InvalidAssignmentTarget"),
+            ParserErrorType::ExpectedExpression => write!(f, "ExpectedExpression"),
         }
     }
 }
@@ -89,6 +93,8 @@ impl ParserError {
             ParserErrorType::UnexpectedEOF => "Unexpected end of file".to_string(),
             ParserErrorType::IndentationError => "Indentation error".to_string(),
             ParserErrorType::BraceError => "Mismatched braces".to_string(),
+            ParserErrorType::InvalidAssignmentTarget => "Invalid assignment target".to_string(),
+            ParserErrorType::ExpectedExpression => "Expected expression".to_string(),
             //ParserErrorType::InvalidExpression => "Invalid expression".to_string(),
         };
 
