@@ -1,6 +1,6 @@
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::lexer::lex::{Token, SyntaxMode};
-use crate::parser::ast::{ASTNode, Block, Statement, Expression, VariableDeclaration, Declaration, Function, IfStatement, WhileStatement, ForStatement, ReturnStatement, BinaryOperation, UnaryOperation, FunctionDeclaration};
+use crate::parser::ast::{ASTNode, Block, Statement, Expression, VariableDeclaration, Declaration, Function, IfStatement, WhileStatement, ForStatement, ReturnStatement, BinaryOperation, UnaryOperation, FunctionDeclaration, Parameters};
 use crate::tok::{TokenType, Keywords, Operators, Delimiters};
 
 pub struct Parser {
@@ -29,12 +29,23 @@ impl Parser {
     }
     fn parse_block(&mut self) -> Result<Block, ParserError> {
         match self.syntax_mode {
-            SyntaxMode::Indentation => self.parse_mode_indentation(),
-            SyntaxMode::Braces => self.parse_mode_brace(),
+            SyntaxMode::Indentation => self.parse_indented_block(), // changer  de  nom plus tard
+            SyntaxMode::Braces => self.parse_braced_block(),        //  changer  de  nom plus tard
         }
     }
-    //
+
+    fn parse_indented_block(&mut self) -> Result<Block, ParserError> {
+        // Implémentez la logique pour un bloc indenté ici
+        todo!("Implement indented block parsing")
+    }
+
+    fn parse_braced_block(&mut self) -> Result<Block, ParserError> {
+        // Implémentez la logique pour un bloc avec accolades ici
+        todo!("Implement braced block parsing")
+    }
+
     // fn parse_mode_indentation(&mut self) -> Result<Block, ParserError> {
+    //     todo!();
     //
     //     self.expect(TokenType::INDENT)?;
     //     let indent_level = self.current_indent_level();
@@ -58,6 +69,8 @@ impl Parser {
     //
     // fn parse_mode_brace(&mut self) -> Result<Block, ParserError> {
     //
+    //
+    //
     //     let opening_brace = self.expect(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
     //     let mut statements = Vec::new();
     //
@@ -75,8 +88,29 @@ impl Parser {
     //     })
     // }
 
-    fn parse_parameters(&mut self) -> Result<Vec<(String, Option<String>)>, ParserError> {
-        todo!()
+    fn parse_parameters(&mut self) -> Result<Vec<Parameters>, ParserError> {
+        let mut parameters = Vec::new();
+
+        if !self.check(&TokenType::DELIMITER(Delimiters::RPAR)) {
+            loop {
+                let name = self.consume(TokenType::IDENTIFIER, "Expected Parameter Name")?;
+                let type_annotation = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
+                    Some(self.consume(TokenType::IDENTIFIER, "Expected Parameter Type")?.text.clone())
+                } else {
+                    None
+                };
+                parameters.push(Parameters {
+                    name: name.text.clone(),
+                    parameter_type: type_annotation,
+                });
+
+                if !self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]) {
+                    break;
+                }
+            }
+        }
+
+        Ok(parameters)
     }
 
     fn parse_type_annotation(&mut self) -> Result<Option<String>, ParserError> {
@@ -108,10 +142,11 @@ impl Parser {
     }
 
     fn parse_variable_declaration(&mut self) -> Result<ASTNode, ParserError> {
-        let name = self.consume(&TokenType::IDENTIFIER , "Expected variable name")?;
+        let name = self.consume(TokenType::IDENTIFIER, "Expected variable name")?;
         let mut type_annotation = None;
+
         if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
-            type_annotation = Some(self.consume(&TokenType::IDENTIFIER , "Expected type annotation':'")?.text.clone());
+            type_annotation = Some(self.consume(TokenType::IDENTIFIER, "Expected type annotation")?.text.clone());
         }
 
         let initializer = if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
@@ -120,39 +155,36 @@ impl Parser {
             None
         };
 
-        self.consume(&TokenType::DELIMITER(Delimiters::SEMICOLON), "Expected ';' after variable declaration")?;
+        self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON), "Expected ';' after variable declaration")?;
 
-        Ok(ASTNode::Declaration(Declaration::Variable(VariableDeclaration{
-            mutable: false,
+        Ok(ASTNode::Declaration(Declaration::Variable(VariableDeclaration {
             name: name.text.clone(),
             variable_type: type_annotation,
-            value:initializer ,
-
+            value: initializer,
+            mutable: false, // Vous pouvez ajouter la gestion de la mutabilité plus tard
         })))
-
     }
 
     fn parse_function_declaration(&mut self) -> Result<ASTNode, ParserError> {
-        let name = self.consume(&TokenType::IDENTIFIER , "Expected function name")?;
-        self.consume(&TokenType::DELIMITER(Delimiters::LPAR), "Expected '(' after function name")?;
+        let name = self.consume(TokenType::IDENTIFIER, "Expect function name.")?;
+        self.consume(TokenType::DELIMITER(Delimiters::LPAR), "Expect '(' after function name.")?;
         let parameters = self.parse_parameters()?;
-        self.consume(&TokenType::DELIMITER(Delimiters::RPAR), "Expected ')' after function parameters")?;
+        self.consume(TokenType::DELIMITER(Delimiters::RPAR), "Expect ')' after parameters.")?;
 
         let return_type = if self.match_token(&[TokenType::OPERATOR(Operators::RARROW)]) {
-            Some(self.consume(&TokenType::IDENTIFIER , "Expected return type after '->'")?.text.clone())
+            Some(self.consume(TokenType::IDENTIFIER, "Expect return type after '->'.")?.text.clone())
         } else {
             None
         };
 
         let body = self.parse_block()?;
-        Ok(ASTNode::Declaration(Declaration::Function(FunctionDeclaration{
-                name: name.text.clone(),
-                parameter: parameters,
-                return_type,
-                block: body,
-            },
 
-        )))
+        Ok(ASTNode::Declaration(Declaration::Function(FunctionDeclaration {
+            name: name.text.clone(),
+            parameter: parameters,
+            return_type,
+            block: body,
+        })))
     }
 
     fn parse_struct_declaration(&mut self) -> Result<ASTNode, ParserError> {
@@ -204,9 +236,8 @@ impl Parser {
 
 
     fn parse_expression(&mut self) -> Result<Expression, ParserError> {
-        let token = self.consume(&TokenType::IDENTIFIER, "Expect expression.")?;
-        todo!()
-        //self.parse_assignment()
+        let token = self.consume(TokenType::IDENTIFIER, "Expect expression.")?;
+        Ok(Expression::Identifier(token.text.clone()))
     }
 
     fn parse_assignment(&mut self) -> Result<Expression, ParserError> {
@@ -324,12 +355,12 @@ impl Parser {
         self.create_error(ParserErrorType::IndentationError)
     }
 
-    fn consume(&mut self, token_type: &TokenType, message: &str) -> Result<&Token, ParserError> {
-        if self.check(token_type) {
+    fn consume(&mut self, token_type: TokenType, message: &str) -> Result<&Token, ParserError> {
+        if self.check(&token_type) {
             Ok(self.advance())
         } else {
             Err(self.create_error(ParserErrorType::UnexpectedToken {
-                expected: token_type.clone(),
+                expected: token_type,
                 found: self.peek().token_type.clone(),
             }))
         }

@@ -88,10 +88,10 @@ pub enum Declaration{
 #[allow(dead_code)]
 #[derive(Debug,Clone)]
 pub struct VariableDeclaration{
-    pub mutable: bool,
     pub name: String,
     pub variable_type: Option<String>,
     pub value: Option<Expression>,
+    pub mutable: bool,
 }
 #[allow(dead_code)]
 #[derive(Debug,Clone)]
