@@ -11,7 +11,7 @@ fn main() {
 
     println!("Start Lexer");
 
-    let source_code = "let x = 10 ";
+    let source_code = "let x = 10";
 
     let mut lexer = Lexer::new(source_code, SyntaxMode::Indentation);
     let tokens = lexer.tokenize();
@@ -19,12 +19,10 @@ fn main() {
         println!("{:?}", token);
     }
 
-
-
-    let mut  parser = Parser::new(tokens, SyntaxMode::Indentation);
+    let mut parser = Parser::new(tokens, SyntaxMode::Indentation);
 
     match parser.parse() {
-        Ok(ast) => print_ast(ast),
+        Ok(ast) => println!("AST: {:?}", ast),
         Err(e) => println!("Error parsing: {}", e),
     }
 

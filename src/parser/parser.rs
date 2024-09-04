@@ -132,6 +132,9 @@ impl Parser {
     }
 
     fn parse_variable_declaration(&mut self) -> Result<ASTNode, ParserError> {
+        // consume 'let'
+        self.consume(&TokenType::KEYWORD(Keywords::LET), "Expected 'let' keyword")?;
+
         let name = self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expected variable name")?;
         let name_text = name.text.clone();
 
@@ -141,18 +144,32 @@ impl Parser {
             None
         };
 
-        let initializer = if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
-            Some(self.parse_expression()?)
-        } else {
-            None
-        };
+        self.consume(&TokenType::OPERATOR(Operators::EQUAL), "Expected '=' after variable name")?;
+        let initializer = self.parse_expression()?;
 
-        self.consume(&TokenType::DELIMITER(Delimiters::SEMICOLON), "Expected ';' after variable declaration")?;
+
+
+        // let name = self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expected variable name")?;
+        // let name_text = name.text.clone();
+        //
+        // let type_annotation = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
+        //     Some(self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expected type annotation")?.text.clone())
+        // } else {
+        //     None
+        // };
+        //
+        // let initializer = if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
+        //     Some(self.parse_expression()?)
+        // } else {
+        //     None
+        // };
+        //
+        // self.consume(&TokenType::DELIMITER(Delimiters::SEMICOLON), "Expected ';' after variable declaration")?;
 
         Ok(ASTNode::Declaration(Declaration::Variable(VariableDeclaration {
             name: name_text,
             variable_type: type_annotation,
-            value: initializer,
+            value:Some(initializer),//value: initializer,
             mutable: false,
         })))
     }
