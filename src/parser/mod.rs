@@ -1,9 +1,10 @@
 
 
-mod ast;
+pub mod ast;
 
-mod error;
+pub mod parser_error;
 
-mod parser;
+pub mod parser;
+
 
 

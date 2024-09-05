@@ -1,9 +1,11 @@
 pub mod lex;
 
 
-pub mod error;
-mod syntax_mode;
+pub mod lexer_error;
+//mod syntax_mode;
 pub mod tok;
+
+
 
 
 

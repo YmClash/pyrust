@@ -3,11 +3,19 @@ pub mod lexer;
 mod semantic;
 mod utils;
 mod codegen;
+pub mod parser;
 
 //mod ast;
 #[allow(dead_code)]
-pub use lexer::*;
-//pub use parser::*;
+pub use lexer::lex::Lexer;
+pub use lexer::tok;
+pub use lexer::lexer_error;
+pub use crate::lexer::lex::SyntaxMode;
+
+
+//pub use parser::parser;
+//pub use parser::ast;
+//pub use parser::error;
 
 
 

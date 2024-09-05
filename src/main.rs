@@ -1,53 +1,79 @@
 #![allow(dead_code)]
 #![allow(unused)]
+//use pyrust::parser::parser::Parser;
 
-//use ymcrust::{type_of};
-
-
-
-//mod lex;
-
-
-use pyrust::lex::{lox, Lexer, SyntaxMode};
+use pyrust::lexer::lex::Lexer;
+use pyrust::lexer::lex::SyntaxMode;
+use pyrust::parser::parser::Parser;
+use pyrust::parser::ast::{ASTNode,Declaration,VariableDeclaration};
 
 fn main() {
 
     println!("Start Lexer");
 
-    let code = r#"
-def example_function():
-    if True:
-        print("Indented")
-    else:
-        print("Also indented")
-        if False:
-            print("More indentation")
-    print("Back to first indentation level")
+    let source_code = "let";
 
-print("No indentation")
-"#;
-
-
-
-    let mut  nova = Lexer::new(code,SyntaxMode::Indentation);
-    let tokens = Lexer::tokenize(&mut nova);
-    for token in tokens {
+    let mut lexer = Lexer::new(source_code, SyntaxMode::Indentation);
+    let tokens = lexer.tokenize();
+    for token in &tokens {
         println!("{:?}", token);
     }
+
+    let mut parser = Parser::new(tokens, SyntaxMode::Indentation);
+
+    match parser.parse() {
+        Ok(ast) => println!("AST: {:?}", ast),
+        Err(e) => println!("Error parsing: {}", e),
+    }
+
 
     println!("Done");
     println!("Pyrust Compiler ");
     println!("By YmC")
 }
-//
-//
-//
-//     let code2 = r#"
-// def example():
-//     let x = 10
-//     if x > 5:
-//         print("Greater than 5")
-//     else:
-//         print("Less or equal to 5")
-//     let y = 20
-// "#;
+
+
+
+fn print_ast(ast: ASTNode) {
+    match ast {
+        ASTNode::Program(statements) => {
+            println!("Program:");
+            for statement in statements {
+                print_ast(statement);
+            }
+        },
+        ASTNode::Declaration(decl) => print_declaration(decl),
+        _ => println!("Unexpected node type"),
+    }
+}
+
+
+fn print_declaration(decl: Declaration) {
+    match decl {
+        Declaration::Variable(var) => print_variable_declaration(var),
+        _ => println!("Unexpected declaration type"),
+    }
+}
+
+fn print_variable_declaration(var: VariableDeclaration){
+    println!("Variable Declaration");
+    println!("Name: {}", var.name);
+    println!("Type: {:?}", var.variable_type);
+    println!("Value: {:?}", var.value);
+    println!("Mutable: {}", var.mutable);
+
+}
+
+
+
+/*
+// Exemple de code source
+    // //let syntax_mode = SyntaxMode::Braces; // Ou SyntaxMode::Indentation
+    // let mut lexer = Lexer::new(source_code, SyntaxMode::Braces);
+    // let tokens = lexer.tokenize();
+    // //let mut parser = Parser::new(tokens, syntax_mode);
+    //
+    // match parser.parse() {
+    //     Ok(ast) => println!("{:?}", ast),
+    //     Err(e) => eprintln!("Error parsing: {}", e),
+    // }*/

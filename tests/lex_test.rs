@@ -1,13 +1,15 @@
 use pyrust::lexer::lex::Lexer;
 use pyrust::lexer::tok::{TokenType, Keywords, Operators, Delimiters, StringKind};
-use pyrust::error::{LexerError, Position, LexerErrorType};
+use pyrust::lexer_error::{LexerError, Position, LexerErrorType};
 use num_bigint::BigInt;
+
 
 
 
 #[cfg(test)]
 mod tests {
-    use pyrust::lex::SyntaxMode;
+    //use pyrust::lex::SyntaxMode;
+    use pyrust::lexer::lex::SyntaxMode;
     use super::*;
 
     // Test pour les nombres
