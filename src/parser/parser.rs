@@ -1,7 +1,7 @@
 #[allow(dead_code)]
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::lexer::lex::{Token, SyntaxMode};
-use crate::parser::ast::{ASTNode, Block, Statement, Expression, VariableDeclaration, Declaration,/* Function, IfStatement, WhileStatement, ForStatement, ReturnStatement,  UnaryOperation,*/BinaryOperation ,FunctionDeclaration, Parameters, Operator};
+use crate::parser::ast::{ASTNode, Block, Statement, Expression, VariableDeclaration, Declaration, BinaryOperation, FunctionDeclaration, Parameters, Operator, Literal};
 use crate::tok::{TokenType, Keywords, Operators, Delimiters};
 
 pub struct Parser {
@@ -135,18 +135,15 @@ impl Parser {
         // consume 'let'
         self.consume(&TokenType::KEYWORD(Keywords::LET), "Expected 'let' keyword")?;
 
+        // Consommer l'identificateur
         let name = self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expected variable name")?;
         let name_text = name.text.clone();
 
-        let type_annotation = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
-            Some(self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expected type annotation")?.text.clone())
-        } else {
-            None
-        };
-
+        // Consommer le signe égal
         self.consume(&TokenType::OPERATOR(Operators::EQUAL), "Expected '=' after variable name")?;
-        let initializer = self.parse_expression()?;
 
+        // Analyser l'expression d'initialisation
+        let initializer = self.parse_expression()?;
 
 
         // let name = self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expected variable name")?;
@@ -168,7 +165,7 @@ impl Parser {
 
         Ok(ASTNode::Declaration(Declaration::Variable(VariableDeclaration {
             name: name_text,
-            variable_type: type_annotation,
+            variable_type:None,// type_annotation,
             value:Some(initializer),//value: initializer,
             mutable: false,
         })))
@@ -257,7 +254,15 @@ impl Parser {
 
 
     fn parse_expression(&mut self) -> Result<Expression, ParserError> {
-        self.parse_assignment()
+        if  let TokenType::INTEGER { value} = &self.peek().token_type{
+            let value = value.clone();
+            self.advance();
+            Ok(Expression::Literal(Literal::Integer {value}))
+        } else {
+            Err(self.create_error(ParserErrorType::ExpectedExpression))
+        }
+
+        //self.parse_assignment()
         // let token = self.consume(TokenType::IDENTIFIER, "Expect expression.")?;
         // Ok(Expression::Identifier(token.text.clone()))
     }
