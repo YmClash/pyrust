@@ -1,446 +1,534 @@
+use num_bigint::BigInt;
 #[allow(dead_code)]
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::lexer::lex::{Token, SyntaxMode};
-use crate::parser::ast::{ASTNode, Block, Statement, Expression, VariableDeclaration, Declaration, BinaryOperation, FunctionDeclaration, Parameters, Operator, Literal};
+use crate::parser::ast::{ASTNode, Block, Statement, Expression, VariableDeclaration, Declaration, BinaryOperation, FunctionDeclaration, Parameters, Operator, Literal, Identifier};
 use crate::tok::{TokenType, Keywords, Operators, Delimiters};
+//
+// pub struct Parser {
+//     tokens: Vec<Token>,
+//     current: usize,
+//     syntax_mode: SyntaxMode,
+//     indent_stack: Vec<usize>,
+// }
+//
+// impl Parser {
+//     pub fn new(tokens: Vec<Token>, syntax_mode: SyntaxMode) -> Self {
+//         Parser {
+//             tokens,
+//             current: 0,
+//             syntax_mode,
+//             indent_stack: vec![0],
+//         }
+//     }
+//
+//     pub fn parse(&mut self) -> Result<ASTNode, ParserError> {
+//         let mut statements = Vec::new();
+//         while !self.is_at_end() {
+//             statements.push(self.parse_declaration()?);
+//         }
+//         Ok(ASTNode::Program(statements))
+//     }
+//     fn parse_block(&mut self) -> Result<Block, ParserError> {
+//         match self.syntax_mode {
+//             SyntaxMode::Indentation => self.parse_indented_block(), // changer  de  nom plus tard
+//             SyntaxMode::Braces => self.parse_braced_block(),        //  changer  de  nom plus tard
+//         }
+//     }
+//
+//     fn parse_indented_block(&mut self) -> Result<Block, ParserError> {
+//         self.expect(TokenType::INDENT)?;
+//         let indent_level = self.current_indent_level();
+//         self.indent_stack.push(indent_level);
+//
+//         let mut statements = Vec::new();
+//         while !self.check(&TokenType::DEDENT) && !self.is_at_end() {
+//             statements.push(self.parse_statement()?);
+//         }
+//
+//         self.expect(TokenType::DEDENT)?;
+//         self.indent_stack.pop();
+//
+//         Ok(Block {
+//             statements,
+//             syntax_mode: SyntaxMode::Indentation,
+//             indent_level: Some(indent_level),
+//             braces: None,
+//         })
+//     }
+//
+//     fn current_indent_level(&self) -> usize {
+//         *self.indent_stack.last().unwrap_or(&0)
+//     }
+//     fn parse_braced_block(&mut self) -> Result<Block, ParserError> {
+//         self.expect(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
+//
+//         let mut statements = Vec::new();
+//         while !self.check(&TokenType::DELIMITER(Delimiters::RCURBRACE)) && !self.is_at_end() {
+//             statements.push(self.parse_statement()?);
+//         }
+//
+//         self.expect(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+//
+//         Ok(Block {
+//             statements,
+//             syntax_mode: SyntaxMode::Braces,
+//             indent_level: None,
+//             braces: None, // Nous ne stockons plus les tokens ici
+//         })
+//     }
+//
+//     fn parse_parameters(&mut self) -> Result<Vec<Parameters>, ParserError> {
+//         let mut parameters = Vec::new();
+//
+//         while !self.check(&TokenType::DELIMITER(Delimiters::RPAR)) {
+//             let name = self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expected Parameter Name")?;
+//             let name_text = name.text.clone();
+//
+//             let type_annotation = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
+//                 Some(self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expected Parameter Type")?.text.clone())
+//             } else {
+//                 None
+//             };
+//
+//             parameters.push(Parameters {
+//                 name: name_text,
+//                 parameter_type: type_annotation,
+//             });
+//
+//             if !self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]) {
+//                 break;
+//             }
+//         }
+//
+//         Ok(parameters)
+//     }
+//
+//     fn parse_type_annotation(&mut self) -> Result<Option<String>, ParserError> {
+//         todo!()
+//     }
+//
+//     fn parse_string_literal(&mut self) -> Result<Expression, ParserError> {
+//         todo!()
+//     }
+//
+//     fn parse_number_literal(&mut self) -> Result<Expression, ParserError> {
+//         todo!()
+//     }
+//
+//
+//     fn parse_declaration(&mut self) -> Result<ASTNode, ParserError> {
+//         if self.match_token(&[TokenType::KEYWORD(Keywords::LET)]){
+//             self.parse_variable_declaration()
+//         } else if self.match_token(&[TokenType::KEYWORD(Keywords::FN)]) {
+//             self.parse_function_declaration()
+//         } else if self.match_token(&[TokenType::KEYWORD(Keywords::STRUCT)]){
+//             self.parse_struct_declaration()
+//         } else if self.match_token(&[TokenType::KEYWORD(Keywords::CLASS)]){
+//             self.parse_class_declaration()
+//         } else {
+//             self.parse_statement().map(ASTNode::Statement)
+//         }
+//
+//     }
+//
+//     fn parse_variable_declaration(&mut self) -> Result<ASTNode, ParserError> {
+//         // consume 'let'
+//         self.consume(&TokenType::KEYWORD(Keywords::LET), "Expected 'let' keyword")?;
+//
+//         // Consommer l'identificateur
+//         let name = self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expected variable name")?;
+//         let name_text = name.text.clone();
+//
+//         // Consommer le signe égal
+//         self.consume(&TokenType::OPERATOR(Operators::EQUAL), "Expected '=' after variable name")?;
+//
+//         // Analyser l'expression d'initialisation
+//         let initializer = self.parse_expression()?;
+//
+//
+//         // let name = self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expected variable name")?;
+//         // let name_text = name.text.clone();
+//         //
+//         // let type_annotation = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
+//         //     Some(self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expected type annotation")?.text.clone())
+//         // } else {
+//         //     None
+//         // };
+//         //
+//         // let initializer = if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
+//         //     Some(self.parse_expression()?)
+//         // } else {
+//         //     None
+//         // };
+//         //
+//         // self.consume(&TokenType::DELIMITER(Delimiters::SEMICOLON), "Expected ';' after variable declaration")?;
+//
+//         Ok(ASTNode::Declaration(Declaration::Variable(VariableDeclaration {
+//             name: name_text,
+//             variable_type:None,// type_annotation,
+//             value:Some(initializer),//value: initializer,
+//             mutable: false,
+//         })))
+//     }
+//
+//     fn parse_function_declaration(&mut self) -> Result<ASTNode, ParserError> {
+//         let name = self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expect function name.")?;
+//         let name_text = name.text.clone();
+//
+//         self.consume(&TokenType::DELIMITER(Delimiters::LPAR), "Expect '(' after function name.")?;
+//         let parameters = self.parse_parameters()?;
+//         self.consume(&TokenType::DELIMITER(Delimiters::RPAR), "Expect ')' after parameters.")?;
+//
+//         let return_type = if self.match_token(&[TokenType::OPERATOR(Operators::RARROW)]) {
+//             Some(self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expect return type after '->'.")?.text.clone())
+//         } else {
+//             None
+//         };
+//
+//         let body = self.parse_block()?;
+//
+//         Ok(ASTNode::Declaration(Declaration::Function(FunctionDeclaration {
+//             name: name_text,
+//             parameter: parameters,
+//             return_type,
+//             block: body,
+//         })))
+//     }
+//
+//     fn parse_struct_declaration(&mut self) -> Result<ASTNode, ParserError> {
+//         todo!()
+//     }
+//     fn parse_class_declaration(&mut self) -> Result<ASTNode, ParserError> {
+//         todo!()
+//     }
+//
+//     fn parse_enum_declaration(&mut self) -> Result<ASTNode, ParserError> {
+//         todo!()
+//     }
+//
+//     fn parse_statement(&mut self) -> Result<Statement, ParserError> {
+//         Ok(if self.match_token(&[TokenType::KEYWORD(Keywords::IF)]) {
+//             self.parse_if_statement()
+//         } else if self.match_token(&[TokenType::KEYWORD(Keywords::WHILE)]) {
+//             self.parse_while_statement()
+//         } else if self.match_token(&[TokenType::KEYWORD(Keywords::FOR)]) {
+//             self.parse_for_statement()
+//         } else if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]) {
+//             self.parse_return_statement()
+//         } else {
+//             self.parse_expression_statement()
+//         }.expect("Error parsing statement"))
+//     }
+//
+//     fn parse_if_statement(&mut self) -> Result<Statement, ParserError> {
+//        todo!()
+//     }
+//
+//     fn parse_while_statement(&mut self) -> Result<Statement, ParserError> {
+//         todo!()
+//         // self.advance(); // Consume 'while'
+//         // let condition = self.parse_expression()?;
+//         // let body = self.parse_block()?;
+//         //
+//         // Ok(Statement::While(WhileStatement { condition, block: body }))
+//     }
+//
+//     fn parse_for_statement(&mut self) -> Result<Statement, ParserError> {
+//      todo!()
+//     }
+//
+//     fn parse_return_statement(&mut self) -> Result<Statement, ParserError> {
+//         todo!()
+//     }
+//
+//     fn parse_expression_statement(&mut self) -> Result<Statement, ParserError> {
+//         todo!()
+//         // let expr = self.parse_expression()?;
+//         // self.expect(TokenType:: DELIMITER(Delimiters::SEMICOLON))?;
+//         // Ok(Statement::Expression(expr))
+//     }
+//
+//
+//
+//
+//
+//
+//     fn parse_expression(&mut self) -> Result<Expression, ParserError> {
+//         if  let TokenType::INTEGER { value} = &self.peek().token_type{
+//             let value = value.clone();
+//             self.advance();
+//             Ok(Expression::Literal(Literal::Integer {value}))
+//         } else {
+//             Err(self.create_error(ParserErrorType::ExpectedExpression))
+//         }
+//
+//         //self.parse_assignment()
+//         // let token = self.consume(TokenType::IDENTIFIER, "Expect expression.")?;
+//         // Ok(Expression::Identifier(token.text.clone()))
+//     }
+//
+//     fn parse_assignment(&mut self) -> Result<Expression, ParserError> {
+//         let expr = self.parse_or()?;
+//
+//         if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
+//             let value = self.parse_assignment()?;
+//             // Vérifiez si l'expression de gauche est une variable valide
+//             match expr {
+//                 Expression::Identifier(name) => {
+//                     Ok(Expression::BinaryOperation(BinaryOperation {
+//                         left: Box::new(Expression::Identifier(name)),
+//                         operator: Operator::Equal,
+//                         right: Box::new(value),
+//                     }))
+//                 },
+//                 _ => Err(self.create_error(ParserErrorType::InvalidAssignmentTarget)),
+//             }
+//         } else {
+//             Ok(expr)
+//         }
+//     }
+//
+//     fn parse_or(&mut self) -> Result<Expression, ParserError> {
+//         todo!()
+//     }
+//
+//     fn parse_and(&mut self) -> Result<Expression, ParserError> {
+//         todo!()
+//     }
+//
+//     fn binary_op(&mut self) -> Result<Expression, ParserError> {
+//         todo!()
+//     }
+//
+//
+//     fn parse_equality(&mut self) -> Result<Expression, ParserError> {
+//         todo!()
+//     }
+//
+//     fn parse_comparison(&mut self) -> Result<Expression, ParserError> {
+//         todo!()
+//     }
+//
+//     fn parse_term(&mut self) -> Result<Expression, ParserError> {
+//         todo!()
+//     }
+//
+//     fn parse_factor(&mut self) -> Result<Expression, ParserError> {
+//         todo!()
+//     }
+//
+//     fn parse_unary(&mut self) -> Result<Expression, ParserError> {
+//         todo!()
+//     }
+//
+//     // fn parse_primary(&mut self) -> Result<Expression, ParserError> {
+//     //     if self.match_token(&[TokenType::INTEGER]) {
+//     //         // Gérez les littéraux entiers
+//     //     } else if self.match_token(&[TokenType::FLOAT]) {
+//     //         // Gérez les littéraux flottants
+//     //     } else if self.match_token(&[TokenType::STRING]) {
+//     //         // Gérez les littéraux de chaîne
+//     //     } else if self.match_token(&[TokenType::IDENTIFIER]) {
+//     //         Ok(Expression::Identifier(self.previous().text.clone()))
+//     //     } else if self.match_token(&[TokenType::DELIMITER(Delimiters::LPAR)]) {
+//     //         let expr = self.parse_expression()?;
+//     //         self.consume(TokenType::DELIMITER(Delimiters::RPAR), "Expect ')' after expression.")?;
+//     //         Ok(expr)
+//     //     } else {
+//     //         Err(self.create_error(ParserErrorType::ExpectedExpression))
+//     //     }
+//     // }
+//
+//
+//     // Methode Utilitaire
+//
+//     fn advance(&mut self) -> &Token {
+//         if !self.is_at_end() {
+//             self.current += 1;
+//         }
+//         self.previous()
+//     }
+//
+//     fn is_at_end(&self) -> bool {
+//         self.peek().token_type == TokenType::EOF
+//     }
+//
+//     fn peek(&self) -> &Token {
+//         &self.tokens[self.current]
+//     }
+//
+//     fn previous(&self) -> &Token {
+//         &self.tokens[self.current - 1]
+//     }
+//
+//     fn check(&self, token_type: &TokenType) -> bool {
+//         if self.is_at_end() {
+//             false
+//         } else {
+//             &self.peek().token_type == token_type
+//         }
+//     }
+//
+//     fn synchronize(){
+//         todo!()
+//     }
+//
+//     fn match_token(&mut self, token_types: &[TokenType]) -> bool {
+//         for token_type in token_types {
+//             if self.check(token_type) {
+//                 self.advance();
+//                 return true;
+//             }
+//         }
+//         false
+//     }
+//
+//     fn expect(&mut self, token_type: TokenType) -> Result<&Token, ParserError> {
+//         if self.check(&token_type) {
+//             Ok(self.advance())
+//         } else {
+//             Err(self.create_error(ParserErrorType::UnexpectedToken {
+//                 expected: token_type,
+//                 found: self.peek().token_type.clone(),
+//             }))
+//         }
+//     }
+//
+//     fn create_error(&self, error_type: ParserErrorType) -> ParserError {
+//         ParserError::new(
+//             error_type,
+//             Position {
+//                 line: self.peek().line,
+//                 column: self.peek().column,
+//             },
+//         )
+//     }
+//
+//     fn unexpected_eof_error(&self) -> ParserError {
+//         self.create_error(ParserErrorType::UnexpectedEOF)
+//     }
+//
+//     fn indentation_error(&self) -> ParserError {
+//         self.create_error(ParserErrorType::IndentationError)
+//     }
+//
+//     fn consume(&mut self, token_type: &TokenType, _message: &str) -> Result<&Token, ParserError> {
+//         if self.check(token_type) {
+//             Ok(self.advance())
+//         } else {
+//             Err(self.create_error(ParserErrorType::UnexpectedToken {
+//                 expected: token_type.clone(),
+//                 found: self.peek().token_type.clone(),
+//             }))
+//         }
+//     }
+//
+//
+//     fn current_token(&self) -> Option<&Token> {
+//         self.tokens.get(self.current)
+//     }
+//
+//
+// }
+//
+//
+// //by YmC
+//
 
-pub struct Parser {
-    tokens: Vec<Token>,
-    current: usize,
-    syntax_mode: SyntaxMode,
-    indent_stack: Vec<usize>,
+
+
+//////////////////////Debut///////////////////////////
+
+pub struct Parser{
+    tokens: Vec<Token>, // liste des tokens genere par le lexer
+    current: usize // index du token actuel
 }
 
 impl Parser {
-    pub fn new(tokens: Vec<Token>, syntax_mode: SyntaxMode) -> Self {
-        Parser {
+    pub fn new(tokens:Vec<Token>) -> Self{
+        Parser{
             tokens,
-            current: 0,
-            syntax_mode,
-            indent_stack: vec![0],
+            current: 0
         }
     }
 
-    pub fn parse(&mut self) -> Result<ASTNode, ParserError> {
-        let mut statements = Vec::new();
-        while !self.is_at_end() {
-            statements.push(self.parse_declaration()?);
-        }
-        Ok(ASTNode::Program(statements))
-    }
-    fn parse_block(&mut self) -> Result<Block, ParserError> {
-        match self.syntax_mode {
-            SyntaxMode::Indentation => self.parse_indented_block(), // changer  de  nom plus tard
-            SyntaxMode::Braces => self.parse_braced_block(),        //  changer  de  nom plus tard
-        }
-    }
-
-    fn parse_indented_block(&mut self) -> Result<Block, ParserError> {
-        self.expect(TokenType::INDENT)?;
-        let indent_level = self.current_indent_level();
-        self.indent_stack.push(indent_level);
-
-        let mut statements = Vec::new();
-        while !self.check(&TokenType::DEDENT) && !self.is_at_end() {
-            statements.push(self.parse_statement()?);
-        }
-
-        self.expect(TokenType::DEDENT)?;
-        self.indent_stack.pop();
-
-        Ok(Block {
-            statements,
-            syntax_mode: SyntaxMode::Indentation,
-            indent_level: Some(indent_level),
-            braces: None,
-        })
-    }
-
-    fn current_indent_level(&self) -> usize {
-        *self.indent_stack.last().unwrap_or(&0)
-    }
-    fn parse_braced_block(&mut self) -> Result<Block, ParserError> {
-        self.expect(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
-
-        let mut statements = Vec::new();
-        while !self.check(&TokenType::DELIMITER(Delimiters::RCURBRACE)) && !self.is_at_end() {
-            statements.push(self.parse_statement()?);
-        }
-
-        self.expect(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
-
-        Ok(Block {
-            statements,
-            syntax_mode: SyntaxMode::Braces,
-            indent_level: None,
-            braces: None, // Nous ne stockons plus les tokens ici
-        })
-    }
-
-    fn parse_parameters(&mut self) -> Result<Vec<Parameters>, ParserError> {
-        let mut parameters = Vec::new();
-
-        while !self.check(&TokenType::DELIMITER(Delimiters::RPAR)) {
-            let name = self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expected Parameter Name")?;
-            let name_text = name.text.clone();
-
-            let type_annotation = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
-                Some(self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expected Parameter Type")?.text.clone())
-            } else {
-                None
-            };
-
-            parameters.push(Parameters {
-                name: name_text,
-                parameter_type: type_annotation,
-            });
-
-            if !self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]) {
-                break;
-            }
-        }
-
-        Ok(parameters)
-    }
-
-    fn parse_type_annotation(&mut self) -> Result<Option<String>, ParserError> {
-        todo!()
-    }
-
-    fn parse_string_literal(&mut self) -> Result<Expression, ParserError> {
-        todo!()
-    }
-
-    fn parse_number_literal(&mut self) -> Result<Expression, ParserError> {
-        todo!()
-    }
-
-
-    fn parse_declaration(&mut self) -> Result<ASTNode, ParserError> {
-        if self.match_token(&[TokenType::KEYWORD(Keywords::LET)]){
-            self.parse_variable_declaration()
-        } else if self.match_token(&[TokenType::KEYWORD(Keywords::FN)]) {
-            self.parse_function_declaration()
-        } else if self.match_token(&[TokenType::KEYWORD(Keywords::STRUCT)]){
-            self.parse_struct_declaration()
-        } else if self.match_token(&[TokenType::KEYWORD(Keywords::CLASS)]){
-            self.parse_class_declaration()
-        } else {
-            self.parse_statement().map(ASTNode::Statement)
-        }
-
-    }
-
-    fn parse_variable_declaration(&mut self) -> Result<ASTNode, ParserError> {
-        // consume 'let'
-        self.consume(&TokenType::KEYWORD(Keywords::LET), "Expected 'let' keyword")?;
-
-        // Consommer l'identificateur
-        let name = self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expected variable name")?;
-        let name_text = name.text.clone();
-
-        // Consommer le signe égal
-        self.consume(&TokenType::OPERATOR(Operators::EQUAL), "Expected '=' after variable name")?;
-
-        // Analyser l'expression d'initialisation
-        let initializer = self.parse_expression()?;
-
-
-        // let name = self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expected variable name")?;
-        // let name_text = name.text.clone();
-        //
-        // let type_annotation = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
-        //     Some(self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expected type annotation")?.text.clone())
-        // } else {
-        //     None
-        // };
-        //
-        // let initializer = if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
-        //     Some(self.parse_expression()?)
-        // } else {
-        //     None
-        // };
-        //
-        // self.consume(&TokenType::DELIMITER(Delimiters::SEMICOLON), "Expected ';' after variable declaration")?;
-
-        Ok(ASTNode::Declaration(Declaration::Variable(VariableDeclaration {
-            name: name_text,
-            variable_type:None,// type_annotation,
-            value:Some(initializer),//value: initializer,
-            mutable: false,
-        })))
-    }
-
-    fn parse_function_declaration(&mut self) -> Result<ASTNode, ParserError> {
-        let name = self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expect function name.")?;
-        let name_text = name.text.clone();
-
-        self.consume(&TokenType::DELIMITER(Delimiters::LPAR), "Expect '(' after function name.")?;
-        let parameters = self.parse_parameters()?;
-        self.consume(&TokenType::DELIMITER(Delimiters::RPAR), "Expect ')' after parameters.")?;
-
-        let return_type = if self.match_token(&[TokenType::OPERATOR(Operators::RARROW)]) {
-            Some(self.consume(&TokenType::IDENTIFIER { name: String::new() }, "Expect return type after '->'.")?.text.clone())
-        } else {
-            None
-        };
-
-        let body = self.parse_block()?;
-
-        Ok(ASTNode::Declaration(Declaration::Function(FunctionDeclaration {
-            name: name_text,
-            parameter: parameters,
-            return_type,
-            block: body,
-        })))
-    }
-
-    fn parse_struct_declaration(&mut self) -> Result<ASTNode, ParserError> {
-        todo!()
-    }
-    fn parse_class_declaration(&mut self) -> Result<ASTNode, ParserError> {
-        todo!()
-    }
-
-    fn parse_enum_declaration(&mut self) -> Result<ASTNode, ParserError> {
-        todo!()
-    }
-
-    fn parse_statement(&mut self) -> Result<Statement, ParserError> {
-        Ok(if self.match_token(&[TokenType::KEYWORD(Keywords::IF)]) {
-            self.parse_if_statement()
-        } else if self.match_token(&[TokenType::KEYWORD(Keywords::WHILE)]) {
-            self.parse_while_statement()
-        } else if self.match_token(&[TokenType::KEYWORD(Keywords::FOR)]) {
-            self.parse_for_statement()
-        } else if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]) {
-            self.parse_return_statement()
-        } else {
-            self.parse_expression_statement()
-        }.expect("Error parsing statement"))
-    }
-
-    fn parse_if_statement(&mut self) -> Result<Statement, ParserError> {
-       todo!()
-    }
-
-    fn parse_while_statement(&mut self) -> Result<Statement, ParserError> {
-        todo!()
-        // self.advance(); // Consume 'while'
-        // let condition = self.parse_expression()?;
-        // let body = self.parse_block()?;
-        //
-        // Ok(Statement::While(WhileStatement { condition, block: body }))
-    }
-
-    fn parse_for_statement(&mut self) -> Result<Statement, ParserError> {
-     todo!()
-    }
-
-    fn parse_return_statement(&mut self) -> Result<Statement, ParserError> {
-        todo!()
-    }
-
-    fn parse_expression_statement(&mut self) -> Result<Statement, ParserError> {
-        todo!()
-        // let expr = self.parse_expression()?;
-        // self.expect(TokenType:: DELIMITER(Delimiters::SEMICOLON))?;
-        // Ok(Statement::Expression(expr))
-    }
-
-
-
-
-
-
-    fn parse_expression(&mut self) -> Result<Expression, ParserError> {
-        if  let TokenType::INTEGER { value} = &self.peek().token_type{
-            let value = value.clone();
-            self.advance();
-            Ok(Expression::Literal(Literal::Integer {value}))
-        } else {
-            Err(self.create_error(ParserErrorType::ExpectedExpression))
-        }
-
-        //self.parse_assignment()
-        // let token = self.consume(TokenType::IDENTIFIER, "Expect expression.")?;
-        // Ok(Expression::Identifier(token.text.clone()))
-    }
-
-    fn parse_assignment(&mut self) -> Result<Expression, ParserError> {
-        let expr = self.parse_or()?;
-
-        if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
-            let value = self.parse_assignment()?;
-            // Vérifiez si l'expression de gauche est une variable valide
-            match expr {
-                Expression::Identifier(name) => {
-                    Ok(Expression::BinaryOperation(BinaryOperation {
-                        left: Box::new(Expression::Identifier(name)),
-                        operator: Operator::Equal,
-                        right: Box::new(value),
-                    }))
-                },
-                _ => Err(self.create_error(ParserErrorType::InvalidAssignmentTarget)),
-            }
-        } else {
-            Ok(expr)
-        }
-    }
-
-    fn parse_or(&mut self) -> Result<Expression, ParserError> {
-        todo!()
-    }
-
-    fn parse_and(&mut self) -> Result<Expression, ParserError> {
-        todo!()
-    }
-
-    fn binary_op(&mut self) -> Result<Expression, ParserError> {
-        todo!()
-    }
-
-
-    fn parse_equality(&mut self) -> Result<Expression, ParserError> {
-        todo!()
-    }
-
-    fn parse_comparison(&mut self) -> Result<Expression, ParserError> {
-        todo!()
-    }
-
-    fn parse_term(&mut self) -> Result<Expression, ParserError> {
-        todo!()
-    }
-
-    fn parse_factor(&mut self) -> Result<Expression, ParserError> {
-        todo!()
-    }
-
-    fn parse_unary(&mut self) -> Result<Expression, ParserError> {
-        todo!()
-    }
-
-    // fn parse_primary(&mut self) -> Result<Expression, ParserError> {
-    //     if self.match_token(&[TokenType::INTEGER]) {
-    //         // Gérez les littéraux entiers
-    //     } else if self.match_token(&[TokenType::FLOAT]) {
-    //         // Gérez les littéraux flottants
-    //     } else if self.match_token(&[TokenType::STRING]) {
-    //         // Gérez les littéraux de chaîne
-    //     } else if self.match_token(&[TokenType::IDENTIFIER]) {
-    //         Ok(Expression::Identifier(self.previous().text.clone()))
-    //     } else if self.match_token(&[TokenType::DELIMITER(Delimiters::LPAR)]) {
-    //         let expr = self.parse_expression()?;
-    //         self.consume(TokenType::DELIMITER(Delimiters::RPAR), "Expect ')' after expression.")?;
-    //         Ok(expr)
-    //     } else {
-    //         Err(self.create_error(ParserErrorType::ExpectedExpression))
-    //     }
-    // }
-
-
-    // Methode Utilitaire
-
-    fn advance(&mut self) -> &Token {
-        if !self.is_at_end() {
-            self.current += 1;
-        }
-        self.previous()
-    }
-
-    fn is_at_end(&self) -> bool {
-        self.peek().token_type == TokenType::EOF
-    }
-
-    fn peek(&self) -> &Token {
-        &self.tokens[self.current]
-    }
-
-    fn previous(&self) -> &Token {
-        &self.tokens[self.current - 1]
-    }
-
-    fn check(&self, token_type: &TokenType) -> bool {
-        if self.is_at_end() {
-            false
-        } else {
-            &self.peek().token_type == token_type
-        }
-    }
-
-    fn synchronize(){
-        todo!()
-    }
-
-    fn match_token(&mut self, token_types: &[TokenType]) -> bool {
-        for token_type in token_types {
-            if self.check(token_type) {
-                self.advance();
-                return true;
-            }
-        }
-        false
-    }
-
-    fn expect(&mut self, token_type: TokenType) -> Result<&Token, ParserError> {
-        if self.check(&token_type) {
-            Ok(self.advance())
-        } else {
-            Err(self.create_error(ParserErrorType::UnexpectedToken {
-                expected: token_type,
-                found: self.peek().token_type.clone(),
-            }))
-        }
-    }
-
-    fn create_error(&self, error_type: ParserErrorType) -> ParserError {
-        ParserError::new(
-            error_type,
-            Position {
-                line: self.peek().line,
-                column: self.peek().column,
-            },
-        )
-    }
-
-    fn unexpected_eof_error(&self) -> ParserError {
-        self.create_error(ParserErrorType::UnexpectedEOF)
-    }
-
-    fn indentation_error(&self) -> ParserError {
-        self.create_error(ParserErrorType::IndentationError)
-    }
-
-    fn consume(&mut self, token_type: &TokenType, _message: &str) -> Result<&Token, ParserError> {
-        if self.check(token_type) {
-            Ok(self.advance())
-        } else {
-            Err(self.create_error(ParserErrorType::UnexpectedToken {
-                expected: token_type.clone(),
-                found: self.peek().token_type.clone(),
-            }))
-        }
-    }
-
-
-    fn current_token(&self) -> Option<&Token> {
+    fn current_token(&self) -> Option<&Token>{
         self.tokens.get(self.current)
     }
+
+    fn advance(&mut self){
+        self.current += 1;
+    }
+
+    fn is_at_end(&self) -> bool{
+        let _ = self.current >= self.tokens.len();
+        return true;
+    }
+
+    pub fn parse_variable_declaration(&mut self) -> Option<ASTNode> {
+        if let Some(token) = self.current_token(){
+            if token.text == "let"{
+                self.advance();
+
+                if let Some(name_token) = self.current_token(){
+                    if let TokenType::IDENTIFIER {name:_} = &name_token.token_type{
+                        let name = name_token.text.clone();
+                        self.advance();
+
+                        if let Some(equal_token) = self.current_token(){
+                            if let TokenType::OPERATOR(Operators::EQUAL) = &equal_token.token_type{
+                                self.advance();
+
+                                if let Some(expression) = self.parse_expression(){
+                                    return Some(ASTNode::Declaration(Declaration::Variable(VariableDeclaration{
+                                        name,
+                                        variable_type:None,
+                                        value:Some(expression),
+                                        mutable: false
+                                    })))
+
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+
+
+
+
+    pub fn parse_expression(&mut self) -> Option<Expression> {
+        if let Some(token) = self.current_token() {
+            match &token.token_type {
+                // Déstructuration de `TokenType::INTEGER` pour obtenir les données
+                TokenType::INTEGER{value} => {
+                    // Utilise directement la valeur du token
+                    let value = value.clone(); // Assurez-vous que le type correspond
+                    self.advance(); // Consomme l'entier
+                    return Some(Expression::Literal(Literal::Integer { value }));
+                }
+                // Déstructuration de `TokenType::IDENTIFIER` pour obtenir les données
+                TokenType::IDENTIFIER{name} => {
+                    let name = name.clone(); // Assurez-vous que le type correspond
+                    self.advance(); // Consomme l'identifiant
+                    return Some(Expression::Identifier(name));
+                }
+                _ => {}
+            }
+        }
+        None
+    }
+
+
 
 
 }
 
-
-//by YmC
-
-
-
-
-
-
-
-
+///////////////////////fin essai
 
 
 
