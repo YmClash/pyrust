@@ -6,8 +6,7 @@ use crate::tok::TokenType;
 #[allow(dead_code)]
 #[derive(Debug,PartialEq,Clone)]
 pub struct Position{
-    pub line: usize,
-    pub column: usize,
+    pub index: usize,
 }
 
 #[allow(dead_code)]
@@ -27,6 +26,7 @@ pub enum  ParserErrorType{
     BraceError,
     InvalidAssignmentTarget,
     ExpectedExpression,
+    InvalidVariableDeclaration,
 }
 
 // #[allow(dead_code)]
@@ -39,16 +39,12 @@ pub enum  ParserErrorType{
 // implement de la position
 #[allow(dead_code)]
 impl Position{
-    fn new() -> Self{ Position{line: 1, column: 1}}
+    fn new() -> Self{ Position{index: 0}}
     fn advance(&mut self, ch:char){
-        self.column +=1;
-        if ch == '\n'{
-            self.line +=1;
-            self.column = 1;
-        }
+        self.index += ch.len_utf8();
     }
     fn move_left(&mut self){
-        self.column -=1;
+        self.index -= 1;
     }
 }
 
@@ -56,7 +52,7 @@ impl Position{
 
 impl  Display for Position{
     fn fmt(&self, f:&mut Formatter<'_>) -> fmt::Result{
-        write!(f, "line: {}, column: {}", self.line, self.column)
+        write!(f, "Position index {}", self.index)
     }
 }
 
@@ -79,6 +75,7 @@ impl Display for ParserErrorType {
             ParserErrorType::BraceError => write!(f, "BraceError"),
             ParserErrorType::InvalidAssignmentTarget => write!(f, "InvalidAssignmentTarget"),
             ParserErrorType::ExpectedExpression => write!(f, "ExpectedExpression"),
+            ParserErrorType::InvalidVariableDeclaration => write!(f, "InvalidVariableDeclaration"),
         }
     }
 }
@@ -96,6 +93,7 @@ impl ParserError {
             ParserErrorType::InvalidAssignmentTarget => "Invalid assignment target".to_string(),
             ParserErrorType::ExpectedExpression => "Expected expression".to_string(),
             //ParserErrorType::InvalidExpression => "Invalid expression".to_string(),
+            ParserErrorType::InvalidVariableDeclaration => "Invalid variable declaration".to_string(),
         };
 
         ParserError {

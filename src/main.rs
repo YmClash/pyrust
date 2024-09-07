@@ -20,11 +20,13 @@ fn main() {
     }
 
     //let mut parser = Parser::new(tokens, SyntaxMode::Indentation);
-    let mut parser = Parser::new(tokens);
+    let mut parser = Parser::new(tokens, SyntaxMode::Indentation);
 
     match parser.parse_variable_declaration() {
-        Some(ast) => println!("AST: {:?}", ast),
-        None => println!("Error parsing: "),
+        Ok(ast) => print_ast(ast),
+        Err(e) => println!("Error parsing: {}", e),
+        // Some(ast) => println!("AST: {:?}", ast),
+        // None => println!("Error parsing: "),
     }
 
 

@@ -3,6 +3,7 @@ use num_bigint::BigInt;
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::lexer::lex::{Token, SyntaxMode};
 use crate::parser::ast::{ASTNode, Block, Statement, Expression, VariableDeclaration, Declaration, BinaryOperation, FunctionDeclaration, Parameters, Operator, Literal, Identifier};
+use crate::parser::parser_error::ParserErrorType::InvalidVariableDeclaration;
 use crate::tok::{TokenType, Keywords, Operators, Delimiters};
 //
 // pub struct Parser {
@@ -131,7 +132,7 @@ use crate::tok::{TokenType, Keywords, Operators, Delimiters};
 //         }
 //
 //     }
-//
+
 //     fn parse_variable_declaration(&mut self) -> Result<ASTNode, ParserError> {
 //         // consume 'let'
 //         self.consume(&TokenType::KEYWORD(Keywords::LET), "Expected 'let' keyword")?;
@@ -441,53 +442,70 @@ use crate::tok::{TokenType, Keywords, Operators, Delimiters};
 //////////////////////Debut///////////////////////////
 
 pub struct Parser{
-    tokens: Vec<Token>, // liste des tokens genere par le lexer
-    current: usize // index du token actuel
+    tokens: Vec<Token>,     // liste des tokens genere par le lexer
+    current: usize,          // index du token actuel
+    syntax_mode: SyntaxMode,
+    indent_level: Vec<usize>,
 }
 
 impl Parser {
-    pub fn new(tokens:Vec<Token>) -> Self{
+    pub fn new(tokens:Vec<Token>,syntax_mode: SyntaxMode) -> Self{
         Parser{
             tokens,
-            current: 0
+            current: 0,
+            syntax_mode,
+            indent_level: vec![0],
         }
     }
+    #[allow(dead_code)]
+    fn parse_declaration(&mut self) -> Result<ASTNode, ParserError> {
+        if self.match_token(&[TokenType::KEYWORD(Keywords::LET)]){
+            self.parse_variable_declaration()
+        } else if self.match_token(&[TokenType::KEYWORD(Keywords::FN)]) {
+            self.parse_function_declaration()
+        } else if self.match_token(&[TokenType::KEYWORD(Keywords::STRUCT)]){
+            self.parse_struct_declaration()
+        } else if self.match_token(&[TokenType::KEYWORD(Keywords::CLASS)]){
+            self.parse_class_declaration()
+        } else {
+            self.parse_statement().map(ASTNode::Statement)
+        }
 
-    fn current_token(&self) -> Option<&Token>{
-        self.tokens.get(self.current)
     }
 
-    fn advance(&mut self){
-        self.current += 1;
-    }
+    #[allow(dead_code)]
+    pub fn parse_variable_declaration(&mut self) -> Result<ASTNode, ParserError> {
+        if let Some(token) = self.current_token() {
+            if token.text == "let" {
+                self.advance(); // Consomme le "let"
 
-    fn is_at_end(&self) -> bool{
-        let _ = self.current >= self.tokens.len();
-        return true;
-    }
-
-    pub fn parse_variable_declaration(&mut self) -> Option<ASTNode> {
-        if let Some(token) = self.current_token(){
-            if token.text == "let"{
-                self.advance();
-
-                if let Some(name_token) = self.current_token(){
-                    if let TokenType::IDENTIFIER {name:_} = &name_token.token_type{
+                // Parse l'identifiant de la variable
+                if let Some(name_token) = self.current_token() {
+                    if let TokenType::IDENTIFIER { name: _ } = &name_token.token_type {
                         let name = name_token.text.clone();
-                        self.advance();
+                        self.advance(); // Consomme l'identifiant
 
-                        if let Some(equal_token) = self.current_token(){
-                            if let TokenType::OPERATOR(Operators::EQUAL) = &equal_token.token_type{
-                                self.advance();
+                        // Vérifie et consomme le signe "="
+                        if let Some(equal_token) = self.current_token() {
+                            if let TokenType::OPERATOR(Operators::EQUAL) = &equal_token.token_type {
+                                self.advance(); // Consomme "="
 
-                                if let Some(expression) = self.parse_expression(){
-                                    return Some(ASTNode::Declaration(Declaration::Variable(VariableDeclaration{
-                                        name,
-                                        variable_type:None,
-                                        value:Some(expression),
-                                        mutable: false
-                                    })))
-
+                                // Parse l'expression de droite
+                                if let Some(expression) = self.parse_expression() {
+                                    return Ok(ASTNode::Declaration(
+                                        Declaration::Variable(VariableDeclaration {
+                                            name,
+                                            variable_type: None,
+                                            value: Some(expression),
+                                            mutable: false,
+                                        }),
+                                    ));
+                                } else {
+                                    return Err(ParserError::new(InvalidVariableDeclaration,{
+                                        Position{
+                                            index: self.current,
+                                        }
+                                    }));
                                 }
                             }
                         }
@@ -495,9 +513,26 @@ impl Parser {
                 }
             }
         }
-        None
-    }
 
+        // Si on ne peut pas parser la déclaration de variable, retourne une erreur
+        Err(ParserError::new(InvalidVariableDeclaration, {
+            Position {
+                index: self.current,
+            }
+        }))
+    }
+    fn parse_function_declaration(&mut self) -> Result<ASTNode, ParserError> {
+        todo!()
+    }
+    fn parse_struct_declaration(&mut self) -> Result<ASTNode, ParserError> {
+        todo!()
+    }
+    fn parse_class_declaration(&mut self) -> Result<ASTNode, ParserError> {
+        todo!()
+    }
+    fn parse_enum_declaration(&mut self) -> Result<ASTNode, ParserError> {
+        todo!()
+    }
 
 
 
@@ -523,12 +558,55 @@ impl Parser {
         None
     }
 
+    pub fn parse_statement(&mut self) -> Result<Statement,ParserError>{
+        todo!()
+    }
+
+    // utilitaire du parseur
+
+    fn current_token(&self) -> Option<&Token>{
+        self.tokens.get(self.current)
+    }
+
+    fn advance(&mut self){
+        self.current += 1;
+    }
+
+    fn is_at_end(&self) -> bool{
+        let _ = self.current >= self.tokens.len();
+        return true;
+    }
+
+    fn peek(&self) ->&Token{
+        &self.tokens[self.current]
+    }
+
+    fn match_token(&mut self, expected_tokens: &[TokenType]) -> bool {
+        if let Some(token) = self.current_token(){
+            for expected in expected_tokens{
+                if &token.token_type == expected {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+
+
+    fn create_error(&self, error_type: ParserErrorType) -> ParserError {
+        ParserError::new(
+            error_type,
+            Position {
+                index: self.current,
+            },
+        )
+    }
 
 
 
 }
 
-///////////////////////fin essai
+///////////////////////fin essai//////////////////////////////
 
 
 
