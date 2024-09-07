@@ -424,6 +424,11 @@ impl Parser {
     }
 
 
+    fn current_token(&self) -> Option<&Token> {
+        self.tokens.get(self.current)
+    }
+
+
 }
 
 
