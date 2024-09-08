@@ -1,9 +1,9 @@
-use num_bigint::BigInt;
 #[allow(dead_code)]
+use num_bigint::BigInt;
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::lexer::lex::{Token, SyntaxMode};
 use crate::parser::ast::{ASTNode, Block, Statement, Expression, VariableDeclaration, Declaration, BinaryOperation, FunctionDeclaration, Parameters, Operator, Literal, Identifier, Function, UnaryOperation, UnaryOperator};
-use crate::parser::parser_error::ParserErrorType::{ExpectedCloseParenthesis, ExpectedTypeAnnotation, ExpectOperatorEqual, ExpectValue, ExpectVariableName, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEndOfInput, UnexpectedToken};
+use crate::parser::parser_error::ParserErrorType::{ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, ExpectFunctionName, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEndOfInput, UnexpectedToken};
 use crate::tok::{TokenType, Keywords, Operators, Delimiters};
 //
 // pub struct Parser {
@@ -461,6 +461,61 @@ impl Parser {
         Position{index: self.current}
     }
 
+
+    #[allow(dead_code)]
+    fn parse_parameters(&mut self) -> Result<Vec<Parameters>,ParserError>{
+        let mut params = Vec::new();
+
+        // Boucle pour analyser les paramètres tant qu'il y a des tokens à parser
+        loop {
+            // Parse le nom du paramètre (un identifiant est attendu)
+            let name_token = self.current_token().ok_or_else(|| {
+                ParserError::new(ExpectParameterName, self.current_position())
+            })?;
+
+            let name = if let TokenType::IDENTIFIER { name: _ } = &name_token.token_type {
+                name_token.text.clone()
+            } else {
+                return Err(ParserError::new(ExpectParameterName, self.current_position()));
+            };
+            self.advance(); // Consomme le nom du paramètre
+
+            // Vérifie si un type est spécifié après ":"
+            let parameter_type = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
+                self.advance(); // Consomme-le ":"
+                let type_token = self.current_token().ok_or_else(|| {
+                    ParserError::new(ExpectedTypeAnnotation, self.current_position())
+                })?;
+
+                if let TokenType::IDENTIFIER { .. } = &type_token.token_type {
+                    Some(type_token.text.clone()) // Utilise l'identifiant comme type
+                } else {
+                    return Err(ParserError::new(InvalidTypeAnnotation, self.current_position()));
+                }
+            } else {
+                None // Aucun type spécifié
+            };
+
+            // Ajoute le paramètre à la liste
+            params.push(Parameters {
+                name : name,
+                parameter_type : parameter_type,
+            });
+
+            // Vérifie si nous avons atteint la fin des paramètres (délimité par une parenthèse fermante ou une virgule)
+            if self.match_token(&[TokenType::DELIMITER(Delimiters::RPAR)]) {
+                self.advance(); // Consomme la parenthèse fermante
+                break;
+            } else if self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]) {
+                self.advance(); // Consomme la virgule pour passer au prochain paramètre
+            } else {
+                return Err(ParserError::new(UnexpectedToken, self.current_position()));
+            }
+        }
+
+        Ok(params) // Retourne la liste des paramètres analysés
+    }
+
     #[allow(dead_code)]
     fn parse_declaration(&mut self) -> Result<ASTNode, ParserError> {
         if self.match_token(&[TokenType::KEYWORD(Keywords::LET)]){
@@ -505,6 +560,8 @@ impl Parser {
         };
         self.advance(); // Consomme l'identifiant
 
+        // let type_annotation = self.parse_parameters()?;
+
         let type_annotation = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
             self.advance(); // Consomme-le ":"
             let type_token = self.current_token().ok_or_else(|| {
@@ -540,48 +597,52 @@ impl Parser {
         })))
 
     }
+
     pub fn parse_function_declaration(&mut self) -> Result<ASTNode, ParserError> {
-        // Consomme le mot-clé "fn"
-        if self.match_token(&[TokenType::KEYWORD(Keywords::FN)]) {
-            self.advance(); // Consomme "fn"
+        // Consomme "fn"
+        self.advance(); // Suppose que "fn" a déjà été vérifié
 
-            // Parse le nom de la fonction
-            if let Some(name_token) = self.current_token() {
-                if let TokenType::IDENTIFIER { name: _ } = &name_token.token_type {
-                    let name = name_token.text.clone();
-                    self.advance(); // Consomme le nom
+        // Parse le nom de la fonction
+        let name_token = self.current_token().ok_or_else(|| {
+            ParserError::new(ExpectFunctionName, self.current_position())
+        })?;
+        let name = if let TokenType::IDENTIFIER { .. } = &name_token.token_type {
+            name_token.text.clone()
+        } else {
+            return Err(ParserError::new(ExpectFunctionName, self.current_position()));
+        };
+        self.advance(); // Consomme le nom de la fonction
 
-                    // Vous pouvez ensuite continuer avec les paramètres, le bloc de code, etc.
-                    // Pour cet exemple, supposons que nous allons directement à la création du nœud AST
-                    return Ok(ASTNode::Function(Function {
-                        declaration: FunctionDeclaration {
-                            name,
-                            parameter: vec![], // À compléter avec l'analyse des paramètres
-                            return_type: None,  // À compléter avec l'analyse du type de retour
-                            block: Block {
-                                statements: vec![], // À compléter avec l'analyse du bloc
-                                syntax_mode: self.syntax_mode,
-                                indent_level: None,
-                                braces: None,
-                            },
-                        },
-                        block: Block {
-                            statements: vec![],
-                            syntax_mode: self.syntax_mode,
-                            indent_level: None,
-                            braces: None,
-                        },
-                    }));
-                }
-            }
+        // Vérifie et consomme la parenthèse ouvrante "("
+        if !self.match_token(&[TokenType::DELIMITER(Delimiters::LPAR)]) {
+            return Err(ParserError::new(ExpectedOpenParenthesis, self.current_position()));
         }
+        self.advance(); // Consomme la parenthèse ouvrante
 
-        Err(ParserError::new(InvalidFunctionDeclaration,{
-            Position{
-                index: self.current,
-            }
-        }))
+        // Parse la liste des paramètres
+        let parameters = self.parse_parameters()?;
+
+        // Vérifie et consomme la parenthèse fermante ")"
+        if !self.match_token(&[TokenType::DELIMITER(Delimiters::RPAR)]) {
+            return Err(ParserError::new(ExpectedOpenParenthesis, self.current_position()));
+        }
+        self.advance(); // Consomme la parenthèse fermante
+
+        // Continuez avec le parsing du corps de la fonction ou du type de retour...
+
+        Ok(ASTNode::Declaration(Declaration::Function(FunctionDeclaration {
+            name,
+            parameters: parameters,
+            return_type: None,
+            block: Block {
+                statements: Vec::new(),
+                syntax_mode: self.syntax_mode,
+                indent_level: None,
+                braces: None,
+            },
+        })))
     }
+
     fn parse_struct_declaration(&mut self) -> Result<ASTNode, ParserError> {
         todo!()
     }
@@ -846,6 +907,18 @@ impl Parser {
         )
     }
 
+    // fn expect(&mut self, token_type: TokenType) -> Result<&Token, ParserError> {
+    //     if let Some(token) = self.current_token(){
+    //         if &token.token_type == &token_type {
+    //             self.advance();
+    //             return Ok(token);
+    //         }
+    //     }
+    //     Err(self.create_error(UnexpectedToken {
+    //         expected: token_type,
+    //         found: self.current_token().unwrap().token_type.clone(),
+    //     }))
+    // }
 
 
 }

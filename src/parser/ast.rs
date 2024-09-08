@@ -97,7 +97,7 @@ pub struct VariableDeclaration{
 #[derive(Debug,Clone)]
 pub struct FunctionDeclaration{
     pub name:String,
-    pub parameter: Vec<Parameters>,
+    pub parameters: Vec<Parameters>,
     pub return_type: Option<String>,
     pub block: Block,
 }

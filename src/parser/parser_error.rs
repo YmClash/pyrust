@@ -1,7 +1,7 @@
 #[allow(dead_code)]
 use std::fmt::{Display, Formatter};
 use std::fmt;
-use crate::tok::TokenType;
+//use crate::tok::TokenType;
 
 #[allow(dead_code)]
 #[derive(Debug,PartialEq,Clone)]
@@ -20,7 +20,7 @@ pub struct ParserError{
 #[allow(dead_code)]
 #[derive(Debug,PartialEq,Clone)]
 pub enum  ParserErrorType{
-    UnexpectedToken , //    { expected: TokenType, found: TokenType },
+    UnexpectedToken ,//{ expected: TokenType, found: TokenType },
     UnexpectedEOF,
     IndentationError,
     BraceError,
@@ -33,6 +33,10 @@ pub enum  ParserErrorType{
     ExpectOperatorEqual,
     ExpectValue,
     ExpectedTypeAnnotation,
+    ExpectParameterName,
+    ExpectFunctionName,
+
+    ExpectedOpenParenthesis,
     ExpectedCloseParenthesis,
     UnexpectedEndOfInput,
 }
@@ -90,8 +94,13 @@ impl Display for ParserErrorType {
             ParserErrorType::ExpectOperatorEqual => write!(f, "ExpectOperatorEqual"),
             ParserErrorType::ExpectValue => write!(f, "ExpectValue"),
             ParserErrorType::ExpectedTypeAnnotation => write!(f, "ExpectedTypeAnnotation"),
+
+
+            ParserErrorType::ExpectedOpenParenthesis => write!(f, "ExpectedOpenParenthesis"),
             ParserErrorType::ExpectedCloseParenthesis => write!(f, "ExpectedCloseParenthesis"),
             ParserErrorType::UnexpectedEndOfInput => write!(f, "UnexpectedEndOfInput"),
+            ParserErrorType::ExpectParameterName => write!(f, "ExpectParameterName"),
+            ParserErrorType::ExpectFunctionName => write!(f, "ExpectFunctionName"),
 
 
             ParserErrorType::InvalidFunctionDeclaration => write!(f, "InvalidFunctionDeclaration"),
@@ -119,8 +128,13 @@ impl ParserError {
             ParserErrorType::ExpectOperatorEqual => "Expect operator equal".to_string(),
             ParserErrorType::ExpectValue => "Expect value".to_string(),
             ParserErrorType::ExpectedTypeAnnotation => "Expected type annotation".to_string(),
+
+            ParserErrorType::ExpectedOpenParenthesis => "Expected open parenthesis".to_string(),
             ParserErrorType::ExpectedCloseParenthesis => "Expected close parenthesis".to_string(),
             ParserErrorType::InvalidFunctionDeclaration => "Invalid function declaration".to_string(),
+            ParserErrorType::ExpectParameterName => "Expect parameter name".to_string(),
+            ParserErrorType::ExpectFunctionName => "Expect function name".to_string(),
+
             ParserErrorType::UnexpectedEndOfInput => "Unexpected end of input".to_string(),};
 
 
