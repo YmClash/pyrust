@@ -2,8 +2,8 @@ use num_bigint::BigInt;
 #[allow(dead_code)]
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::lexer::lex::{Token, SyntaxMode};
-use crate::parser::ast::{ASTNode, Block, Statement, Expression, VariableDeclaration, Declaration, BinaryOperation, FunctionDeclaration, Parameters, Operator, Literal, Identifier, Function};
-use crate::parser::parser_error::ParserErrorType::{ExpectOperatorEqual, ExpectValue, ExpectVariableName, InvalidFunctionDeclaration, InvalidVariableDeclaration};
+use crate::parser::ast::{ASTNode, Block, Statement, Expression, VariableDeclaration, Declaration, BinaryOperation, FunctionDeclaration, Parameters, Operator, Literal, Identifier, Function, UnaryOperation, UnaryOperator};
+use crate::parser::parser_error::ParserErrorType::{ExpectedCloseParenthesis, ExpectedTypeAnnotation, ExpectOperatorEqual, ExpectValue, ExpectVariableName, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEndOfInput, UnexpectedToken};
 use crate::tok::{TokenType, Keywords, Operators, Delimiters};
 //
 // pub struct Parser {
@@ -479,7 +479,7 @@ impl Parser {
 
     #[allow(dead_code)]
     pub fn parse_variable_declaration(&mut self) -> Result<ASTNode, ParserError> {
-        /* verifies et consomme-le mot-clé "let"*/
+        //verifies et consomme-le mot-clé "let"
         if !self.match_token(&[TokenType::KEYWORD(Keywords::LET)]) {
             return Err(ParserError::new(InvalidVariableDeclaration,Position{index: self.current}));
         }
@@ -497,6 +497,7 @@ impl Parser {
         let name_token = self.current_token().ok_or_else(|| {
             ParserError::new(ExpectVariableName, self.current_position())
         })?;
+
         let name = if let TokenType::IDENTIFIER { name: _ } = &name_token.token_type {
             name_token.text.clone()
         } else {
@@ -504,13 +505,19 @@ impl Parser {
         };
         self.advance(); // Consomme l'identifiant
 
-        let type_annotation = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]){
-            Some(self.current_token().ok_or_else(|| {
-                ParserError::new(ExpectValue, self.current_position())
-            })?.text.clone())
+        let type_annotation = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
+            self.advance(); // Consomme-le ":"
+            let type_token = self.current_token().ok_or_else(|| {
+                ParserError::new(ExpectedTypeAnnotation, self.current_position())
+            })?;
+
+            if let TokenType::IDENTIFIER { .. } = &type_token.token_type {
+                Some(type_token.text.clone()) // Utilise l'identifiant comme annotation de type
+            } else {
+                return Err(ParserError::new(InvalidTypeAnnotation, self.current_position()));
+            }
         } else {
             None
-
         };
 
         // Vérifie et consomme l'opérateur "="
@@ -520,13 +527,13 @@ impl Parser {
         self.advance(); // Consomme-le "="
 
         // Parse l'expression pour la valeur de la variable
-        let value = self.parse_expression().ok_or_else(|| {
-            ParserError::new(ExpectValue, self.current_position())
+        let value = self.parse_expression().or_else(|_| {
+            Err(ParserError::new(ExpectValue, self.current_position()))
         })?;
 
         // Crée et retourne le nœud AST pour la déclaration de variable
         Ok(ASTNode::Declaration(Declaration::Variable(VariableDeclaration {
-            name,
+            name: name,
             variable_type: type_annotation,
             value: Some(value),
             mutable: mutable,
@@ -587,27 +594,209 @@ impl Parser {
 
 
 
-    pub fn parse_expression(&mut self) -> Option<Expression> {
-        if let Some(token) = self.current_token() {
-            match &token.token_type {
-                // Déstructuration de `TokenType::INTEGER` pour obtenir les données
-                TokenType::INTEGER{value} => {
-                    // Utilise directement la valeur du token
-                    let value = value.clone(); // Assurez-vous que le type correspond
-                    self.advance(); // Consomme l'entier
-                    return Some(Expression::Literal(Literal::Integer { value }));
-                }
-                // Déstructuration de `TokenType::IDENTIFIER` pour obtenir les données
-                TokenType::IDENTIFIER{name} => {
-                    let name = name.clone(); // Assurez-vous que le type correspond
-                    self.advance(); // Consomme l'identifiant
-                    return Some(Expression::Identifier(name));
-                }
-                _ => {}
-            }
-        }
-        None
+    // pub fn parse_expression(&mut self) -> Option<Expression> {
+    //     if let Some(token) = self.current_token() {
+    //         match &token.token_type {
+    //             // Déstructuration de `TokenType::INTEGER` pour obtenir les données
+    //             TokenType::INTEGER{value} => {
+    //                 // Utilise directement la valeur du token
+    //                 let value = value.clone(); // Assurez-vous que le type correspond
+    //                 self.advance(); // Consomme l'entier
+    //                 return Some(Expression::Literal(Literal::Integer { value }));
+    //             }
+    //             // Déstructuration de `TokenType::IDENTIFIER` pour obtenir les données
+    //             TokenType::IDENTIFIER{name} => {
+    //                 let name = name.clone(); // Assurez-vous que le type correspond
+    //                 self.advance(); // Consomme l'identifiant
+    //                 return Some(Expression::Identifier(name));
+    //             }
+    //             _ => {}
+    //         }
+    //     }
+    //     None
+    // }
+
+    pub fn parse_expression(&mut self) -> Result<Expression,ParserError> {
+        self.parse_assignment()
     }
+
+    fn parse_assignment(&mut self) -> Result<Expression, ParserError> {
+        let expression = self.parse_equality()?;
+
+        if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
+            let value = self.parse_assignment()?;
+            if let Expression::Identifier(name) = expression {
+                Ok(Expression::BinaryOperation(BinaryOperation{
+                    left: Box::new(Expression::Identifier(name)),
+                    operator: Operator::Equal,
+                    right: Box::new(value),
+                }))
+            } else {
+                Err(ParserError::new(ParserErrorType::InvalidAssignmentTarget, self.current_position()))
+            }
+        } else {
+            Ok(expression)
+        }
+    }
+
+    fn parse_equality(&mut self) -> Result<Expression,ParserError>{
+        let mut  expression = self.parse_comparison()?;
+
+        while self.match_token(&[
+            TokenType::OPERATOR(Operators::EQEQUAL),
+            TokenType::OPERATOR(Operators::NOTEQUAL),
+        ]){
+            let operator = match self.previous().token_type {
+                TokenType::OPERATOR(Operators::EQEQUAL) => Operator::Equal,
+                TokenType::OPERATOR(Operators::NOTEQUAL) => Operator::NotEqual,
+                _ => unreachable!(),
+            };
+            let right = self.parse_comparison()?;
+            expression = Expression::BinaryOperation(BinaryOperation{
+                left: Box::new(expression),
+                operator,
+                right: Box::new(right),
+            })
+        }
+        Ok(expression)
+    }
+
+    fn parse_comparison(&mut self) -> Result<Expression,ParserError>{
+        let mut  expression = self.parse_term()?;
+
+        while self.match_token(&[
+            TokenType::OPERATOR(Operators::LESS),
+            TokenType::OPERATOR(Operators::GREATER),
+            TokenType::OPERATOR(Operators::LESSEQUAL),
+            TokenType::OPERATOR(Operators::GREATEREQUAL),
+        ]){
+            let operator = match self.previous().token_type {
+                TokenType::OPERATOR(Operators::LESS) => Operator::LessThan,
+                TokenType::OPERATOR(Operators::GREATER) => Operator::GreaterThan,
+                TokenType::OPERATOR(Operators::LESSEQUAL) => Operator::LesshanOrEqual,
+                TokenType::OPERATOR(Operators::GREATEREQUAL) => Operator::GreaterThanOrEqual,
+                _ => unreachable!(),
+            };
+            let right = self.parse_term()?;
+            expression = Expression::BinaryOperation(BinaryOperation{
+                left: Box::new(expression),
+                operator,
+                right: Box::new(right),
+            })
+        }
+        Ok(expression)
+    }
+    fn parse_term(&mut self) -> Result<Expression,ParserError>{
+        let mut  expression = self.parse_factor()?;
+
+        while self.match_token(&[
+            TokenType::OPERATOR(Operators::PLUS),
+            TokenType::OPERATOR(Operators::MINUS),
+        ]){
+            let operator = match self.previous().token_type{
+                TokenType::OPERATOR(Operators::PLUS) => Operator::Addition,
+                TokenType::OPERATOR(Operators::MINUS) => Operator::Substraction,
+                _ => unreachable!(),
+            };
+            let right = self.parse_factor()?;
+            expression = Expression::BinaryOperation(BinaryOperation{
+                left: Box::new(expression),
+                operator,
+                right: Box::new(right),
+            })
+        }
+        Ok(expression)
+    }
+    fn parse_factor(&mut self) -> Result<Expression,ParserError>{
+        let mut  expression = self.parse_unary()?;
+        while self.match_token(&[
+            TokenType::OPERATOR(Operators::STAR),
+            TokenType::OPERATOR(Operators::SLASH),
+        ]) {
+            let operator = match self.previous().token_type{
+                TokenType::OPERATOR(Operators::STAR) => Operator::Multiplication,
+                TokenType::OPERATOR(Operators::SLASH) => Operator::Division,
+                _ => unreachable!(),
+            };
+            let right = self.parse_unary()?;
+            expression = Expression::BinaryOperation(BinaryOperation{
+                left: Box::new(expression),
+                operator,
+                right: Box::new(right),
+            })
+
+        }
+        Ok(expression)
+    }
+    fn parse_unary(&mut self) -> Result<Expression, ParserError> {
+        if self.match_token(&[
+            TokenType::OPERATOR(Operators::MINUS),
+            TokenType::OPERATOR(Operators::EXCLAMATION),
+        ]) {
+            let operator = match self.previous().token_type {
+                TokenType::OPERATOR(Operators::MINUS) => UnaryOperator::Negative,
+                TokenType::OPERATOR(Operators::EXCLAMATION) => UnaryOperator::Not,
+                _ => unreachable!(),
+            };
+            let right = self.parse_unary()?;
+            return Ok(Expression::UnaryOperation(UnaryOperation{
+                operator,
+                operand:Box::new(right),
+            }));
+        }
+
+        self.parse_primary()
+    }
+    fn parse_primary(&mut self) -> Result<Expression,ParserError> {
+        if let Some(token) = self.current_token() {
+            let expr = match &token.token_type {
+                TokenType::INTEGER { value } => {
+                    let value = value.clone();
+                    Expression::Literal(Literal::Integer { value })
+                }
+                TokenType::FLOAT { value } => {
+                    let value = *value;
+                    Expression::Literal(Literal::Float { value })
+                }
+                TokenType::STRING { value, .. } => {
+                    let value = value.clone();
+                    Expression::Literal(Literal::String(value))
+                }
+                TokenType::KEYWORD(Keywords::TRUE) => {
+                    Expression::Literal(Literal::Boolean(true))
+                }
+                TokenType::KEYWORD(Keywords::FALSE) => {
+                    Expression::Literal(Literal::Boolean(false))
+                }
+                TokenType::IDENTIFIER { name } => {
+                    let name = name.clone();
+                    Expression::Identifier(name)
+                }
+                TokenType::DELIMITER(Delimiters::LPAR) => {
+                    self.advance();
+                    let expr = self.parse_expression()?;
+                    if let Some(token) = self.current_token() {
+                        if matches!(token.token_type, TokenType::DELIMITER(Delimiters::RPAR)) {
+                            expr
+                        } else {
+                            return Err(ParserError::new(ExpectedCloseParenthesis, self.current_position()));
+                        }
+                    } else {
+                        return Err(ParserError::new(UnexpectedEndOfInput, self.current_position()));
+                    }
+                }
+                _ => return Err(ParserError::new(UnexpectedToken, self.current_position())),
+            };
+            self.advance();
+            Ok(expr)
+        } else {
+            Err(ParserError::new(UnexpectedEndOfInput, self.current_position()))
+        }
+    }
+
+
+
+
 
     pub fn parse_statement(&mut self) -> Result<Statement,ParserError>{
         todo!()
@@ -621,6 +810,10 @@ impl Parser {
 
     fn advance(&mut self){
         self.current += 1;
+    }
+
+    fn previous(&self) -> &Token{
+        &self.tokens[self.current - 1]
     }
 
     fn is_at_end(&self) -> bool{

@@ -11,7 +11,7 @@ fn main() {
 
     println!("Start Lexer");
 
-    let source_code = "let x = 10 ";
+    let source_code = "let mut x = true ";
 
     let mut lexer = Lexer::new(source_code, SyntaxMode::Indentation);
     let tokens = lexer.tokenize();

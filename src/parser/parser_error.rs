@@ -20,7 +20,7 @@ pub struct ParserError{
 #[allow(dead_code)]
 #[derive(Debug,PartialEq,Clone)]
 pub enum  ParserErrorType{
-    UnexpectedToken{ expected: TokenType, found: TokenType },
+    UnexpectedToken , //    { expected: TokenType, found: TokenType },
     UnexpectedEOF,
     IndentationError,
     BraceError,
@@ -28,9 +28,13 @@ pub enum  ParserErrorType{
     ExpectedExpression,
     InvalidVariableDeclaration,
     InvalidFunctionDeclaration,
+    InvalidTypeAnnotation,
     ExpectVariableName,
     ExpectOperatorEqual,
-    ExpectValue
+    ExpectValue,
+    ExpectedTypeAnnotation,
+    ExpectedCloseParenthesis,
+    UnexpectedEndOfInput,
 }
 
 // #[allow(dead_code)]
@@ -73,16 +77,22 @@ impl Display for ParserError{
 impl Display for ParserErrorType {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            ParserErrorType::UnexpectedToken{expected,found} => write!(f, "Expected Toke {:?}, but Found: {:?}", expected, found),
+            ParserErrorType::UnexpectedToken => write!(f, "UnexpectedToken"),
+            //ParserErrorType::UnexpectedToken{expected,found} => write!(f, "Expected Toke {:?}, but Found: {:?}", expected, found),
             ParserErrorType::UnexpectedEOF => write!(f, "UnexpectedEOF"),
             ParserErrorType::IndentationError => write!(f, "IndentationError"),
             ParserErrorType::BraceError => write!(f, "BraceError"),
             ParserErrorType::InvalidAssignmentTarget => write!(f, "InvalidAssignmentTarget"),
             ParserErrorType::ExpectedExpression => write!(f, "ExpectedExpression"),
             ParserErrorType::InvalidVariableDeclaration => write!(f, "InvalidVariableDeclaration"),
+            ParserErrorType::InvalidTypeAnnotation => write!(f, "InvalidTypeAnnotation"),
             ParserErrorType::ExpectVariableName => write!(f, "ExpectVariableName"),
             ParserErrorType::ExpectOperatorEqual => write!(f, "ExpectOperatorEqual"),
             ParserErrorType::ExpectValue => write!(f, "ExpectValue"),
+            ParserErrorType::ExpectedTypeAnnotation => write!(f, "ExpectedTypeAnnotation"),
+            ParserErrorType::ExpectedCloseParenthesis => write!(f, "ExpectedCloseParenthesis"),
+            ParserErrorType::UnexpectedEndOfInput => write!(f, "UnexpectedEndOfInput"),
+
 
             ParserErrorType::InvalidFunctionDeclaration => write!(f, "InvalidFunctionDeclaration"),
         }
@@ -94,8 +104,9 @@ impl Display for ParserErrorType {
 impl ParserError {
     pub fn new(error: ParserErrorType, position: Position) -> Self {
         let message = match &error {
-            ParserErrorType::UnexpectedToken { expected, found } =>
-                format!("Expected {:?}, but found {:?}", expected, found),
+            ParserErrorType::UnexpectedToken => "Unexpected token".to_string(),
+            // ParserErrorType::UnexpectedToken { expected, found } =>
+            //     format!("Expected {:?}, but found {:?}", expected, found),
             ParserErrorType::UnexpectedEOF => "Unexpected end of file".to_string(),
             ParserErrorType::IndentationError => "Indentation error".to_string(),
             ParserErrorType::BraceError => "Mismatched braces".to_string(),
@@ -103,10 +114,15 @@ impl ParserError {
             ParserErrorType::ExpectedExpression => "Expected expression".to_string(),
             //ParserErrorType::InvalidExpression => "Invalid expression".to_string(),
             ParserErrorType::InvalidVariableDeclaration => "Invalid variable declaration".to_string(),
+            ParserErrorType::InvalidTypeAnnotation => "Invalid type annotation".to_string(),
             ParserErrorType::ExpectVariableName => "Expect variable name".to_string(),
             ParserErrorType::ExpectOperatorEqual => "Expect operator equal".to_string(),
             ParserErrorType::ExpectValue => "Expect value".to_string(),
-            ParserErrorType::InvalidFunctionDeclaration => "Invalid function declaration".to_string(),};
+            ParserErrorType::ExpectedTypeAnnotation => "Expected type annotation".to_string(),
+            ParserErrorType::ExpectedCloseParenthesis => "Expected close parenthesis".to_string(),
+            ParserErrorType::InvalidFunctionDeclaration => "Invalid function declaration".to_string(),
+            ParserErrorType::UnexpectedEndOfInput => "Unexpected end of input".to_string(),};
+
 
         ParserError {
             error,
