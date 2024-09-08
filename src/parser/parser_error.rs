@@ -27,6 +27,10 @@ pub enum  ParserErrorType{
     InvalidAssignmentTarget,
     ExpectedExpression,
     InvalidVariableDeclaration,
+    InvalidFunctionDeclaration,
+    ExpectVariableName,
+    ExpectOperatorEqual,
+    ExpectValue
 }
 
 // #[allow(dead_code)]
@@ -76,6 +80,11 @@ impl Display for ParserErrorType {
             ParserErrorType::InvalidAssignmentTarget => write!(f, "InvalidAssignmentTarget"),
             ParserErrorType::ExpectedExpression => write!(f, "ExpectedExpression"),
             ParserErrorType::InvalidVariableDeclaration => write!(f, "InvalidVariableDeclaration"),
+            ParserErrorType::ExpectVariableName => write!(f, "ExpectVariableName"),
+            ParserErrorType::ExpectOperatorEqual => write!(f, "ExpectOperatorEqual"),
+            ParserErrorType::ExpectValue => write!(f, "ExpectValue"),
+
+            ParserErrorType::InvalidFunctionDeclaration => write!(f, "InvalidFunctionDeclaration"),
         }
     }
 }
@@ -94,7 +103,10 @@ impl ParserError {
             ParserErrorType::ExpectedExpression => "Expected expression".to_string(),
             //ParserErrorType::InvalidExpression => "Invalid expression".to_string(),
             ParserErrorType::InvalidVariableDeclaration => "Invalid variable declaration".to_string(),
-        };
+            ParserErrorType::ExpectVariableName => "Expect variable name".to_string(),
+            ParserErrorType::ExpectOperatorEqual => "Expect operator equal".to_string(),
+            ParserErrorType::ExpectValue => "Expect value".to_string(),
+            ParserErrorType::InvalidFunctionDeclaration => "Invalid function declaration".to_string(),};
 
         ParserError {
             error,

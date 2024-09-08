@@ -22,7 +22,7 @@ fn main() {
     //let mut parser = Parser::new(tokens, SyntaxMode::Indentation);
     let mut parser = Parser::new(tokens, SyntaxMode::Indentation);
 
-    match parser.parse_variable_declaration() {
+    match parser.parse_variable_declaration(){
         Ok(ast) => print_ast(ast),
         Err(e) => println!("Error parsing: {}", e),
         // Some(ast) => println!("AST: {:?}", ast),
