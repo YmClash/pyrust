@@ -58,6 +58,8 @@ pub enum Operator{
     LesshanOrEqual,
     GreaterThanOrEqual,
 }
+
+
 #[derive(Debug,Clone)]
 pub enum UnaryOperator{
     Negate,
@@ -75,6 +77,19 @@ pub enum UnaryOperator{
 }
 
 #[allow(dead_code)]
+#[derive(Debug,Clone,)]
+pub enum Type{
+    Int,
+    Float,
+    String,
+    Bool,
+    Char,
+    Array(Box<Type>),
+    Tuple(Vec<Type>),
+    Custom(String),
+}
+
+#[allow(dead_code)]
 #[derive(Debug,Clone)]
 pub enum Declaration{
     Variable(VariableDeclaration),
@@ -89,23 +104,23 @@ pub enum Declaration{
 #[derive(Debug,Clone)]
 pub struct VariableDeclaration{
     pub name: String,
-    pub variable_type: Option<String>,
+    pub variable_type: Option<Type>,
     pub value: Option<Expression>,
     pub mutable: bool,
 }
 #[allow(dead_code)]
 #[derive(Debug,Clone)]
 pub struct FunctionDeclaration{
-    pub name:String,
-    pub parameters: Vec<Parameters>,
-    pub return_type: Option<String>,
-    pub block: Block,
+    pub name: String,
+    pub parameters: Vec<(String, Type)>, // (nom, type)
+    pub return_type: Option<Type>,
+    pub body: Block,
 }
 #[allow(dead_code)]
 #[derive(Debug,Clone)]
 pub struct ConstanteDeclaration{
     pub name: String,
-    pub constant_type: Option<String>,
+    pub constant_type: Option<Type>,
     pub value: Expression,
 }
 
@@ -114,6 +129,7 @@ pub struct ConstanteDeclaration{
 pub struct StructDeclaration{
     pub name: String,
     pub fields: Vec<Parameters>,
+    //pub fileds_type: Vec<Type>,
 }
 
 #[allow(dead_code)]
@@ -145,6 +161,7 @@ pub enum Expression{
     LambdaExpression(LambdaExpression),
     MatchExpression(MatchExpression),
     MatchArms(Box<MatchArms>),
+    TypeCast(Box<Expression>, Type),
 
 
 }

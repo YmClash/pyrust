@@ -36,6 +36,8 @@ pub enum  ParserErrorType{
     ExpectParameterName,
     ExpectFunctionName,
 
+    //ExpectedType,
+
     ExpectedOpenParenthesis,
     ExpectedCloseParenthesis,
     UnexpectedEndOfInput,
@@ -94,6 +96,7 @@ impl Display for ParserErrorType {
             ParserErrorType::ExpectOperatorEqual => write!(f, "ExpectOperatorEqual"),
             ParserErrorType::ExpectValue => write!(f, "ExpectValue"),
             ParserErrorType::ExpectedTypeAnnotation => write!(f, "ExpectedTypeAnnotation"),
+
 
 
             ParserErrorType::ExpectedOpenParenthesis => write!(f, "ExpectedOpenParenthesis"),

@@ -2,7 +2,7 @@
 use num_bigint::BigInt;
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::lexer::lex::{Token, SyntaxMode};
-use crate::parser::ast::{ASTNode, Block, Statement, Expression, VariableDeclaration, Declaration, BinaryOperation, FunctionDeclaration, Parameters, Operator, Literal, Identifier, Function, UnaryOperation, UnaryOperator};
+use crate::parser::ast::{ASTNode, Block, Statement, Expression, VariableDeclaration, Declaration, BinaryOperation, FunctionDeclaration, Parameters, Operator, Literal, Identifier, Function, UnaryOperation, UnaryOperator, Type};
 use crate::parser::parser_error::ParserErrorType::{ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, ExpectFunctionName, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEndOfInput, UnexpectedToken};
 use crate::tok::{TokenType, Keywords, Operators, Delimiters};
 //
@@ -532,6 +532,27 @@ impl Parser {
 
     }
 
+    fn parse_type(&mut self) -> Result<Type,ParserError>{
+        if let Some(token) = self.current_token(){
+            match &token.token_type{
+                TokenType::IDENTIFIER {name} => {
+                    self.advance();
+                    match name.as_str() {
+                        "int" => Ok(Type::Int),
+                        "float" => Ok(Type::Float),
+                        "String" => Ok(Type::String),
+                        "bool" => Ok(Type::Bool),
+                        "char" => Ok(Type::Char),
+                        _ => Ok(Type::Custom(name.clone())),
+                    }
+                }
+                _ => Err(ParserError::new(ExpectedTypeAnnotation, self.current_position())),
+            }
+        } else {
+            Err(ParserError::new(UnexpectedEndOfInput, self.current_position()))
+        }
+    }
+
     #[allow(dead_code)]
     pub fn parse_variable_declaration(&mut self) -> Result<ASTNode, ParserError> {
         //verifies et consomme-le mot-clé "let"
@@ -562,19 +583,11 @@ impl Parser {
 
         // let type_annotation = self.parse_parameters()?;
 
-        let type_annotation = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
+        let variable_type = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
             self.advance(); // Consomme-le ":"
-            let type_token = self.current_token().ok_or_else(|| {
-                ParserError::new(ExpectedTypeAnnotation, self.current_position())
-            })?;
-
-            if let TokenType::IDENTIFIER { .. } = &type_token.token_type {
-                Some(type_token.text.clone()) // Utilise l'identifiant comme annotation de type
-            } else {
-                return Err(ParserError::new(InvalidTypeAnnotation, self.current_position()));
-            }
+            Some(self.parse_type()?) // Parse le type
         } else {
-            None
+            None // Aucun type spécifié
         };
 
         // Vérifie et consomme l'opérateur "="
@@ -591,12 +604,14 @@ impl Parser {
         // Crée et retourne le nœud AST pour la déclaration de variable
         Ok(ASTNode::Declaration(Declaration::Variable(VariableDeclaration {
             name: name,
-            variable_type: type_annotation,
+            variable_type: variable_type,
             value: Some(value),
             mutable: mutable,
         })))
 
     }
+
+
 
     pub fn parse_function_declaration(&mut self) -> Result<ASTNode, ParserError> {
         // Consomme "fn"
