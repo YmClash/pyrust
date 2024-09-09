@@ -170,6 +170,13 @@ impl<'a> Lexer<'a> {
         keywords.insert("with".to_string(), Keywords::WITH);
         keywords.insert("while".to_string(), Keywords::WHILE);
         keywords.insert("yield".to_string(), Keywords::YIELD);
+        //TYPE KEYWORDS
+        keywords.insert("int".to_string(), Keywords::INT);
+        keywords.insert("float".to_string(), Keywords::FLOAT);
+        keywords.insert("str".to_string(), Keywords::STR);
+        keywords.insert("bool".to_string(), Keywords::BOOL);
+        keywords.insert("char".to_string(), Keywords::CHAR);
+
         return keywords;
 
     }
@@ -462,9 +469,9 @@ impl<'a> Lexer<'a> {
         }
 
         if let Some(keyword) = self.keywords.get(&self.current_token_text) {
-            TokenType::KEYWORD(keyword.clone())
+            TokenType::KEYWORD(keyword.clone())  // c'est un mot clé
         } else {
-            TokenType::IDENTIFIER { name: self.current_token_text.clone() }
+            TokenType::IDENTIFIER { name: self.current_token_text.clone() } // sinon c'est un identifiant
         }
     }
 

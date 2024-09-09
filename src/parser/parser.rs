@@ -620,14 +620,38 @@ impl Parser {
         let token = self.current_token().ok_or_else(|| {
             ParserError::new(ExpectedTypeAnnotation, self.current_position())
         })?;
-
-        match token.text.as_str() {
-            "int" => Ok(Type::Int),
-            "float" => Ok(Type::Float),
-            "string" => Ok(Type::String),
-            "bool" => Ok(Type::Bool),
+        match &token.token_type  {
+            TokenType::KEYWORD(Keywords::INT) => {
+                self.advance();
+                Ok(Type::Int)
+            }
+            TokenType::KEYWORD(Keywords::FLOAT) => {
+                self.advance();
+                Ok(Type::Float)
+            }
+            TokenType::KEYWORD(Keywords::STR) => {
+                self.advance();
+                Ok(Type::String)
+            }
+            TokenType::KEYWORD(Keywords::BOOL) => {
+                self.advance();
+                Ok(Type::Bool)
+            }
+            TokenType::KEYWORD(Keywords::CHAR) => {
+                self.advance();
+                Ok(Type::Char)
+            }
             _ => Err(ParserError::new(InvalidTypeAnnotation, self.current_position())),
         }
+        //
+        // match token.text.as_str() {
+        //     "int" => Ok(Type::Int),
+        //     "float" => Ok(Type::Float),
+        //     "string" => Ok(Type::String),
+        //     "bool" => Ok(Type::Bool),
+        //     "char" => Ok(Type::Char),
+        //     _ => Err(ParserError::new(InvalidTypeAnnotation, self.current_position())),
+        // }
     }
 
     #[allow(dead_code)]
