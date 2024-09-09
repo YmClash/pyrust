@@ -11,7 +11,7 @@ fn main() {
 
     println!("Start Lexer");
 
-    let source_code = "let mut x = true";
+    let source_code = "let mut x = 10.5";
     let source_code2 = "fn add(x: int)";
 
     let mut lexer = Lexer::new(source_code2, SyntaxMode::Indentation);
@@ -21,7 +21,7 @@ fn main() {
     }
 
     //let mut parser = Parser::new(tokens, SyntaxMode::Indentation);
-    let mut parser = Parser::new(tokens, SyntaxMode::Indentation);
+    let mut parser = Parser::new(tokens, SyntaxMode::Braces);
 
     match parser.parse_function_declaration(){
         Ok(ast) => print_ast(ast),
@@ -80,7 +80,7 @@ fn print_function_declaration(func: FunctionDeclaration) {
     println!("Name: {}", func.name);
     println!("Parameters: {:?}", func.parameters);
     println!("Return Type: {:?}", func.return_type);
-    println!("Body: {:?}", func.block);
+    println!("Body: {:?}", func.body);
 
 }
 

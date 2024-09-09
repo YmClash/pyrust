@@ -1,7 +1,7 @@
 #[allow(dead_code)]
 use std::fmt::{Display, Formatter};
 use std::fmt;
-//use crate::tok::TokenType;
+use crate::tok::TokenType;
 
 #[allow(dead_code)]
 #[derive(Debug,PartialEq,Clone)]
@@ -35,6 +35,7 @@ pub enum  ParserErrorType{
     ExpectedTypeAnnotation,
     ExpectParameterName,
     ExpectFunctionName,
+    ExpectIdentifier,
 
     //ExpectedType,
 
@@ -84,7 +85,7 @@ impl Display for ParserErrorType {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             ParserErrorType::UnexpectedToken => write!(f, "UnexpectedToken"),
-            //ParserErrorType::UnexpectedToken{expected,found} => write!(f, "Expected Toke {:?}, but Found: {:?}", expected, found),
+           // ParserErrorType::UnexpectedToken{expected,found} => write!(f, "Expected Toke {:?}, but Found: {:?}", expected, found),
             ParserErrorType::UnexpectedEOF => write!(f, "UnexpectedEOF"),
             ParserErrorType::IndentationError => write!(f, "IndentationError"),
             ParserErrorType::BraceError => write!(f, "BraceError"),
@@ -95,7 +96,9 @@ impl Display for ParserErrorType {
             ParserErrorType::ExpectVariableName => write!(f, "ExpectVariableName"),
             ParserErrorType::ExpectOperatorEqual => write!(f, "ExpectOperatorEqual"),
             ParserErrorType::ExpectValue => write!(f, "ExpectValue"),
+
             ParserErrorType::ExpectedTypeAnnotation => write!(f, "ExpectedTypeAnnotation"),
+            ParserErrorType::ExpectIdentifier => write!(f, "ExpectIdentifier"),
 
 
 
@@ -137,6 +140,7 @@ impl ParserError {
             ParserErrorType::InvalidFunctionDeclaration => "Invalid function declaration".to_string(),
             ParserErrorType::ExpectParameterName => "Expect parameter name".to_string(),
             ParserErrorType::ExpectFunctionName => "Expect function name".to_string(),
+            ParserErrorType::ExpectIdentifier => "Expect identifier".to_string(),
 
             ParserErrorType::UnexpectedEndOfInput => "Unexpected end of input".to_string(),};
 

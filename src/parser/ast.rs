@@ -84,9 +84,10 @@ pub enum Type{
     String,
     Bool,
     Char,
-    Array(Box<Type>),
-    Tuple(Vec<Type>),
+    // Array(Box<Type>),
+    // Tuple(Vec<Type>),
     Custom(String),
+    Infer,  // Type inféré déduire par le compilateur
 }
 
 #[allow(dead_code)]
