@@ -162,7 +162,7 @@ pub enum Expression{
     LambdaExpression(LambdaExpression),
     MatchExpression(MatchExpression),
     MatchArms(Box<MatchArms>),
-    TypeCast(Box<Expression>, Type),
+    TypeCast(TypeCast),
 
 
 }
@@ -218,6 +218,13 @@ pub struct MemberAccess{
     pub member: String,
 }
 
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub struct TypeCast{
+    pub expression: Box<Expression>,
+    pub target_type: Type,
+}
+
 
 
 #[allow(dead_code)]
@@ -238,6 +245,7 @@ pub enum Statement{
     Try(TryStatement),
     With(WithStatement),
     Yield(YieldStatement),
+    TypeC
 
 
 }
