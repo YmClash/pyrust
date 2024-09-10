@@ -44,6 +44,7 @@ pub enum  ParserErrorType{
     ExpectedOpenParenthesis,
     ExpectedCloseParenthesis,
     UnexpectedEndOfInput,
+
 }
 
 // #[allow(dead_code)]

@@ -468,44 +468,27 @@ impl Parser {
     //     }
     // }
 
+    //
     pub fn parse_block(&mut self) -> Result<Block, ParserError> {
-        let syntax_mode = self.get_syntax_mode(); // Récupère le mode syntaxique
-
         let mut statements = Vec::new();
-        let mut braces = None;
-        let mut indent_level = None;
 
-        match syntax_mode {
-            SyntaxMode::Braces => {
-                // Gérer les accolades
-                let opening_brace = self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?; // Renvoie un Token
-                // Parse les statements à l'intérieur des accolades
-                while !self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) {
-                    let statement = self.parse_statement()?; // Analyse chaque statement
-                    statements.push(statement);
-                }
-                let closing_brace = self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?; // Renvoie un Token
-                braces = Some((opening_brace, closing_brace));
-            }
-            SyntaxMode::Indentation => {
-                // Gérer l'indentation
-                let current_indent_level = self.get_current_indent_level();
-                indent_level = Some(current_indent_level);
+        // Consomme l'accolade ouvrante `{`
+        self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
 
-                // Boucle pour analyser les statements en mode indentation
-                while self.get_current_indent_level() == current_indent_level {
-                    let statement = self.parse_statement()?;
-                    statements.push(statement);
-                }
-            }
+        // Analyse les statements dans le bloc
+        while !self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) {
+            let statement = self.parse_statement()?; // Parse chaque statement
+            statements.push(statement);
         }
 
-        // Retourne un bloc avec tous les champs renseignés
+        // Consomme l'accolade fermante `}`
+        self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+
         Ok(Block {
-            statements,
-            syntax_mode,
-            indent_level,
-            braces,
+            statements, // Retourne tous les statements analysés
+            syntax_mode: self.syntax_mode,
+            indent_level: None,
+            braces: None,
         })
     }
     pub fn get_syntax_mode(&self) -> SyntaxMode {
@@ -682,11 +665,37 @@ impl Parser {
                 Ok(Type::Char)
             }
             _ => {
+                println!("Unexpected token: {:?}", token);
                 // Si le token actuel n'est pas un type valide, renvoyer une erreur
                 Err(ParserError::new(InvalidTypeAnnotation, self.current_position()))
             }
         }
     }
+    //
+    // fn parse_type(&mut self) -> Result<Type, ParserError> {
+    //     match self.current_token() {
+    //         Some(token) => match &token.token_type {
+    //             TokenType::KEYWORD(Keywords::INT) => {
+    //                 self.advance();
+    //                 Ok(Type::Int)
+    //             },
+    //             TokenType::KEYWORD(Keywords::FLOAT) => {
+    //                 self.advance();
+    //                 Ok(Type::Float)
+    //             },
+    //             TokenType::KEYWORD(Keywords::STR) => {
+    //                 self.advance();
+    //                 Ok(Type::String)
+    //             },
+    //             TokenType::KEYWORD(Keywords::BOOL) => {
+    //                 self.advance();
+    //                 Ok(Type::Bool)
+    //             },
+    //             _ => Err(ParserError::new(InvalidTypeAnnotation, self.current_position())),
+    //         },
+    //         None => Err(ParserError::new(UnexpectedEndOfInput, self.current_position())),
+    //     }
+    // }
 
 
     #[allow(dead_code)]
@@ -740,29 +749,63 @@ impl Parser {
 
     }
 
+    // pub fn parse_function_declaration(&mut self) -> Result<ASTNode, ParserError> {
+    //     self.consume(TokenType::KEYWORD(Keywords::FN))?;
+    //     let name = self.consume_identifier()?;
+    //
+    //     self.consume(TokenType::DELIMITER(Delimiters::LPAR))?;
+    //     let parameters = self.parse_function_parameters()?;
+    //     self.consume(TokenType::DELIMITER(Delimiters::RPAR))?;
+    //
+    //     // Ajoutez une impression pour vérifier si le `->` est bien trouvé
+    //     if self.match_token(&[TokenType::OPERATOR(Operators::RARROW)]) {
+    //         println!("Found -> operator for return type");
+    //         self.advance(); // Consomme `->`
+    //
+    //         // Ajoutez une impression pour confirmer l'analyse du type
+    //         let return_type = Some(self.parse_type()?);
+    //         println!("Parsed return type: {:?}", return_type);
+    //     } else {
+    //         println!("No return type specified");
+    //     }
+    //
+    //     let body = self.parse_block()?;
+    //     Ok(ASTNode::Declaration(Declaration::Function(FunctionDeclaration {
+    //         name,
+    //         parameters,
+    //         return_type: None, // ou `return_type` si trouvé
+    //         body,
+    //     })))
+    // }
+
+
 
     pub fn parse_function_declaration(&mut self) -> Result<ASTNode, ParserError> {
-        self.consume(TokenType::KEYWORD(Keywords::FN))?;
-        let name = self.consume_identifier()?;
+        self.consume(TokenType::KEYWORD(Keywords::FN))?; // Consomme `fn`
 
-        self.consume(TokenType::DELIMITER(Delimiters::LPAR))?;
-        let parameters = self.parse_function_parameters()?;
-        self.consume(TokenType::DELIMITER(Delimiters::RPAR))?;
+        let name = self.consume_identifier()?; // Parse le nom de la fonction
 
+        self.consume(TokenType::DELIMITER(Delimiters::LPAR))?; // Consomme `(`
+
+        let parameters = self.parse_function_parameters()?; // Parse les paramètres de la fonction
+
+        self.consume(TokenType::DELIMITER(Delimiters::RPAR))?; // Consomme `)`
+
+        // Gestion du type de retour (après `->`)
         let return_type = if self.match_token(&[TokenType::OPERATOR(Operators::RARROW)]) {
-            self.advance(); // Consomme "->"
-            Some(self.parse_type()?)
+            self.consume(TokenType::OPERATOR(Operators::RARROW))?; //self.advance(); // Consomme `->`
+            Some(self.parse_type()?) // Parse le type de retour
         } else {
-            None
+            None // Pas de type de retour spécifié
         };
 
-        let body = self.parse_block()?;
+        let body = self.parse_block()?; // Parse le corps de la fonction
 
-        Ok(ASTNode::Declaration(Declaration::Function(FunctionDeclaration{
-            name: name,
-            parameters: parameters,
-            return_type : return_type,
-            body : body,
+        Ok(ASTNode::Declaration(Declaration::Function(FunctionDeclaration {
+            name,
+            parameters,
+            return_type,
+            body,
         })))
     }
 
@@ -777,8 +820,30 @@ impl Parser {
     }
 
 
-    pub fn parse_expression(&mut self) -> Result<Expression,ParserError> {
-        self.parse_assignment()
+    pub fn parse_expression(&mut self) -> Result<Expression, ParserError> {
+        let mut left = self.parse_primary()?; // Parse l'expression primaire (comme un identifiant ou un littéral)
+
+        // Gérer les opérations binaires
+        while let Some(operator) = self.match_operator() {
+            self.advance(); // Consomme l'opérateur
+            let right = self.parse_primary()?; // Parse l'expression à droite de l'opérateur
+            left = Expression::BinaryOperation(BinaryOperation {
+                left: Box::new(left),
+                operator,
+                right: Box::new(right),
+            });
+        }
+
+        Ok(left)
+    }
+    fn match_operator(&mut self) ->Option<Operator>{
+        match self.current_token()?.token_type{
+            TokenType::OPERATOR(Operators::PLUS) => Some(Operator::Addition),
+            TokenType::OPERATOR(Operators::MINUS) => Some(Operator::Substraction),
+            TokenType::OPERATOR(Operators::STAR) => Some(Operator::Multiplication),
+            TokenType::OPERATOR(Operators::SLASH) => Some(Operator::Division),
+            _ => None,
+        }
     }
 
     fn parse_assignment(&mut self) -> Result<Expression, ParserError> {
@@ -958,7 +1023,7 @@ impl Parser {
     pub fn parse_return_statement(&mut self) -> Result<Statement, ParserError> {
         self.consume(TokenType::KEYWORD(Keywords::RETURN))?; // Consomme le mot-clé `return`
 
-        // Parse l'expression après `return`, si elle existe
+        // Parse l'expression après `return', si elle existe
         let value = if !self.match_token(&[TokenType::DELIMITER(Delimiters::SEMICOLON)]) {
             Some(self.parse_expression()?) // Parse l'expression qui suit `return`
         } else {
@@ -993,6 +1058,9 @@ impl Parser {
     }
 
     fn advance(&mut self){
+        // if !self.is_at_end(){
+        //     self.current += 1;
+        // }
         self.current += 1;
     }
 
@@ -1020,6 +1088,12 @@ impl Parser {
         false
     }
 
+    // fn match_token(&mut self,types: &[TokenType]) -> bool {
+    //     if let Some(token) = self.current_token(){
+    //         types.iter().any(|t|&token.token_type == t)
+    //     }else { false }
+    // }
+
 
     fn create_error(&self, error_type: ParserErrorType) -> ParserError {
         ParserError::new(
@@ -1030,17 +1104,33 @@ impl Parser {
         )
     }
 
-    pub fn consume(&mut self, expected: TokenType) -> Result<Token, ParserError> {
-        // on clone le token actuel pour ne pas avoir de problem avec le borrow checker
-        let current_token = self.current_token().cloned().ok_or_else(|| {
-            ParserError::new(UnexpectedEOF, self.current_position())
-        })?;
+    // pub fn consume(&mut self, expected: TokenType) -> Result<Token, ParserError> {
+    //     // on clone le token actuel pour ne pas avoir de problem avec le borrow checker
+    //     let current_token = self.current_token().cloned().ok_or_else(|| {
+    //         self.print_surrounding_tokens();
+    //         ParserError::new(UnexpectedEOF, self.current_position())
+    //     })?;
+    //
+    //     if current_token.token_type == expected {
+    //         self.advance(); // Avance au prochain token
+    //         Ok(current_token.clone()) // Renvoie le token consommé
+    //     } else {
+    //         self.print_surrounding_tokens();
+    //         Err(ParserError::new(UnexpectedToken, self.current_position()))
+    //     }
+    // }
 
-        if current_token.token_type == expected {
-            self.advance(); // Avance au prochain token
-            Ok(current_token.clone()) // Renvoie le token consommé
+    fn consume(&mut self, expected: TokenType) -> Result<Token, ParserError> {
+        if let Some(token) = self.current_token() {
+            if token.token_type == expected {
+                let token = token.clone();
+                self.advance();
+                Ok(token)
+            } else {
+                Err(ParserError::new(UnexpectedToken, self.current_position()))
+            }
         } else {
-            Err(ParserError::new(UnexpectedToken, self.current_position()))
+            Err(ParserError::new(UnexpectedEndOfInput, self.current_position()))
         }
     }
 
@@ -1074,8 +1164,47 @@ impl Parser {
     //     }))
     // }
 
+    fn print_surrounding_tokens(&self){
+        let prev_token = if self.current > 0 {
+            Some(&self.tokens[self.current - 1])
+        } else {
+            None
+        };
+        let current_token = self.current_token();
+        let next_token = if self.current  + 1 < self.tokens.len(){
+            Some(&self.tokens[self.current + 1])
+        } else {
+            None
+        };
+        println!("");
+        println!("---------------- Token Error Context--by-YmC ----------");
+        if let Some(prev) = prev_token{
+            println!("Previous Token: {:?}", prev);
+        }
+        if let Some(current) = current_token{
+            println!("Current Token: {:?}", current);
+        }
+        if let Some(next) = next_token{
+            println!("Next Token: {:?}", next);
+        }
+        println!("----------------------------------------------------------");
+        println!("");
+
+    }
+
+    pub fn create_error_with_context(&self, error_type: ParserErrorType) -> ParserError {
+        self.print_surrounding_tokens();
+        ParserError::new(
+            error_type,
+            Position {
+                index: self.current,
+            },
+        )
+    }
+
 
 }
+//by YmC
 
 ///////////////////////fin essai//////////////////////////////
 
