@@ -12,12 +12,11 @@ fn main() {
     println!("Start Lexer");
 
     let source_code = "let mut x:float = 10.5";
-    let source_code2 = r#"fn add(a:int, b:int) {
- return a + b;
-    }
+    let source_code2 = r#"fn add(a: int, b: int) -> int {
+        return a + b;}
     "#;
 
-    let mut lexer = Lexer::new(source_code, SyntaxMode::Braces);
+    let mut lexer = Lexer::new(source_code2, SyntaxMode::Braces);
     let tokens = lexer.tokenize();
     for token in &tokens {
         println!("{:?}", token);
@@ -26,7 +25,7 @@ fn main() {
     //let mut parser = Parser::new(tokens, SyntaxMode::Indentation);
     let mut parser = Parser::new(tokens, SyntaxMode::Braces);
     // match parser.parse_function_declaration(){
-    match parser.parse_variable_declaration(){
+    match parser.parse_function_declaration(){
         Ok(ast) => {
             println!("AST For Function Declaration:");
             print_ast(ast)}

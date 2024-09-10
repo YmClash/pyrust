@@ -33,12 +33,13 @@ pub enum  ParserErrorType{
     ExpectOperatorEqual,
     ExpectValue,
     ExpectColon,
+
     ExpectedTypeAnnotation,
     ExpectParameterName,
     ExpectFunctionName,
     ExpectIdentifier,
 
-    //ExpectedType,
+    ExpectedType,
 
     ExpectedOpenParenthesis,
     ExpectedCloseParenthesis,
@@ -101,6 +102,7 @@ impl Display for ParserErrorType {
 
             ParserErrorType::ExpectedTypeAnnotation => write!(f, "ExpectedTypeAnnotation"),
             ParserErrorType::ExpectIdentifier => write!(f, "ExpectIdentifier"),
+            ParserErrorType::ExpectedType => write!(f, "ExpectedType"),
 
 
 
@@ -137,6 +139,8 @@ impl ParserError {
             ParserErrorType::ExpectValue => "Expect value".to_string(),
             ParserErrorType::ExpectColon => "Expect colon".to_string(),
             ParserErrorType::ExpectedTypeAnnotation => "Expected type annotation".to_string(),
+            ParserErrorType::ExpectedType => "Expected type".to_string(),
+
 
             ParserErrorType::ExpectedOpenParenthesis => "Expected open parenthesis".to_string(),
             ParserErrorType::ExpectedCloseParenthesis => "Expected close parenthesis".to_string(),

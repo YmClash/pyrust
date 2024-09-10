@@ -2,7 +2,7 @@
 use num_bigint::BigInt;
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::lexer::lex::{Token, SyntaxMode};
-use crate::parser::ast::{ASTNode, Block, Statement, Expression, VariableDeclaration, Declaration, BinaryOperation, FunctionDeclaration, Parameters, Operator, Literal, Identifier, Function, UnaryOperation, UnaryOperator, Type, TypeCast};
+use crate::parser::ast::{ASTNode, Block, Statement, Expression, VariableDeclaration, Declaration, BinaryOperation, FunctionDeclaration, Parameters, Operator, Literal, Identifier, Function, UnaryOperation, UnaryOperator, Type, TypeCast, ReturnStatement};
 use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEndOfInput, UnexpectedEOF, UnexpectedToken};
 use crate::tok::{TokenType, Keywords, Operators, Delimiters};
 //
@@ -527,6 +527,44 @@ impl Parser {
     // Cette méthode est un exemple de parsing d'instructions dans un bloc
 
 
+    // fn parse_function_parameters(&mut self) -> Result<Vec<(String, Type)>, ParserError> {
+    //     let mut params = Vec::new();
+    //
+    //     loop {
+    //         let name_token = self.current_token().ok_or_else(|| {
+    //             ParserError::new(ExpectParameterName, self.current_position())
+    //         })?;
+    //
+    //         let name = if let TokenType::IDENTIFIER { name: _ } = &name_token.token_type {
+    //             name_token.text.clone()
+    //         } else {
+    //             return Err(ParserError::new(ExpectParameterName, self.current_position()));
+    //         };
+    //         self.advance(); // Consomme le nom du paramètre
+    //
+    //         // Si ":" est trouvé, on doit analyser le type
+    //         if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
+    //             self.advance(); // Consomme ":"
+    //             let parameter_type = self.parse_type()?; // Analyse le type du paramètre
+    //             params.push((name, parameter_type));
+    //         } else {
+    //             return Err(ParserError::new(ExpectColon, self.current_position()));
+    //         }
+    //
+    //         // Gestion des virgules et parenthèses fermantes
+    //         if self.match_token(&[TokenType::DELIMITER(Delimiters::RPAR)]) {
+    //             self.advance(); // Consomme la parenthèse fermante
+    //             break;
+    //         } else if self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]) {
+    //             self.advance(); // Consomme la virgule
+    //         } else {
+    //             return Err(ParserError::new(UnexpectedToken, self.current_position()));
+    //         }
+    //     }
+    //
+    //     Ok(params)
+    // }
+
 
 
     #[allow(dead_code)]
@@ -616,43 +654,40 @@ impl Parser {
 
     }
 
+
     pub fn parse_type(&mut self) -> Result<Type, ParserError> {
         let token = self.current_token().ok_or_else(|| {
             ParserError::new(ExpectedTypeAnnotation, self.current_position())
         })?;
-        match &token.token_type  {
+
+        match &token.token_type {
             TokenType::KEYWORD(Keywords::INT) => {
-                self.advance();
+                self.advance(); // Consomme le token `int`
                 Ok(Type::Int)
             }
             TokenType::KEYWORD(Keywords::FLOAT) => {
-                self.advance();
+                self.advance(); // Consomme le token `float`
                 Ok(Type::Float)
             }
-            TokenType::KEYWORD(Keywords::STR) => {
-                self.advance();
-                Ok(Type::String)
-            }
             TokenType::KEYWORD(Keywords::BOOL) => {
-                self.advance();
+                self.advance(); // Consomme le token `bool`
                 Ok(Type::Bool)
             }
+            TokenType::KEYWORD(Keywords::STR) => {
+                self.advance(); // Consomme le token `string`
+                Ok(Type::String)
+            }
             TokenType::KEYWORD(Keywords::CHAR) => {
-                self.advance();
+                self.advance(); // Consomme le token `char`
                 Ok(Type::Char)
             }
-            _ => Err(ParserError::new(InvalidTypeAnnotation, self.current_position())),
+            _ => {
+                // Si le token actuel n'est pas un type valide, renvoyer une erreur
+                Err(ParserError::new(InvalidTypeAnnotation, self.current_position()))
+            }
         }
-        //
-        // match token.text.as_str() {
-        //     "int" => Ok(Type::Int),
-        //     "float" => Ok(Type::Float),
-        //     "string" => Ok(Type::String),
-        //     "bool" => Ok(Type::Bool),
-        //     "char" => Ok(Type::Char),
-        //     _ => Err(ParserError::new(InvalidTypeAnnotation, self.current_position())),
-        // }
     }
+
 
     #[allow(dead_code)]
     pub fn parse_variable_declaration(&mut self) -> Result<ASTNode, ParserError> {
@@ -741,29 +776,6 @@ impl Parser {
         todo!()
     }
 
-
-
-    // pub fn parse_expression(&mut self) -> Option<Expression> {
-    //     if let Some(token) = self.current_token() {
-    //         match &token.token_type {
-    //             // Déstructuration de `TokenType::INTEGER` pour obtenir les données
-    //             TokenType::INTEGER{value} => {
-    //                 // Utilise directement la valeur du token
-    //                 let value = value.clone(); // Assurez-vous que le type correspond
-    //                 self.advance(); // Consomme l'entier
-    //                 return Some(Expression::Literal(Literal::Integer { value }));
-    //             }
-    //             // Déstructuration de `TokenType::IDENTIFIER` pour obtenir les données
-    //             TokenType::IDENTIFIER{name} => {
-    //                 let name = name.clone(); // Assurez-vous que le type correspond
-    //                 self.advance(); // Consomme l'identifiant
-    //                 return Some(Expression::Identifier(name));
-    //             }
-    //             _ => {}
-    //         }
-    //     }
-    //     None
-    // }
 
     pub fn parse_expression(&mut self) -> Result<Expression,ParserError> {
         self.parse_assignment()
@@ -943,14 +955,36 @@ impl Parser {
         }
     }
 
+    pub fn parse_return_statement(&mut self) -> Result<Statement, ParserError> {
+        self.consume(TokenType::KEYWORD(Keywords::RETURN))?; // Consomme le mot-clé `return`
 
+        // Parse l'expression après `return`, si elle existe
+        let value = if !self.match_token(&[TokenType::DELIMITER(Delimiters::SEMICOLON)]) {
+            Some(self.parse_expression()?) // Parse l'expression qui suit `return`
+        } else {
+            None // Pas d'expression après `return`
+        };
 
+        // Consomme le point-virgule `;` après `return`
+        self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON))?;
 
-
-    pub fn parse_statement(&mut self) -> Result<Statement,ParserError>{
-        unimplemented!();
-
+        Ok(Statement::Return(ReturnStatement {
+            value, // L'expression retournée, si elle existe
+        }))
     }
+
+
+    pub fn parse_statement(&mut self) -> Result<Statement, ParserError> {
+        if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]) {
+            // Si c'est un statement `return`, on appelle `parse_return_statement`
+            self.parse_return_statement()
+        } else {
+            // Sinon, on tente de parser d'autres types d'instructions (expressions, boucles, etc.)
+            let expr = self.parse_expression()?;
+            Ok(Statement::Expression(expr))
+        }
+    }
+
 
     /// Fonction Utilitaire pour le parser
 
