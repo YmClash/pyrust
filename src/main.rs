@@ -12,18 +12,18 @@ fn main() {
     println!("===================\n");
 
     let test_cases = [
-        ("Simple Function", "fn add(a: int, b: int) -> int { return a + b; }"),
-        ("Function with Multiple Statements", r#"
-            fn calculate(x: int, y: int) -> int {
+        ("Simple Function", "fn add(a: int, b: int) -> int { return a + b; }",true),
+        ("Function with Multiple Statements", r#"fn calculate(x: int, y: int) -> int {
                 let result = x * y;
                 return result + 10;
             }
-        "#),
-        ("Function without Return Type", "fn greet(name: str) { print(\"Hello, \" + name); }"),
-        ("Variable Declaration", "let x: int = 5;"),
+        "#,true),
+        ("Function without Return Type", "fn greet(name: str) { print(\"Hello, \" + name); }",true),
+        ("Variable Declaration", "let  x:int = 5",false),
+        ("Variable Declaration mutable ", "let mut x:float = 5.5",false),
     ];
 
-    for (test_name, source_code) in test_cases.iter() {
+    for (test_name, source_code,is_function) in test_cases.iter() {
         println!("Test Case: {}", test_name);
         println!("Source Code:\n{}\n", source_code);
 
@@ -38,7 +38,7 @@ fn main() {
 
                 // Parser Test
                 println!("Parser Output:");
-                match run_parser(&tokens) {
+                match run_parser(&tokens,*is_function) {
                     Ok(ast) => {
                         print_ast(ast);
                         println!("Parser completed successfully.\n");
@@ -49,7 +49,7 @@ fn main() {
             Err(e) => println!("Lexer Error: {}\n", e),
         }
 
-        println!("--------------------------------------------------\n");
+        println!("----------------------------------------------------\n");
     }
 
     println!("Pyrust Compiler Test Completed");
@@ -60,10 +60,13 @@ fn run_lexer(source_code: &str) -> Result<Vec<Token>, String> {
     Ok(lexer.tokenize())
 }
 
-fn run_parser(tokens: &[Token]) -> Result<ASTNode, String> {
+fn run_parser(tokens: &[Token],is_function:bool) -> Result<ASTNode, String> {
     let mut parser = Parser::new(tokens.to_vec(), SyntaxMode::Braces);
-    parser.parse_function_declaration()
-        .map_err(|e| format!("{} at position {}", e.message, e.position.index))
+    if is_function {
+        parser.parse_function_declaration()
+    } else {
+        parser.parse_variable_declaration()
+    }.map_err(|e| format!("{} at position {}", e.message, e.position.index))
 }
 
 fn print_ast(ast: ASTNode) {
@@ -115,21 +118,18 @@ fn print_function_declaration(func: FunctionDeclaration) {
 
 
 
-
-
 /*
+
 fn main() {
 
     println!("Start Lexer");
 
-    let source_code = "fn add(a,b) -> bool {
-        return a + b;
-    }";
+    let source_code = "let x:int = 5";
     let source_code2 = r#"fn add(a: int, b: int) -> int {
         return a + b;}
     "#;
 
-    let mut lexer = Lexer::new(source_code2, SyntaxMode::Braces);
+    let mut lexer = Lexer::new(source_code, SyntaxMode::Braces);
     let tokens = lexer.tokenize();
     for token in &tokens {
         println!("{:?}", token);
@@ -138,7 +138,7 @@ fn main() {
     //let mut parser = Parser::new(tokens, SyntaxMode::Indentation);
     let mut parser = Parser::new(tokens, SyntaxMode::Braces);
     // match parser.parse_function_declaration(){
-    match parser.parse_function_declaration(){
+    match parser.parse_variable_declaration(){
         Ok(ast) => {
             println!("AST For Function Declaration:");
             print_ast(ast)}
@@ -201,6 +201,11 @@ fn print_function_declaration(func: FunctionDeclaration) {
     println!("Body: {:?}", func.body);
 
 }
+*/
+
+
+
+
 
 //
 // fn print_ast(ast: ASTNode) {
@@ -243,4 +248,3 @@ fn print_function_declaration(func: FunctionDeclaration) {
     // }*/
 
 
- */
