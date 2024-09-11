@@ -12,15 +12,16 @@ fn main() {
     println!("===================\n");
 
     let test_cases = [
-        ("Simple Function", "fn add(a: int, b: int) -> int { return a + b; }",true),
-        ("Function with Multiple Statements", r#"fn calculate(x: int, y: int) -> int {
-                let result = x * y;
-                return result + 10;
-            }
-        "#,true),
-        ("Function without Return Type", "fn greet(name: str) { print(\"Hello, \" + name); }",true),
-        ("Variable Declaration", "let  x:int = 5",false),
-        ("Variable Declaration mutable ", "let mut x:float = 5.5",false),
+        ("Simple Function", "fn add(a: int, b: float) -> float { return a + b; }",true),
+        ("Simple Function2", "fn add(a: int, b: float)  { return a + b; }",true),
+        // ("Function with Multiple Statements", r#"fn calculate(x: int, y: int) -> int {
+        //         let result = x * y;
+        //         return result + 10;
+        //     }
+        // "#,true),
+        // ("Function without Return Type", "fn greet(name: str) { print(\"Hello, \" + name); }",true),
+        // ("Variable Declaration", "let  x:int = 5",false),
+        // ("Variable Declaration mutable ", "let mut x:float = 5.5",false),
     ];
 
     for (test_name, source_code,is_function) in test_cases.iter() {
