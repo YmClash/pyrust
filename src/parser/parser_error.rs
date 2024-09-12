@@ -43,7 +43,9 @@ pub enum  ParserErrorType{
 
     ExpectedOpenParenthesis,
     ExpectedCloseParenthesis,
+    UnexpectedIndentation,
     UnexpectedEndOfInput,
+
 
 }
 
@@ -104,6 +106,7 @@ impl Display for ParserErrorType {
             ParserErrorType::ExpectedTypeAnnotation => write!(f, "ExpectedTypeAnnotation"),
             ParserErrorType::ExpectIdentifier => write!(f, "ExpectIdentifier"),
             ParserErrorType::ExpectedType => write!(f, "ExpectedType"),
+            ParserErrorType::UnexpectedIndentation => write!(f, "UnexpectedIndentation"),
 
 
 
@@ -142,7 +145,7 @@ impl ParserError {
             ParserErrorType::ExpectedTypeAnnotation => "Expected type annotation".to_string(),
             ParserErrorType::ExpectedType => "Expected type".to_string(),
 
-
+            ParserErrorType::UnexpectedIndentation => "Unexpected indentation".to_string(),
             ParserErrorType::ExpectedOpenParenthesis => "Expected open parenthesis".to_string(),
             ParserErrorType::ExpectedCloseParenthesis => "Expected close parenthesis".to_string(),
             ParserErrorType::InvalidFunctionDeclaration => "Invalid function declaration".to_string(),

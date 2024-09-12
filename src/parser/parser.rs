@@ -3,7 +3,7 @@ use num_bigint::BigInt;
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::lexer::lex::{Token, SyntaxMode};
 use crate::parser::ast::{ASTNode, Block, Statement, Expression, VariableDeclaration, Declaration, BinaryOperation, FunctionDeclaration, Parameters, Operator, Literal, Identifier, Function, UnaryOperation, UnaryOperator, Type, TypeCast, ReturnStatement};
-use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEndOfInput, UnexpectedEOF, UnexpectedToken};
+use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEndOfInput, UnexpectedEOF, UnexpectedIndentation, UnexpectedToken};
 use crate::tok::{TokenType, Keywords, Operators, Delimiters};
 //
 // pub struct Parser {
@@ -461,15 +461,39 @@ impl Parser {
         Position{index: self.current}
     }
 
-    // pub fn parse_block(&mut self) -> Result<Block, ParserError> {
-    //     match self.syntax_mode {
-    //         SyntaxMode::Indentation => self.parse_indented_block(),
-    //         SyntaxMode::Braces => self.parse_braced_block(),
-    //     }
-    // }
+    pub fn parse_block(&mut self) -> Result<Block, ParserError> {
+        match self.syntax_mode {
+            SyntaxMode::Indentation => self.parse_indented_block(),
+            SyntaxMode::Braces => self.parse_braced_block(),
+        }
+    }
+    fn current_indent_level(&self) -> usize {
+        if let Some(TokenType::INDENT) = self.current_token().map(|t| &t.token_type) {
+            self.get_current_indent_level()
+        } else {
+            0
+        }
+    }
+
+    pub fn parse_indented_block(&mut self) -> Result<Block,ParserError>{
+       // println!("Début du parsing du bloc indenté");
+       //  let mut statements = Vec::new();
+       //  let initial_indent = self.current_indent_level();
+       //  while !self.is_at_end() {
+       //      let current_indent = self.current_indent_level();
+       //      if current_indent < initial_indent{
+       //          println!("Fin du parsing du bloc indenté");
+       //          break;
+       //      }else if current_indent > initial_indent{
+       //          return Err(ParserError::new(UnexpectedIndentation, self.current_position()));
+       //      }
+       //
+       //  }
+        todo!()
+    }
 
     //
-    fn parse_block(&mut self) -> Result<Block, ParserError> {
+    pub fn parse_braced_block(&mut self) -> Result<Block, ParserError> {
         println!("Début du parsing du bloc");
         let opening_brace = self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
         println!("Accolade ouvrante consommée");
@@ -595,43 +619,6 @@ impl Parser {
             }
         }
     }
-
-    // fn parse_type(&mut self) -> Result<Type, ParserError> {
-    //     println!("Début du parsing du type");
-    //     let token = self.current_token().ok_or_else(|| {
-    //         ParserError::new(ParserErrorType::UnexpectedEndOfInput, self.current_position())
-    //     })?;
-    //
-    //     let result = match &token.token_type {
-    //         TokenType::KEYWORD(Keywords::INT) => {
-    //             self.advance();
-    //             println!("Type int détecté");
-    //             Ok(Type::Int)
-    //         },
-    //         TokenType::KEYWORD(Keywords::FLOAT) => {
-    //             self.advance();
-    //             println!("Type float détecté");
-    //             Ok(Type::Float)
-    //         },
-    //         TokenType::KEYWORD(Keywords::STR) => {
-    //             self.advance();
-    //             println!("Type str détecté");
-    //             Ok(Type::String)
-    //         },
-    //         TokenType::KEYWORD(Keywords::BOOL) => {
-    //             self.advance();
-    //             println!("Type bool détecté");
-    //             Ok(Type::Bool)
-    //         },
-    //         _ => {
-    //             println!("Type invalide détecté : {:?}", token);
-    //             Err(ParserError::new(ParserErrorType::InvalidTypeAnnotation, self.current_position()))
-    //         },
-    //     };
-    //
-    //     println!("Fin du parsing du type : {:?}", result);
-    //     result
-    // }
 
 
     #[allow(dead_code)]
