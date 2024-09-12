@@ -1,8 +1,7 @@
 //#![allow(dead_code)]
 
-
-use std::fmt::{Display, Formatter};
 use std::fmt;
+use std::fmt::{Display, Formatter};
 
 /// Enumeration des erreurs du compilateur
 // #[derive(Debug, PartialEq,Clone)]
@@ -14,23 +13,22 @@ use std::fmt;
 //
 // }
 
-#[derive(Debug, PartialEq,Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Position {
     pub line: usize,
     pub column: usize,
 }
 
-
-#[derive(Debug, PartialEq,Clone)]
-pub struct LexerError{
+#[derive(Debug, PartialEq, Clone)]
+pub struct LexerError {
     pub error: LexerErrorType,
     pub message: String,
     pub position: Position,
 }
 
 //
-#[derive(Debug, PartialEq,Clone)]
-pub enum LexerErrorType{
+#[derive(Debug, PartialEq, Clone)]
+pub enum LexerErrorType {
     InvalidCharacter(char),
     InvalidToken(String),
     InvalidFloat(String),
@@ -42,11 +40,11 @@ pub enum LexerErrorType{
 }
 
 #[allow(dead_code)]
-impl Position{
-    fn new() -> Self{
-        Position{line:1,column:1}
+impl Position {
+    fn new() -> Self {
+        Position { line: 1, column: 1 }
     }
-    fn advance(&mut self, ch:char){
+    fn advance(&mut self, ch: char) {
         self.column += 1;
         if ch == '\n' {
             self.line += 1;
@@ -62,22 +60,15 @@ impl Position{
     // }
 }
 
-
-
-
-
-
-impl Display for Position{
+impl Display for Position {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f,"line {}, column {}",self.line,self.column)
+        write!(f, "line {}, column {}", self.line, self.column)
     }
 }
 
-
-
-impl Display for LexerError{
+impl Display for LexerError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f,"LexerError: {} at {}",self.message,self.position)
+        write!(f, "LexerError: {} at {}", self.message, self.position)
     }
 }
 
@@ -96,52 +87,74 @@ impl Display for LexerErrorType {
     }
 }
 
-
-impl LexerError{
-    pub fn new(error: LexerErrorType, message: String,position: Position) -> Self{
-        LexerError{
+impl LexerError {
+    pub fn new(error: LexerErrorType, message: String, position: Position) -> Self {
+        LexerError {
             error,
             message,
             position,
         }
+    }
+    pub fn invalid_character(c: char, position: Position) -> Self {
+        Self::new(
+            LexerErrorType::InvalidCharacter(c),
+            format!("Invalid character: {}", c),
+            position,
+        )
+    }
+    pub fn invalid_token(t: &str, position: Position) -> Self {
+        Self::new(
+            LexerErrorType::InvalidToken(t.to_string()),
+            format!("Invalid token: {}", t),
+            position,
+        )
+    }
+    pub fn invalid_integer(i: &str, position: Position) -> Self {
+        Self::new(
+            LexerErrorType::InvalidInteger(i.to_string()),
+            format!("Invalid integer: {}", i),
+            position,
+        )
+    }
+    pub fn invalid_float(f: &str, position: Position) -> Self {
+        Self::new(
+            LexerErrorType::InvalidFloat(f.to_string()),
+            format!("Invalid float: {}", f),
+            position,
+        )
+    }
 
+    pub fn invalid_hexadecimal(h: &str, position: Position) -> Self {
+        Self::new(
+            LexerErrorType::InvalidHexadecimal(h.to_string()),
+            format!("Invalid hexadecimal: {}", h),
+            position,
+        )
     }
-    pub fn invalid_character(c: char, position: Position) -> Self{
-        Self::new(LexerErrorType::InvalidCharacter(c),format!("Invalid character: {}",c),position)
+    pub fn unterminated_string(position: Position) -> Self {
+        Self::new(
+            LexerErrorType::UnterminatedString,
+            "Unterminated string".to_string(),
+            position,
+        )
     }
-    pub fn invalid_token(t: &str, position: Position) -> Self{
-        Self::new(LexerErrorType::InvalidToken(t.to_string()),format!("Invalid token: {}",t),position)
+    pub fn unterminated_comment(position: Position) -> Self {
+        Self::new(
+            LexerErrorType::UnterminatedComment,
+            "Unterminated comment".to_string(),
+            position,
+        )
     }
-    pub fn invalid_integer(i: &str, position: Position) -> Self{
-        Self::new(LexerErrorType::InvalidInteger(i.to_string()),format!("Invalid integer: {}",i),position)
+    pub fn invalid_indentation(position: Position) -> Self {
+        Self::new(
+            LexerErrorType::InvaliIndentation,
+            "Invalid indentation".to_string(),
+            position,
+        )
     }
-    pub fn invalid_float(f: &str, position: Position) -> Self{
-        Self::new(LexerErrorType::InvalidFloat(f.to_string()),format!("Invalid float: {}",f),position)
-    }
-
-    pub fn invalid_hexadecimal(h: &str, position: Position) -> Self{
-        Self::new(LexerErrorType::InvalidHexadecimal(h.to_string()),format!("Invalid hexadecimal: {}",h),position)
-    }
-    pub fn unterminated_string(position: Position) -> Self{
-        Self::new(LexerErrorType::UnterminatedString,"Unterminated string".to_string(),position)
-    }
-    pub fn unterminated_comment(position: Position) -> Self{
-        Self::new(LexerErrorType::UnterminatedComment,"Unterminated comment".to_string(),position)
-    }
-    pub fn invalid_indentation(position: Position) -> Self{
-        Self::new(LexerErrorType::InvaliIndentation,"Invalid indentation".to_string(),position)
-    }
-
 }
 
-
 //by YmC
-
-
-
-
-
-
 
 //use std::fmt;
 // use std::fmt::{Display, Formatter};
@@ -299,30 +312,7 @@ impl LexerError{
 // }
 //
 
-
 ///////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /////////////////////////////////ERROR LEXER #2////////////////////////////////////////
 

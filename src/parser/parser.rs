@@ -1,10 +1,20 @@
+use crate::lexer::lex::{SyntaxMode, Token};
+use crate::parser::ast::{
+    ASTNode, BinaryOperation, Block, Declaration, Expression, Function, FunctionDeclaration,
+    Identifier, Literal, Operator, Parameters, ReturnStatement, Statement, Type, TypeCast,
+    UnaryOperation, UnaryOperator, VariableDeclaration,
+};
+use crate::parser::parser_error::ParserErrorType::{
+    ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName,
+    ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis,
+    ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation,
+    InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation,
+    UnexpectedToken,
+};
+use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
+use crate::tok::{Delimiters, Keywords, Operators, TokenType};
 #[allow(dead_code)]
 use num_bigint::BigInt;
-use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
-use crate::lexer::lex::{Token, SyntaxMode};
-use crate::parser::ast::{ASTNode, Block, Statement, Expression, VariableDeclaration, Declaration, BinaryOperation, FunctionDeclaration, Parameters, Operator, Literal, Identifier, Function, UnaryOperation, UnaryOperator, Type, TypeCast, ReturnStatement};
-use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEndOfInput, UnexpectedEOF, UnexpectedIndentation, UnexpectedToken};
-use crate::tok::{TokenType, Keywords, Operators, Delimiters};
 //
 // pub struct Parser {
 //     tokens: Vec<Token>,
@@ -437,28 +447,28 @@ use crate::tok::{TokenType, Keywords, Operators, Delimiters};
 // //by YmC
 //
 
-
-
 //////////////////////Debut///////////////////////////
 
-pub struct Parser{
-    tokens: Vec<Token>,     // liste des tokens genere par le lexer
-    current: usize,          // index du token actuel
+pub struct Parser {
+    tokens: Vec<Token>, // liste des tokens genere par le lexer
+    current: usize,     // index du token actuel
     syntax_mode: SyntaxMode,
     indent_level: Vec<usize>,
 }
 
 impl Parser {
-    pub fn new(tokens:Vec<Token>,syntax_mode: SyntaxMode) -> Self{
-        Parser{
+    pub fn new(tokens: Vec<Token>, syntax_mode: SyntaxMode) -> Self {
+        Parser {
             tokens,
             current: 0,
             syntax_mode,
             indent_level: vec![0],
         }
     }
-    pub fn current_position(&self) ->Position{
-        Position{index: self.current}
+    pub fn current_position(&self) -> Position {
+        Position {
+            index: self.current,
+        }
     }
 
     pub fn parse_block(&mut self) -> Result<Block, ParserError> {
@@ -475,20 +485,20 @@ impl Parser {
         }
     }
 
-    pub fn parse_indented_block(&mut self) -> Result<Block,ParserError>{
-       // println!("Début du parsing du bloc indenté");
-       //  let mut statements = Vec::new();
-       //  let initial_indent = self.current_indent_level();
-       //  while !self.is_at_end() {
-       //      let current_indent = self.current_indent_level();
-       //      if current_indent < initial_indent{
-       //          println!("Fin du parsing du bloc indenté");
-       //          break;
-       //      }else if current_indent > initial_indent{
-       //          return Err(ParserError::new(UnexpectedIndentation, self.current_position()));
-       //      }
-       //
-       //  }
+    pub fn parse_indented_block(&mut self) -> Result<Block, ParserError> {
+        // println!("Début du parsing du bloc indenté");
+        //  let mut statements = Vec::new();
+        //  let initial_indent = self.current_indent_level();
+        //  while !self.is_at_end() {
+        //      let current_indent = self.current_indent_level();
+        //      if current_indent < initial_indent{
+        //          println!("Fin du parsing du bloc indenté");
+        //          break;
+        //      }else if current_indent > initial_indent{
+        //          return Err(ParserError::new(UnexpectedIndentation, self.current_position()));
+        //      }
+        //
+        //  }
         todo!()
     }
 
@@ -526,7 +536,7 @@ impl Parser {
     fn parse_type_cast(&mut self, expr: Expression) -> Result<Expression, ParserError> {
         self.consume(TokenType::KEYWORD(Keywords::AS))?;
         let cast_type = self.parse_type()?;
-        Ok(Expression::TypeCast(TypeCast{
+        Ok(Expression::TypeCast(TypeCast {
             expression: Box::new(expr),
             target_type: cast_type,
         }))
@@ -566,28 +576,25 @@ impl Parser {
         Ok(parameters)
     }
 
-
     #[allow(dead_code)]
     fn parse_declaration(&mut self) -> Result<ASTNode, ParserError> {
-        if self.match_token(&[TokenType::KEYWORD(Keywords::LET)]){
+        if self.match_token(&[TokenType::KEYWORD(Keywords::LET)]) {
             self.parse_variable_declaration()
         } else if self.match_token(&[TokenType::KEYWORD(Keywords::FN)]) {
             self.parse_function_declaration()
-        } else if self.match_token(&[TokenType::KEYWORD(Keywords::STRUCT)]){
+        } else if self.match_token(&[TokenType::KEYWORD(Keywords::STRUCT)]) {
             self.parse_struct_declaration()
-        } else if self.match_token(&[TokenType::KEYWORD(Keywords::CLASS)]){
+        } else if self.match_token(&[TokenType::KEYWORD(Keywords::CLASS)]) {
             self.parse_class_declaration()
         } else {
             self.parse_statement().map(ASTNode::Statement)
         }
-
     }
 
-
     pub fn parse_type(&mut self) -> Result<Type, ParserError> {
-        let token = self.current_token().ok_or_else(|| {
-            ParserError::new(ExpectedTypeAnnotation, self.current_position())
-        })?;
+        let token = self
+            .current_token()
+            .ok_or_else(|| ParserError::new(ExpectedTypeAnnotation, self.current_position()))?;
 
         println!("Parsing type: {:?}", token);
 
@@ -615,11 +622,13 @@ impl Parser {
             _ => {
                 println!("Unexpected token: {:?}", token);
                 // Si le token actuel n'est pas un type valide, renvoyer une erreur
-                Err(ParserError::new(InvalidTypeAnnotation, self.current_position()))
+                Err(ParserError::new(
+                    InvalidTypeAnnotation,
+                    self.current_position(),
+                ))
             }
         }
     }
-
 
     #[allow(dead_code)]
     pub fn parse_variable_declaration(&mut self) -> Result<ASTNode, ParserError> {
@@ -635,16 +644,18 @@ impl Parser {
             false
         };
 
-
         // Vérifie et consomme l'identifiant de la variable
-        let name_token = self.current_token().ok_or_else(|| {
-            ParserError::new(ExpectVariableName, self.current_position())
-        })?;
+        let name_token = self
+            .current_token()
+            .ok_or_else(|| ParserError::new(ExpectVariableName, self.current_position()))?;
 
         let name = if let TokenType::IDENTIFIER { name: _ } = &name_token.token_type {
             name_token.text.clone()
         } else {
-            return Err(ParserError::new(ExpectVariableName, self.current_position()));
+            return Err(ParserError::new(
+                ExpectVariableName,
+                self.current_position(),
+            ));
         };
         self.advance(); // Consomme l'identifiant
 
@@ -660,22 +671,22 @@ impl Parser {
         self.consume(TokenType::OPERATOR(Operators::EQUAL))?;
 
         // Parse l'expression pour la valeur de la variable
-        let value = self.parse_expression().or_else(|_| {
-            Err(ParserError::new(ExpectValue, self.current_position()))
-        })?;
+        let value = self
+            .parse_expression()
+            .or_else(|_| Err(ParserError::new(ExpectValue, self.current_position())))?;
 
         // Crée et retourne le nœud AST pour la déclaration de variable
-        Ok(ASTNode::Declaration(Declaration::Variable(VariableDeclaration {
-            name,
-            variable_type, // Ici on ajoute le type
-            value: Some(value),
-            mutable,
-        })))
-
+        Ok(ASTNode::Declaration(Declaration::Variable(
+            VariableDeclaration {
+                name,
+                variable_type, // Ici on ajoute le type
+                value: Some(value),
+                mutable,
+            },
+        )))
     }
 
     pub fn parse_function_declaration(&mut self) -> Result<ASTNode, ParserError> {
-
         self.consume(TokenType::KEYWORD(Keywords::FN))?;
 
         let name = self.consume_identifier()?;
@@ -695,14 +706,15 @@ impl Parser {
         };
 
         let body = self.parse_block()?;
-        Ok(ASTNode::Declaration(Declaration::Function(FunctionDeclaration {
-            name,
-            parameters,
-            return_type,
-            body,
-        })))
+        Ok(ASTNode::Declaration(Declaration::Function(
+            FunctionDeclaration {
+                name,
+                parameters,
+                return_type,
+                body,
+            },
+        )))
     }
-
 
     fn parse_struct_declaration(&mut self) -> Result<ASTNode, ParserError> {
         todo!()
@@ -713,7 +725,6 @@ impl Parser {
     fn parse_enum_declaration(&mut self) -> Result<ASTNode, ParserError> {
         todo!()
     }
-
 
     pub fn parse_expression(&mut self) -> Result<Expression, ParserError> {
         let mut left = self.parse_primary()?; // Parse l'expression primaire (comme un identifiant ou un littéral)
@@ -731,8 +742,8 @@ impl Parser {
 
         Ok(left)
     }
-    fn match_operator(&mut self) ->Option<Operator>{
-        match self.current_token()?.token_type{
+    fn match_operator(&mut self) -> Option<Operator> {
+        match self.current_token()?.token_type {
             TokenType::OPERATOR(Operators::PLUS) => Some(Operator::Addition),
             TokenType::OPERATOR(Operators::MINUS) => Some(Operator::Substraction),
             TokenType::OPERATOR(Operators::STAR) => Some(Operator::Multiplication),
@@ -747,33 +758,36 @@ impl Parser {
         if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
             let value = self.parse_assignment()?;
             if let Expression::Identifier(name) = expression {
-                Ok(Expression::BinaryOperation(BinaryOperation{
+                Ok(Expression::BinaryOperation(BinaryOperation {
                     left: Box::new(Expression::Identifier(name)),
                     operator: Operator::Equal,
                     right: Box::new(value),
                 }))
             } else {
-                Err(ParserError::new(ParserErrorType::InvalidAssignmentTarget, self.current_position()))
+                Err(ParserError::new(
+                    ParserErrorType::InvalidAssignmentTarget,
+                    self.current_position(),
+                ))
             }
         } else {
             Ok(expression)
         }
     }
 
-    fn parse_equality(&mut self) -> Result<Expression,ParserError>{
-        let mut  expression = self.parse_comparison()?;
+    fn parse_equality(&mut self) -> Result<Expression, ParserError> {
+        let mut expression = self.parse_comparison()?;
 
         while self.match_token(&[
             TokenType::OPERATOR(Operators::EQEQUAL),
             TokenType::OPERATOR(Operators::NOTEQUAL),
-        ]){
+        ]) {
             let operator = match self.previous().token_type {
                 TokenType::OPERATOR(Operators::EQEQUAL) => Operator::Equal,
                 TokenType::OPERATOR(Operators::NOTEQUAL) => Operator::NotEqual,
                 _ => unreachable!(),
             };
             let right = self.parse_comparison()?;
-            expression = Expression::BinaryOperation(BinaryOperation{
+            expression = Expression::BinaryOperation(BinaryOperation {
                 left: Box::new(expression),
                 operator,
                 right: Box::new(right),
@@ -782,15 +796,15 @@ impl Parser {
         Ok(expression)
     }
 
-    fn parse_comparison(&mut self) -> Result<Expression,ParserError>{
-        let mut  expression = self.parse_term()?;
+    fn parse_comparison(&mut self) -> Result<Expression, ParserError> {
+        let mut expression = self.parse_term()?;
 
         while self.match_token(&[
             TokenType::OPERATOR(Operators::LESS),
             TokenType::OPERATOR(Operators::GREATER),
             TokenType::OPERATOR(Operators::LESSEQUAL),
             TokenType::OPERATOR(Operators::GREATEREQUAL),
-        ]){
+        ]) {
             let operator = match self.previous().token_type {
                 TokenType::OPERATOR(Operators::LESS) => Operator::LessThan,
                 TokenType::OPERATOR(Operators::GREATER) => Operator::GreaterThan,
@@ -799,7 +813,7 @@ impl Parser {
                 _ => unreachable!(),
             };
             let right = self.parse_term()?;
-            expression = Expression::BinaryOperation(BinaryOperation{
+            expression = Expression::BinaryOperation(BinaryOperation {
                 left: Box::new(expression),
                 operator,
                 right: Box::new(right),
@@ -807,20 +821,20 @@ impl Parser {
         }
         Ok(expression)
     }
-    fn parse_term(&mut self) -> Result<Expression,ParserError>{
-        let mut  expression = self.parse_factor()?;
+    fn parse_term(&mut self) -> Result<Expression, ParserError> {
+        let mut expression = self.parse_factor()?;
 
         while self.match_token(&[
             TokenType::OPERATOR(Operators::PLUS),
             TokenType::OPERATOR(Operators::MINUS),
-        ]){
-            let operator = match self.previous().token_type{
+        ]) {
+            let operator = match self.previous().token_type {
                 TokenType::OPERATOR(Operators::PLUS) => Operator::Addition,
                 TokenType::OPERATOR(Operators::MINUS) => Operator::Substraction,
                 _ => unreachable!(),
             };
             let right = self.parse_factor()?;
-            expression = Expression::BinaryOperation(BinaryOperation{
+            expression = Expression::BinaryOperation(BinaryOperation {
                 left: Box::new(expression),
                 operator,
                 right: Box::new(right),
@@ -828,24 +842,23 @@ impl Parser {
         }
         Ok(expression)
     }
-    fn parse_factor(&mut self) -> Result<Expression,ParserError>{
-        let mut  expression = self.parse_unary()?;
+    fn parse_factor(&mut self) -> Result<Expression, ParserError> {
+        let mut expression = self.parse_unary()?;
         while self.match_token(&[
             TokenType::OPERATOR(Operators::STAR),
             TokenType::OPERATOR(Operators::SLASH),
         ]) {
-            let operator = match self.previous().token_type{
+            let operator = match self.previous().token_type {
                 TokenType::OPERATOR(Operators::STAR) => Operator::Multiplication,
                 TokenType::OPERATOR(Operators::SLASH) => Operator::Division,
                 _ => unreachable!(),
             };
             let right = self.parse_unary()?;
-            expression = Expression::BinaryOperation(BinaryOperation{
+            expression = Expression::BinaryOperation(BinaryOperation {
                 left: Box::new(expression),
                 operator,
                 right: Box::new(right),
             })
-
         }
         Ok(expression)
     }
@@ -860,15 +873,15 @@ impl Parser {
                 _ => unreachable!(),
             };
             let right = self.parse_unary()?;
-            return Ok(Expression::UnaryOperation(UnaryOperation{
+            return Ok(Expression::UnaryOperation(UnaryOperation {
                 operator,
-                operand:Box::new(right),
+                operand: Box::new(right),
             }));
         }
 
         self.parse_primary()
     }
-    fn parse_primary(&mut self) -> Result<Expression,ParserError> {
+    fn parse_primary(&mut self) -> Result<Expression, ParserError> {
         if let Some(token) = self.current_token() {
             let expr = match &token.token_type {
                 TokenType::INTEGER { value } => {
@@ -883,12 +896,8 @@ impl Parser {
                     let value = value.clone();
                     Expression::Literal(Literal::String(value))
                 }
-                TokenType::KEYWORD(Keywords::TRUE) => {
-                    Expression::Literal(Literal::Boolean(true))
-                }
-                TokenType::KEYWORD(Keywords::FALSE) => {
-                    Expression::Literal(Literal::Boolean(false))
-                }
+                TokenType::KEYWORD(Keywords::TRUE) => Expression::Literal(Literal::Boolean(true)),
+                TokenType::KEYWORD(Keywords::FALSE) => Expression::Literal(Literal::Boolean(false)),
                 TokenType::IDENTIFIER { name } => {
                     let name = name.clone();
                     Expression::Identifier(name)
@@ -900,10 +909,16 @@ impl Parser {
                         if matches!(token.token_type, TokenType::DELIMITER(Delimiters::RPAR)) {
                             expr
                         } else {
-                            return Err(ParserError::new(ExpectedCloseParenthesis, self.current_position()));
+                            return Err(ParserError::new(
+                                ExpectedCloseParenthesis,
+                                self.current_position(),
+                            ));
                         }
                     } else {
-                        return Err(ParserError::new(UnexpectedEndOfInput, self.current_position()));
+                        return Err(ParserError::new(
+                            UnexpectedEndOfInput,
+                            self.current_position(),
+                        ));
                     }
                 }
                 _ => return Err(ParserError::new(UnexpectedToken, self.current_position())),
@@ -911,7 +926,10 @@ impl Parser {
             self.advance();
             Ok(expr)
         } else {
-            Err(ParserError::new(UnexpectedEndOfInput, self.current_position()))
+            Err(ParserError::new(
+                UnexpectedEndOfInput,
+                self.current_position(),
+            ))
         }
     }
 
@@ -943,25 +961,24 @@ impl Parser {
         }
     }
 
-
     /// Fonction Utilitaire pour le parser
 
-    fn current_token(&self) -> Option<&Token>{
+    fn current_token(&self) -> Option<&Token> {
         self.tokens.get(self.current)
     }
 
-    fn advance(&mut self){
+    fn advance(&mut self) {
         // if !self.is_at_end(){
         //     self.current += 1;
         // }
         self.current += 1;
     }
 
-    fn previous(&self) -> &Token{
+    fn previous(&self) -> &Token {
         &self.tokens[self.current - 1]
     }
 
-    fn is_at_end(&self) -> bool{
+    fn is_at_end(&self) -> bool {
         let _ = self.current >= self.tokens.len();
         return true;
     }
@@ -989,7 +1006,6 @@ impl Parser {
         }
     }
 
-
     fn create_error(&self, error_type: ParserErrorType) -> ParserError {
         ParserError::new(
             error_type,
@@ -1015,19 +1031,17 @@ impl Parser {
         }
     }
 
-    pub fn consume_identifier(&mut self) -> Result<String,ParserError>{
-        let current_token = self.current_token().ok_or_else(||{
-            ParserError::new(UnexpectedEOF,self.current_position())
-        })?;
-        if let TokenType::IDENTIFIER {name:_} = &current_token.token_type{
+    pub fn consume_identifier(&mut self) -> Result<String, ParserError> {
+        let current_token = self
+            .current_token()
+            .ok_or_else(|| ParserError::new(UnexpectedEOF, self.current_position()))?;
+        if let TokenType::IDENTIFIER { name: _ } = &current_token.token_type {
             let name = current_token.text.clone();
             self.advance();
             Ok(name)
         } else {
-            Err(ParserError::new(ExpectIdentifier,self.current_position()))
+            Err(ParserError::new(ExpectIdentifier, self.current_position()))
         }
-
-
     }
 
     // fn expect(&mut self, token_type: TokenType) -> Result<&Token, ParserError> {
@@ -1043,32 +1057,31 @@ impl Parser {
     //     }))
     // }
 
-    fn print_surrounding_tokens(&self){
+    fn print_surrounding_tokens(&self) {
         let prev_token = if self.current > 0 {
             Some(&self.tokens[self.current - 1])
         } else {
             None
         };
         let current_token = self.current_token();
-        let next_token = if self.current  + 1 < self.tokens.len(){
+        let next_token = if self.current + 1 < self.tokens.len() {
             Some(&self.tokens[self.current + 1])
         } else {
             None
         };
         println!("");
         println!("---------------- Token Error Context--by-YmC ----------");
-        if let Some(prev) = prev_token{
+        if let Some(prev) = prev_token {
             println!("Previous Token: {:?}", prev);
         }
-        if let Some(current) = current_token{
+        if let Some(current) = current_token {
             println!("Current Token: {:?}", current);
         }
-        if let Some(next) = next_token{
+        if let Some(next) = next_token {
             println!("Next Token: {:?}", next);
         }
         println!("----------------------------------------------------------");
         println!("");
-
     }
 
     pub fn create_error_with_context(&self, error_type: ParserErrorType) -> ParserError {
@@ -1080,14 +1093,10 @@ impl Parser {
             },
         )
     }
-
-
 }
 //by YmC
 
 ///////////////////////fin essai//////////////////////////////
-
-
 
 /////////////////////////////////////////////////////////////////////////////////////
 // use crate::parser::parser_error::{ParserError, ParserErrorType,Position};
@@ -1445,32 +1454,7 @@ impl Parser {
 
 // by YmC
 
-
 ///////////////////////////////////////////
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 //
 //
@@ -1720,23 +1704,6 @@ impl Parser {
 //
 //
 //
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 //
 //

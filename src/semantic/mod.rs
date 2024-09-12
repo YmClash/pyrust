@@ -1,2 +1,2 @@
-mod error;
 mod analyser;
+mod error;
