@@ -76,32 +76,6 @@ impl<'a> Lexer<'a> {
     }
 
     /// La Logique de la Methode pour compter l'indentation a ete trasferer dans la methode get_token()
-    // je vais d'abord gere les different mode de syntaxe
-
-    // fn handle_indentation(&mut self) -> Option<TokenType> {
-    //     let current_indent = self.count_indentation();
-    //     let previous_indent = *self.indent_level.last().unwrap_or(&0);
-    //
-    //     if current_indent > previous_indent {
-    //         self.indent_level.push(current_indent);
-    //         return Some(TokenType::INDENT);
-    //     } else if current_indent < previous_indent {
-    //         while current_indent < *self.indent_level.last().unwrap_or(&0) {
-    //             self.indent_level.pop();
-    //             return Some(TokenType::DEDENT);
-    //         }
-    //         if current_indent != *self.indent_level.last().unwrap_or(&0) {
-    //             return Some(TokenType::ERROR(LexerError::invalid_indentation(
-    //                 Position {
-    //                     line: self.current_line,
-    //                     column: self.current_column,
-    //                 },
-    //             )));
-    //         }
-    //     }
-    //     None
-    // }
-
     /// Methode pour compter l'indentation
 
     pub fn count_indentation(&mut self) -> usize {
@@ -731,6 +705,8 @@ impl<'a> Lexer<'a> {
 }
 
 //by YmC
+
+
 
 ////////////////////////essai/////////////////////////////////////////////
 pub fn lox(input: &str) -> Vec<Tok> {

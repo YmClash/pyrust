@@ -510,9 +510,16 @@ impl Parser {
 
         let mut statements = Vec::new();
         while !self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) {
+            // if self.is_at_end(){
+            //     return Err(ParserError::new(UnexpectedEndOfInput, self.current_position()));
+            // }
             let stmt = self.parse_statement()?;
             println!("Instruction parsée : {:?}", stmt);
             statements.push(stmt);
+
+            if self.match_token(&[TokenType::DELIMITER(Delimiters::SEMICOLON)]){
+                self.advance();
+            }
         }
 
         let closing_brace = self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
@@ -961,6 +968,45 @@ impl Parser {
         }
     }
 
+    // pub fn parse_statement(&mut self) -> Result<Statement, ParserError> {
+    //     if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]) {
+    //         // Si c'est un statement `return`
+    //         self.parse_return_statement()
+    //     } else if self.match_token(&[TokenType::KEYWORD(Keywords::LET)]) {
+    //         // Si c'est une déclaration de variable
+    //         self.parse_variable_declaration().
+    //     } else {
+    //         // Sinon, c'est une expression
+    //         let expr = self.parse_expression()?;
+    //         Ok(Statement::Expression(expr))
+    //     }
+    // }
+
+    // pub fn parse_statement(&mut self) -> Result<Statement, ParserError> {
+    //     if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]) {
+    //         println!("Parsing return statement");
+    //         self.parse_return_statement()
+    //     } else if self.match_token(&[TokenType::KEYWORD(Keywords::LET)]) {
+    //         println!("Parsing variable declaration");
+    //         self.parse_variable_declaration()
+    //     } else {
+    //         println!("Parsing expression");
+    //         let expr = self.parse_expression()?;
+    //
+    //         // Vérifiez la présence du point-virgule
+    //         if self.match_token(&[TokenType::DELIMITER(Delimiters::SEMICOLON)]) {
+    //             self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON))?;
+    //         } else {
+    //             println!("Expected semicolon after expression, but got {:?}", self.current_token());
+    //             return Err(ParserError::new(UnexpectedToken, self.current_position()));
+    //         }
+    //
+    //         Ok(Statement::Expression(expr))
+    //     }
+    // }
+
+
+
     /// Fonction Utilitaire pour le parser
 
     fn current_token(&self) -> Option<&Token> {
@@ -1095,6 +1141,11 @@ impl Parser {
     }
 }
 //by YmC
+
+
+
+
+
 
 ///////////////////////fin essai//////////////////////////////
 

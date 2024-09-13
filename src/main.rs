@@ -2,46 +2,30 @@
 #![allow(unused)]
 //use pyrust::parser::parser::Parser;
 
-use pyrust::lexer::lex::SyntaxMode;
 use pyrust::lexer::lex::{Lexer, Token};
-use pyrust::parser::ast::{ASTNode, Declaration, FunctionDeclaration, VariableDeclaration};
+use pyrust::lexer::lex::SyntaxMode;
 use pyrust::parser::parser::Parser;
+use pyrust::parser::ast::{ASTNode,Declaration,VariableDeclaration,FunctionDeclaration};
 
 fn main() {
     println!("Pyrust Compiler Test");
     println!("===================\n");
 
     let test_cases = [
-        (
-            "Simple Function",
-            "fn add(a: int, b: float) -> float { return a + b; }",
-            true,
-        ),
-        // ("Simple Function2", "fn add(a: int, b: float):\
-        //     return a + b ",true),
-        (
-            "Function with Multiple Statements",
-            r#"fn calculate(x: int, y: int) -> int {
-                let result = x * y;
-                return result + 10;
-            }
-        "#,
-            true,
-        ),
-        (
-            "Function without Return Type",
-            "fn greet(name: str) { print(\"Hello, \" + name); }",
-            true,
-        ),
-        ("Variable Declaration", "let  x:int = 5", false),
-        (
-            "Variable Declaration mutable ",
-            "let mut x:float = 5.5",
-            false,
-        ),
+        ("Simple Function", "fn add(a: int, b: float) -> float { return a + b; }",true),
+        // // ("Simple Function2", "fn add(a: int, b: float):\
+        // //     return a + b ",true),
+        // ("Function with Multiple Statements", r#"fn calculate(x: int, y: int) -> int {
+        //         let result = x * y;
+        //         return result + 10;
+        //     }
+        // "#,true),
+        // ("Function without Return Type", "fn greet(name: str) { print(\"Hello, \" + name); }",true),
+        ("Variable Declaration", "let  x:int = 5",false),
+        ("Variable Declaration mutable ", "let mut x:float = 5.5",false),
     ];
 
-    for (test_name, source_code, is_function) in test_cases.iter() {
+    for (test_name, source_code,is_function) in test_cases.iter() {
         println!("Test Case: {}", test_name);
         println!("Source Code:\n{}\n", source_code);
 
@@ -56,14 +40,14 @@ fn main() {
 
                 // Parser Test
                 println!("Parser Output:");
-                match run_parser(&tokens, *is_function) {
+                match run_parser(&tokens,*is_function) {
                     Ok(ast) => {
                         print_ast(ast);
                         println!("Parser completed successfully.\n");
-                    }
+                    },
                     Err(e) => println!("Parser Error: {}\n", e),
                 }
-            }
+            },
             Err(e) => println!("Lexer Error: {}\n", e),
         }
 
@@ -74,18 +58,17 @@ fn main() {
 }
 
 fn run_lexer(source_code: &str) -> Result<Vec<Token>, String> {
-    let mut lexer = Lexer::new(source_code, SyntaxMode::Braces);
+    let mut lexer = Lexer::new(source_code, SyntaxMode::Indentation);
     Ok(lexer.tokenize())
 }
 
-fn run_parser(tokens: &[Token], is_function: bool) -> Result<ASTNode, String> {
-    let mut parser = Parser::new(tokens.to_vec(), SyntaxMode::Braces);
+fn run_parser(tokens: &[Token],is_function:bool) -> Result<ASTNode, String> {
+    let mut parser = Parser::new(tokens.to_vec(), SyntaxMode::Indentation);
     if is_function {
         parser.parse_function_declaration()
     } else {
         parser.parse_variable_declaration()
-    }
-    .map_err(|e| format!("{} at position {}", e.message, e.position.index))
+    }.map_err(|e| format!("{} at position {}", e.message, e.position.index))
 }
 
 fn print_ast(ast: ASTNode) {
@@ -95,7 +78,7 @@ fn print_ast(ast: ASTNode) {
             for statement in statements {
                 print_ast(statement);
             }
-        }
+        },
         ASTNode::Declaration(decl) => print_declaration(decl),
         ASTNode::Expression(expr) => println!("Expression: {:?}", expr),
         ASTNode::Statement(stmt) => println!("Statement: {:?}", stmt),
@@ -127,6 +110,15 @@ fn print_function_declaration(func: FunctionDeclaration) {
     println!("  Return Type: {:?}", func.return_type);
     println!("  Body: {:?}", func.body);
 }
+
+
+
+
+
+
+
+
+
 
 /*
 
@@ -213,6 +205,10 @@ fn print_function_declaration(func: FunctionDeclaration) {
 }
 */
 
+
+
+
+
 //
 // fn print_ast(ast: ASTNode) {
 //     match ast {
@@ -240,14 +236,17 @@ fn print_function_declaration(func: FunctionDeclaration) {
 //
 //
 
+
 /*
 // Exemple de code source
-// //let syntax_mode = SyntaxMode::Braces; // Ou SyntaxMode::Indentation
-// let mut lexer = Lexer::new(source_code, SyntaxMode::Braces);
-// let tokens = lexer.tokenize();
-// //let mut parser = Parser::new(tokens, syntax_mode);
-//
-// match parser.parse() {
-//     Ok(ast) => println!("{:?}", ast),
-//     Err(e) => eprintln!("Error parsing: {}", e),
-// }*/
+    // //let syntax_mode = SyntaxMode::Braces; // Ou SyntaxMode::Indentation
+    // let mut lexer = Lexer::new(source_code, SyntaxMode::Braces);
+    // let tokens = lexer.tokenize();
+    // //let mut parser = Parser::new(tokens, syntax_mode);
+    //
+    // match parser.parse() {
+    //     Ok(ast) => println!("{:?}", ast),
+    //     Err(e) => eprintln!("Error parsing: {}", e),
+    // }*/
+
+

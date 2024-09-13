@@ -1,7 +1,7 @@
-# pyrust
-
-
 # PyRustLang
+
+
+# pyrust
 
 PyRust est un langage de programmation expérimental qui combine des éléments de Python et de Rust. Ce projet est un hobby et vise à explorer les concepts de conception de langages de programmation en utilisant Rust comme compilateur backend pour générer du code tout en offrant une syntaxe de haut niveau
 
@@ -43,6 +43,10 @@ les keywords peuvent changer à l'avenir
 # Déclaration de variables avec typage optionnel
 let x: int = 10
 let mut y: int = 20
+
+# Fonction simple
+fn add(a, b):
+    return a + b
 
 # Déclaration de fonction avec typage optionnel
 fn add(a: int, b: int) -> int:

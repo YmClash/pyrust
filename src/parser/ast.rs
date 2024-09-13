@@ -24,8 +24,8 @@ pub struct Block {
     pub syntax_mode: SyntaxMode,
     pub indent_level: Option<usize>, // Pour le mode Indentation
     pub braces: Option<(Token, Token)>, // Pour le mode Braces (ouverture, fermeture)
-                                     // pub opening_brace: Option<Token>,  // pour le mode syntaxe Brace
-                                     // pub closing_brace: Option<Token>,
+    // pub opening_brace: Option<Token>,  // pour le mode syntaxe Brace
+    // pub closing_brace: Option<Token>,
 }
 
 #[allow(dead_code)]
