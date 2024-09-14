@@ -485,21 +485,99 @@ impl Parser {
         }
     }
 
+    // pub fn parse_indented_block(&mut self) -> Result<Block, ParserError> {
+    //     println!("Début du parsing du bloc indenté");
+    //     let mut statements = Vec::new();
+    //     let initial_indent = self.current_indent_level();
+    //
+    //     if self.match_token(&[TokenType::INDENT]) {
+    //         self.advance();
+    //     }
+    //     while !self.is_at_end() {
+    //         let current_indent = self.current_indent_level();
+    //         if current_indent < initial_indent {
+    //             println!("Fin du parsing du bloc indenté");
+    //             break;
+    //         } else if current_indent > initial_indent {
+    //             return Err(ParserError::new(UnexpectedIndentation, self.current_position()));
+    //         }
+    //
+    //         match self.parse_statement() {
+    //             Ok(statement) => {
+    //                 println!("Instruction parsée : {:?}", statement);
+    //                 statements.push(statement);
+    //             },
+    //             Err(e) => {
+    //                 println!("Erreur lors du parsing de l'instruction : {:?}", e);
+    //                 // Vous pouvez choisir de retourner l'erreur ici ou de continuer le parsing
+    //                 return Err(e);
+    //             }
+    //         }
+    //
+    //         // Consommer les newlines après chaque instruction
+    //         while self.match_token(&[TokenType::NEWLINE]) {
+    //             self.advance();
+    //         }
+    //         if self.match_token(&[TokenType::DEDENT, TokenType::EOF]) {
+    //             break;
+    //         }
+    //
+    //     }
+    //
+    //     Ok(Block {
+    //         statements,
+    //         syntax_mode: self.syntax_mode,
+    //         indent_level: Some(initial_indent),
+    //         braces: None,
+    //     })
+    // }
+
     pub fn parse_indented_block(&mut self) -> Result<Block, ParserError> {
-        // println!("Début du parsing du bloc indenté");
-        //  let mut statements = Vec::new();
-        //  let initial_indent = self.current_indent_level();
-        //  while !self.is_at_end() {
-        //      let current_indent = self.current_indent_level();
-        //      if current_indent < initial_indent{
-        //          println!("Fin du parsing du bloc indenté");
-        //          break;
-        //      }else if current_indent > initial_indent{
-        //          return Err(ParserError::new(UnexpectedIndentation, self.current_position()));
-        //      }
-        //
-        //  }
-        todo!()
+        println!("Début du parsing du bloc indenté");
+        let mut statements = Vec::new();
+        let initial_indent = self.current_indent_level();
+
+        // Consommer le token INDENT
+        if self.match_token(&[TokenType::INDENT]) {
+            self.advance();
+        }
+
+        while !self.is_at_end() {
+            let current_indent = self.current_indent_level();
+            if current_indent < initial_indent || self.match_token(&[TokenType::DEDENT]) {
+                println!("Fin du parsing du bloc indenté");
+                break;
+            }
+
+            match self.parse_statement() {
+                Ok(statement) => {
+                    println!("Instruction parsée : {:?}", statement);
+                    statements.push(statement);
+                },
+                Err(e) => {
+                    println!("Erreur lors du parsing de l'instruction : {:?}", e);
+                    return Err(e);
+                }
+            }
+
+            // Consommer les newlines après chaque instruction
+            while self.match_token(&[TokenType::NEWLINE]) {
+                self.advance();
+            }
+        }
+
+        // Consommer explicitement le DEDENT si présent
+        if self.match_token(&[TokenType::DEDENT]) {
+            println!("Consommation du token DEDENT");
+            self.advance();
+        }
+
+        Ok(Block {
+            statements,
+            syntax_mode: self.syntax_mode,
+            indent_level: Some(initial_indent),
+            braces: None,
+        })
     }
 
     //
@@ -524,6 +602,9 @@ impl Parser {
 
         let closing_brace = self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
         println!("Accolade fermante consommée");
+        //
+        // let statement = self.parse_statement()?;
+        // statements.push(statement);
 
         println!("Fin du parsing du bloc");
         Ok(Block {
@@ -695,13 +776,9 @@ impl Parser {
 
     pub fn parse_function_declaration(&mut self) -> Result<ASTNode, ParserError> {
         self.consume(TokenType::KEYWORD(Keywords::FN))?;
-
         let name = self.consume_identifier()?;
-
         self.consume(TokenType::DELIMITER(Delimiters::LPAR))?;
-
         let parameters = self.parse_function_parameters()?;
-
         self.consume(TokenType::DELIMITER(Delimiters::RPAR))?;
 
         let return_type = if self.match_token(&[TokenType::OPERATOR(Operators::RARROW)]) {
@@ -711,6 +788,21 @@ impl Parser {
         } else {
             None
         };
+
+        match self.syntax_mode {
+            SyntaxMode::Indentation => {
+                println!("Parsing function block with indentation syntax");
+                self.consume(TokenType::DELIMITER(Delimiters::COLON))?;
+                self.consume(TokenType::NEWLINE)?;
+            },
+            SyntaxMode::Braces => {
+                println!("Parsing function block with braces syntax");
+                // Optionnellement, vous pouvez consommer un point-virgule ici si votre langage le permet
+                if self.match_token(&[TokenType::DELIMITER(Delimiters::SEMICOLON)]) {
+                    self.advance();
+                }
+            }
+        }
 
         let body = self.parse_block()?;
         Ok(ASTNode::Declaration(Declaration::Function(
@@ -734,22 +826,27 @@ impl Parser {
     }
 
     pub fn parse_expression(&mut self) -> Result<Expression, ParserError> {
+        println!("Début du parsing de l'expression : current_token = {:?}", self.current_token());
         let mut left = self.parse_primary()?; // Parse l'expression primaire (comme un identifiant ou un littéral)
+        println!("Expression primaire parsée : {:?}", left);
 
         // Gérer les opérations binaires
         while let Some(operator) = self.match_operator() {
             self.advance(); // Consomme l'opérateur
+            println!("Opérateur binaire détecté : {:?}", operator);
             let right = self.parse_primary()?; // Parse l'expression à droite de l'opérateur
+            println!("Expression à droite de l'opérateur parsée : {:?}", right);
             left = Expression::BinaryOperation(BinaryOperation {
                 left: Box::new(left),
                 operator,
                 right: Box::new(right),
             });
         }
-
+        println!("Fin du parsing de l'expression : {:?}", left);
         Ok(left)
     }
     fn match_operator(&mut self) -> Option<Operator> {
+        println!("Checking for operator, current token: {:?}", self.current_token());
         match self.current_token()?.token_type {
             TokenType::OPERATOR(Operators::PLUS) => Some(Operator::Addition),
             TokenType::OPERATOR(Operators::MINUS) => Some(Operator::Substraction),
@@ -889,6 +986,7 @@ impl Parser {
         self.parse_primary()
     }
     fn parse_primary(&mut self) -> Result<Expression, ParserError> {
+        println!("Début du parsing de l'expression primaire, current_token = {:?}", self.current_token());
         if let Some(token) = self.current_token() {
             let expr = match &token.token_type {
                 TokenType::INTEGER { value } => {
@@ -939,71 +1037,98 @@ impl Parser {
             ))
         }
     }
-
-    pub fn parse_return_statement(&mut self) -> Result<Statement, ParserError> {
-        self.consume(TokenType::KEYWORD(Keywords::RETURN))?; // Consomme le mot-clé `return`
-
-        // Parse l'expression après `return', si elle existe
-        let value = if !self.match_token(&[TokenType::DELIMITER(Delimiters::SEMICOLON)]) {
-            Some(self.parse_expression()?) // Parse l'expression qui suit `return`
-        } else {
-            None // Pas d'expression après `return`
-        };
-
-        // Consomme le point-virgule `;` après `return`
-        self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON))?;
-
-        Ok(Statement::Return(ReturnStatement {
-            value, // L'expression retournée, si elle existe
-        }))
-    }
-
+    // fn parse_statement(&mut self) -> Result<Statement, ParserError> {
+    //     println!("Début du parsing de l'instruction,Current token: {:?}", self.current_token());
+    //     let stament = if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]){
+    //         self.parse_return_statement()?
+    //     } else {
+    //         let expr = self.parse_expression()?;
+    //         self.consume_statement_end()?;
+    //         Statement::Expression(expr)
+    //     };
+    //     Ok(stament)
+    //     // if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]) {
+    //     //     self.parse_return_statement()
+    //     // } else {
+    //     //     let expr = self.parse_expression()?;
+    //     //     if self.syntax_mode == SyntaxMode::Braces {
+    //     //         self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON))?;
+    //     //     }
+    //     //     //self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON))?;
+    //     //     Ok(Statement::Expression(expr))
+    //     // }
+    // }
     fn parse_statement(&mut self) -> Result<Statement, ParserError> {
+        println!("Début du parsing de l'instruction, Current token: {:?}", self.current_token());
+
+        // Ignorer les newlines au début d'une instruction
+        while self.match_token(&[TokenType::NEWLINE]) {
+            self.advance();
+        }
+
         if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]) {
             self.parse_return_statement()
         } else {
             let expr = self.parse_expression()?;
-            self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON))?;
             Ok(Statement::Expression(expr))
         }
     }
 
-    // pub fn parse_statement(&mut self) -> Result<Statement, ParserError> {
-    //     if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]) {
-    //         // Si c'est un statement `return`
-    //         self.parse_return_statement()
-    //     } else if self.match_token(&[TokenType::KEYWORD(Keywords::LET)]) {
-    //         // Si c'est une déclaration de variable
-    //         self.parse_variable_declaration().
+
+    fn parse_return_statement(&mut self) -> Result<Statement, ParserError> {
+        println!("Parsing return statement");
+        self.consume(TokenType::KEYWORD(Keywords::RETURN))?;
+        let value = if !self.match_token(&[TokenType::NEWLINE, TokenType::DEDENT, TokenType::EOF]) {
+            Some(self.parse_expression()?)
+        } else {
+            None
+        };
+        println!("Return statement parsed: {:?}", value);
+        Ok(Statement::Return(ReturnStatement { value }))
+    }
+
+    // pub fn parse_return_statement(&mut self) -> Result<Statement, ParserError> {
+    //     println!("Parsing return statement");
+    //     self.consume(TokenType::KEYWORD(Keywords::RETURN))?;
+    //
+    //     let value = if !self.is_statement_end() {
+    //         Some(self.parse_expression()?)
     //     } else {
-    //         // Sinon, c'est une expression
-    //         let expr = self.parse_expression()?;
-    //         Ok(Statement::Expression(expr))
+    //         None
+    //     };
+    //
+    //     // Consommer les tokens inattendus jusqu'à la fin de l'instruction
+    //     while !self.is_statement_end() && !self.is_at_end() {
+    //         println!("Consuming unexpected token: {:?}", self.current_token());
+    //         self.advance();
     //     }
+    //
+    //     self.consume_statement_end()?;
+    //
+    //     Ok(Statement::Return(ReturnStatement { value }))
     // }
 
-    // pub fn parse_statement(&mut self) -> Result<Statement, ParserError> {
-    //     if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]) {
-    //         println!("Parsing return statement");
-    //         self.parse_return_statement()
-    //     } else if self.match_token(&[TokenType::KEYWORD(Keywords::LET)]) {
-    //         println!("Parsing variable declaration");
-    //         self.parse_variable_declaration()
-    //     } else {
-    //         println!("Parsing expression");
-    //         let expr = self.parse_expression()?;
-    //
-    //         // Vérifiez la présence du point-virgule
-    //         if self.match_token(&[TokenType::DELIMITER(Delimiters::SEMICOLON)]) {
-    //             self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON))?;
-    //         } else {
-    //             println!("Expected semicolon after expression, but got {:?}", self.current_token());
-    //             return Err(ParserError::new(UnexpectedToken, self.current_position()));
-    //         }
-    //
-    //         Ok(Statement::Expression(expr))
-    //     }
-    // }
+    fn is_statement_end(&self) -> bool{
+        match self.syntax_mode {
+            SyntaxMode::Indentation => self.match_token(&[TokenType::NEWLINE,TokenType::DEDENT,TokenType::EOF]),
+            SyntaxMode::Braces => self.match_token(&[TokenType::DELIMITER(Delimiters::SEMICOLON)]),
+        }
+    }
+
+    fn consume_statement_end(&mut self) -> Result<(),ParserError> {
+        match self.syntax_mode {
+            SyntaxMode::Braces => self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON)).map(|_| ()),
+            SyntaxMode::Indentation => {
+                if self.match_token(&[TokenType::NEWLINE,TokenType::DEDENT,TokenType::EOF]){
+                    Ok(())
+                } else {
+                    Err(ParserError::new(UnexpectedToken, self.current_position()))
+                }
+            }
+
+        }
+    }
+
 
 
 
@@ -1014,19 +1139,27 @@ impl Parser {
     }
 
     fn advance(&mut self) {
-        // if !self.is_at_end(){
-        //     self.current += 1;
-        // }
-        self.current += 1;
+        if !self.is_at_end() {
+            self.current += 1;
+        }
+        println!("Advanced to token: {:?}", self.current_token());
     }
+
+    // fn advance(&mut self) {
+    //     // if !self.is_at_end(){
+    //     //     self.current += 1;
+    //     // }
+    //     self.current += 1;
+    // }
 
     fn previous(&self) -> &Token {
         &self.tokens[self.current - 1]
     }
 
     fn is_at_end(&self) -> bool {
-        let _ = self.current >= self.tokens.len();
-        return true;
+        self.current >= self.tokens.len()
+        // let _ = self.current >= self.tokens.len();
+        // return true;
     }
 
     // fn peek(&self) ->&Token{
