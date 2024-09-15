@@ -26,7 +26,7 @@ pub struct Token {
 /// Implementation de la structure Token
 #[allow(dead_code)]
 impl Token {
-    fn new(text: String, token_type: TokenType, line: usize, column: usize) -> Self {
+    pub fn new(text: String, token_type: TokenType, line: usize, column: usize) -> Self {
         Token {
             text,
             token_type,

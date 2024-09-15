@@ -1,136 +1,128 @@
-use num_bigint::BigInt;
-use pyrust::lexer::lex::Lexer;
-use pyrust::lexer::tok::{Delimiters, Keywords, Operators, StringKind, TokenType};
-use pyrust::lexer_error::{LexerError, LexerErrorType, Position};
-use pyrust::parser::ast::{ASTNode, Declaration, Expression, FunctionDeclaration, Statement, VariableDeclaration};
-
-
-
-
 #[cfg(test)]
 mod tests {
-    use nom::Parser;
-    use pyrust::parser::parser_error::ParserError;
-    use pyrust::SyntaxMode;
+
+    use pyrust::parser::ast::{Declaration, Expression, Literal, Type};
+    use pyrust::parser::parser::Parser;
+    use pyrust::{Lexer, SyntaxMode};
+    use pyrust::tok::{Delimiters, Keywords, Operators, TokenType};
     use super::*;
-    use crate::Lexer;  // Assurez-vous que ce chemin est correct
 
-    fn parse_code(code: &str, syntax_mode: SyntaxMode) -> Result<ASTNode, ParserError> {
-        let mut lexer = Lexer::new(code, syntax_mode);
+
+    fn create_parser(source: &str, syntax_mode: SyntaxMode) -> Parser {
+        let mut lexer = Lexer::new(source, syntax_mode);
         let tokens = lexer.tokenize();
-        let mut parser = Parser::new(tokens, syntax_mode);
-        parser.parse()
+        Parser::new(tokens, syntax_mode)
     }
 
     #[test]
-    fn test_indentation_simple_function() {
-        let code = r#"
-fn add(a: int, b: int) -> int:
-    return a + b
-"#;
-        let result = parse_code(code, SyntaxMode::Indentation);
+    fn test_variable_declaration_indentation() {
+        let source = "let x = 5\n";
+        let mut parser = create_parser(source, SyntaxMode::Indentation);
+        let result = parser.parse_variable_declaration();
         assert!(result.is_ok());
-        // Ajoutez plus d'assertions pour vérifier la structure de l'AST
-    }
-
-    #[test]
-    fn test_indentation_function_with_multiple_statements() {
-        let code = r#"
-fn complex(x: int) -> int:
-    let y = x * 2
-    if y > 10:
-        return y - 5
-    return y
-"#;
-        let result = parse_code(code, SyntaxMode::Indentation);
-        assert!(result.is_ok());
-        // Vérifiez la structure de l'AST, y compris les instructions if et let
-    }
-
-    #[test]
-    fn test_braces_simple_function() {
-        let code = r#"
-fn add(a: int, b: int) -> int {
-    return a + b;
-}
-"#;
-        let result = parse_code(code, SyntaxMode::Braces);
-        assert!(result.is_ok());
-        // Vérifiez la structure de l'AST
-    }
-
-    #[test]
-    fn test_braces_function_with_multiple_statements() {
-        let code = r#"
-fn complex(x: int) -> int {
-    let y = x * 2;
-    if (y > 10) {
-        return y - 5;
-    }
-    return y;
-}
-"#;
-        let result = parse_code(code, SyntaxMode::Braces);
-        assert!(result.is_ok());
-        // Vérifiez la structure de l'AST, y compris les accolades imbriquées
-    }
-
-    #[test]
-    fn test_indentation_nested_blocks() {
-        let code = r#"
-fn nested():
-    if true:
-        if false:
-            return 1
-        else:
-            return 2
-    return 3
-"#;
-        let result = parse_code(code, SyntaxMode::Indentation);
-        assert!(result.is_ok());
-        // Vérifiez la structure des blocs imbriqués
-    }
-
-    #[test]
-    fn test_braces_nested_blocks() {
-        let code = r#"
-fn nested() {
-    if (true) {
-        if (false) {
-            return 1;
+        if let Ok(Declaration::Variable(var_decl)) = result {
+            assert_eq!(var_decl.name, "x");
+            assert_eq!(var_decl.mutable, false);
+            assert!(matches!(var_decl.value, Some(Expression::Literal(Literal::Integer { value })) if value == 5.into()));
         } else {
-            return 2;
+            panic!("Expected variable declaration");
         }
     }
-    return 3;
-}
-"#;
-        let result = parse_code(code, SyntaxMode::Braces);
+
+    #[test]
+    fn test_variable_declaration_braces() {
+        let source = "let x = 5;";
+        let mut parser = create_parser(source, SyntaxMode::Braces);
+        let result = parser.parse_variable_declaration();
         assert!(result.is_ok());
-        // Vérifiez la structure des blocs imbriqués
+        if let Ok(Declaration::Variable(var_decl)) = result {
+            assert_eq!(var_decl.name, "x");
+            assert_eq!(var_decl.mutable, false);
+            assert!(matches!(var_decl.value, Some(Expression::Literal(Literal::Integer { value })) if value == 5.into()));
+        } else {
+            panic!("Expected variable declaration");
+        }
     }
 
     #[test]
-    fn test_indentation_error_handling() {
-        let code = r#"
-fn incorrect():
-    let x = 5
-  return x  # Incorrect indentation
-"#;
-        let result = parse_code(code, SyntaxMode::Indentation);
-        assert!(result.is_err());
-        // Vérifiez que l'erreur est liée à l'indentation
+    fn test_function_declaration_indentation() {
+        let source = "fn test_func():\n    return 0\n";
+        let mut parser = create_parser(source, SyntaxMode::Indentation);
+        let result = parser.parse_function_declaration();
+        assert!(result.is_ok());
+        if let Ok(Declaration::Function(func_decl)) = result {
+            assert_eq!(func_decl.name, "test_func");
+            assert!(func_decl.parameters.is_empty());
+            assert!(func_decl.return_type.is_none());
+            assert_eq!(func_decl.body.statements.len(), 1);
+        } else {
+            panic!("Expected function declaration");
+        }
     }
 
     #[test]
-    fn test_braces_error_handling() {
-        let code = r#"
-fn incorrect() {
-    let x = 5;
-    return x;
-"#;  // Missing closing brace
-        let result = parse_code(code, SyntaxMode::Braces);
-        assert!(result.is_err());
-        // Vérifiez que l'erreur est liée aux accolades manquantes
+    fn test_function_declaration_braces() {
+        let source = "fn test_func() { return 0; }";
+        let mut parser = create_parser(source, SyntaxMode::Braces);
+        let result = parser.parse_function_declaration();
+        assert!(result.is_ok());
+        if let Ok(Declaration::Function(func_decl)) = result {
+            assert_eq!(func_decl.name, "test_func");
+            assert!(func_decl.parameters.is_empty());
+            assert!(func_decl.return_type.is_none());
+            assert_eq!(func_decl.body.statements.len(), 1);
+        } else {
+            panic!("Expected function declaration");
+        }
     }
+
+    #[test]
+    fn test_variable_declaration_with_type_annotation() {
+        let source = "let x: int = 5;";
+        let mut parser = create_parser(source, SyntaxMode::Braces);
+        let result = parser.parse_variable_declaration();
+        assert!(result.is_ok());
+        if let Ok(Declaration::Variable(var_decl)) = result {
+            assert_eq!(var_decl.name, "x");
+            assert_eq!(var_decl.mutable, false);
+            assert!(matches!(var_decl.variable_type, Some(Type::Int)));
+            assert!(matches!(var_decl.value, Some(Expression::Literal(Literal::Integer { value })) if value == 5.into()));
+        } else {
+            panic!("Expected variable declaration with type annotation");
+        }
+    }
+
+    #[test]
+    fn test_function_declaration_with_parameters_and_return_type() {
+        let source = "fn add(a: int, b: int) -> int:\n    return a + b\n";
+        let mut parser = create_parser(source, SyntaxMode::Indentation);
+        let result = parser.parse_function_declaration();
+        assert!(result.is_ok());
+        if let Ok(Declaration::Function(func_decl)) = result {
+            assert_eq!(func_decl.name, "add");
+            assert_eq!(func_decl.parameters.len(), 2);
+            assert!(matches!(func_decl.return_type, Some(Type::Int)));
+            assert_eq!(func_decl.body.statements.len(), 1);
+        } else {
+            panic!("Expected function declaration with parameters and return type");
+        }
+    }
+
+    #[test]
+    fn test_variable_declaration_error() {
+        let source = "let 5 = x;";
+        let mut parser = create_parser(source, SyntaxMode::Braces);
+        let result = parser.parse_variable_declaration();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_function_declaration_error() {
+        let source = "fn () { return 0; }";
+        let mut parser = create_parser(source, SyntaxMode::Braces);
+        let result = parser.parse_function_declaration();
+        assert!(result.is_err());
+    }
+
+
 }
