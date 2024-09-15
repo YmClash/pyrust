@@ -12,20 +12,20 @@ fn main() {
     println!("===================\n");
 
     let test_cases = [
-        ("Simple Function", "fn add(a: int, b: float) -> float { return a + b; }",true),
-        //("simple Funtion mode Indentation", r#"fn add(a: int, b: int) -> int:
-          //  return a + b"#,true),
+        ("Simple Function mode Braces", "fn add(a: int, b: float) -> float { return a + b; }",true),
+        // ("simple Funtion mode Indentation", r#"fn add(a: int, b: int) -> int:
+        //    return a + b"#,true),
 
         // // ("Simple Function2", "fn add(a: int, b: float):\
         // //     return a + b ",true),
-        // ("Function with Multiple Statements", r#"fn calculate(x: int, y: int) -> int {
-        //         let result = x * y;
-        //         return result + 10;
-        //     }
-        // "#,true),
-        // ("Function without Return Type", "fn greet(name: str) { print(\"Hello, \" + name); }",true),
-        //("Variable Declaration", "let  x:int = 5",false),
-        //("Variable Declaration mutable ", "let mut x:float = 5.5",false),
+        ("Function with Multiple Statements mode Braces", r#"fn calculate(x: int, y: int) -> int {
+                let result = x * y;
+                return result + 10;
+            }
+        "#,true),
+        ("Function without Return Type", "fn greet(name: str) { print(\"Hello, \" + name); }",true),
+        ("Variable Declaration", "let  x:int = 5",false),
+        ("Variable Declaration mutable ", "let mut x:float = 5.5",false),
     ];
 
     for (test_name, source_code,is_function) in test_cases.iter() {
@@ -65,14 +65,19 @@ fn run_lexer(source_code: &str) -> Result<Vec<Token>, String> {
     Ok(lexer.tokenize())
 }
 
-fn run_parser(tokens: &[Token],is_function:bool) -> Result<ASTNode, String> {
+fn run_parser(tokens: &[Token], is_function: bool) -> Result<ASTNode, String> {
     let mut parser = Parser::new(tokens.to_vec(), SyntaxMode::Braces);
-    if is_function {
+    let result = if is_function {
         parser.parse_function_declaration()
     } else {
         parser.parse_variable_declaration()
-    }.map_err(|e| format!("{} at position {}", e.message, e.position.index))
+    };
+
+    result
+        .map(ASTNode::Declaration)
+        .map_err(|e| format!("{} at position {}", e.message, e.position.index))
 }
+
 
 fn print_ast(ast: ASTNode) {
     match ast {

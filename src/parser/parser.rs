@@ -485,52 +485,6 @@ impl Parser {
         }
     }
 
-    // pub fn parse_indented_block(&mut self) -> Result<Block, ParserError> {
-    //     println!("Début du parsing du bloc indenté");
-    //     let mut statements = Vec::new();
-    //     let initial_indent = self.current_indent_level();
-    //
-    //     if self.match_token(&[TokenType::INDENT]) {
-    //         self.advance();
-    //     }
-    //     while !self.is_at_end() {
-    //         let current_indent = self.current_indent_level();
-    //         if current_indent < initial_indent {
-    //             println!("Fin du parsing du bloc indenté");
-    //             break;
-    //         } else if current_indent > initial_indent {
-    //             return Err(ParserError::new(UnexpectedIndentation, self.current_position()));
-    //         }
-    //
-    //         match self.parse_statement() {
-    //             Ok(statement) => {
-    //                 println!("Instruction parsée : {:?}", statement);
-    //                 statements.push(statement);
-    //             },
-    //             Err(e) => {
-    //                 println!("Erreur lors du parsing de l'instruction : {:?}", e);
-    //                 // Vous pouvez choisir de retourner l'erreur ici ou de continuer le parsing
-    //                 return Err(e);
-    //             }
-    //         }
-    //
-    //         // Consommer les newlines après chaque instruction
-    //         while self.match_token(&[TokenType::NEWLINE]) {
-    //             self.advance();
-    //         }
-    //         if self.match_token(&[TokenType::DEDENT, TokenType::EOF]) {
-    //             break;
-    //         }
-    //
-    //     }
-    //
-    //     Ok(Block {
-    //         statements,
-    //         syntax_mode: self.syntax_mode,
-    //         indent_level: Some(initial_indent),
-    //         braces: None,
-    //     })
-    // }
 
     pub fn parse_indented_block(&mut self) -> Result<Block, ParserError> {
         println!("Début du parsing du bloc indenté");
@@ -579,8 +533,6 @@ impl Parser {
             braces: None,
         })
     }
-
-    //
     pub fn parse_braced_block(&mut self) -> Result<Block, ParserError> {
         println!("Début du parsing du bloc");
         let opening_brace = self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
@@ -588,23 +540,26 @@ impl Parser {
 
         let mut statements = Vec::new();
         while !self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) {
-            // if self.is_at_end(){
-            //     return Err(ParserError::new(UnexpectedEndOfInput, self.current_position()));
-            // }
+            if self.is_at_end() {
+                return Err(ParserError::new(UnexpectedEndOfInput, self.current_position()));
+            }
             let stmt = self.parse_statement()?;
             println!("Instruction parsée : {:?}", stmt);
             statements.push(stmt);
 
-            if self.match_token(&[TokenType::DELIMITER(Delimiters::SEMICOLON)]){
+            // Consommer le point-virgule si présent
+            if self.match_token(&[TokenType::DELIMITER(Delimiters::SEMICOLON)]) {
+                self.advance();
+            }
+
+            // Consommer les newlines
+            while self.match_token(&[TokenType::NEWLINE]) {
                 self.advance();
             }
         }
 
         let closing_brace = self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
         println!("Accolade fermante consommée");
-        //
-        // let statement = self.parse_statement()?;
-        // statements.push(statement);
 
         println!("Fin du parsing du bloc");
         Ok(Block {
@@ -614,6 +569,41 @@ impl Parser {
             braces: Some((opening_brace, closing_brace)),
         })
     }
+
+    //
+    // pub fn parse_braced_block(&mut self) -> Result<Block, ParserError> {
+    //     println!("Début du parsing du bloc");
+    //     let opening_brace = self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
+    //     println!("Accolade ouvrante consommée");
+    //
+    //     let mut statements = Vec::new();
+    //     while !self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) {
+    //         if self.is_at_end(){
+    //             return Err(ParserError::new(UnexpectedEndOfInput, self.current_position()));
+    //         }
+    //         let stmt = self.parse_statement()?;
+    //         println!("Instruction parsée : {:?}", stmt);
+    //         statements.push(stmt);
+    //
+    //         if self.match_token(&[TokenType::DELIMITER(Delimiters::SEMICOLON)]){
+    //             self.advance();
+    //         }
+    //     }
+    //
+    //     let closing_brace = self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+    //     println!("Accolade fermante consommée");
+    //     //
+    //     // let statement = self.parse_statement()?;
+    //     // statements.push(statement);
+    //
+    //     println!("Fin du parsing du bloc");
+    //     Ok(Block {
+    //         statements,
+    //         syntax_mode: self.syntax_mode,
+    //         indent_level: None,
+    //         braces: Some((opening_brace, closing_brace)),
+    //     })
+    // }
     pub fn get_syntax_mode(&self) -> SyntaxMode {
         self.syntax_mode
     }
@@ -665,7 +655,21 @@ impl Parser {
     }
 
     #[allow(dead_code)]
-    fn parse_declaration(&mut self) -> Result<ASTNode, ParserError> {
+    // fn parse_declaration(&mut self) -> Result<Declaration, ParserError> {
+    //     if self.match_token(&[TokenType::KEYWORD(Keywords::LET)]) {
+    //         self.parse_variable_declaration()
+    //     } else if self.match_token(&[TokenType::KEYWORD(Keywords::FN)]) {
+    //         self.parse_function_declaration()
+    //     } else if self.match_token(&[TokenType::KEYWORD(Keywords::STRUCT)]) {
+    //         self.parse_struct_declaration()
+    //     } else if self.match_token(&[TokenType::KEYWORD(Keywords::CLASS)]) {
+    //         self.parse_class_declaration()
+    //     } else {
+    //         self.parse_statement().map(ASTNode::Statement)
+    //     }
+    // }
+
+    fn parse_declaration(&mut self) -> Result<Declaration, ParserError> {
         if self.match_token(&[TokenType::KEYWORD(Keywords::LET)]) {
             self.parse_variable_declaration()
         } else if self.match_token(&[TokenType::KEYWORD(Keywords::FN)]) {
@@ -675,7 +679,11 @@ impl Parser {
         } else if self.match_token(&[TokenType::KEYWORD(Keywords::CLASS)]) {
             self.parse_class_declaration()
         } else {
-            self.parse_statement().map(ASTNode::Statement)
+            // Au lieu de retourner un Statement, nous allons lever une erreur
+            Err(ParserError::new(
+                ParserErrorType::ExpectedDeclaration,
+                self.current_position(),
+            ))
         }
     }
 
@@ -719,7 +727,7 @@ impl Parser {
     }
 
     #[allow(dead_code)]
-    pub fn parse_variable_declaration(&mut self) -> Result<ASTNode, ParserError> {
+    pub fn parse_variable_declaration(&mut self) -> Result<Declaration, ParserError> {
         /* Vérifie et consomme le mot-clé "let" */
 
         self.consume(TokenType::KEYWORD(Keywords::LET))?;
@@ -764,17 +772,15 @@ impl Parser {
             .or_else(|_| Err(ParserError::new(ExpectValue, self.current_position())))?;
 
         // Crée et retourne le nœud AST pour la déclaration de variable
-        Ok(ASTNode::Declaration(Declaration::Variable(
-            VariableDeclaration {
-                name,
-                variable_type, // Ici on ajoute le type
-                value: Some(value),
-                mutable,
-            },
-        )))
+        Ok(Declaration::Variable(VariableDeclaration {
+            name,
+            variable_type,
+            value: Some(value),
+            mutable,
+        }))
     }
 
-    pub fn parse_function_declaration(&mut self) -> Result<ASTNode, ParserError> {
+    pub fn parse_function_declaration(&mut self) -> Result<Declaration, ParserError> {
         self.consume(TokenType::KEYWORD(Keywords::FN))?;
         let name = self.consume_identifier()?;
         self.consume(TokenType::DELIMITER(Delimiters::LPAR))?;
@@ -805,23 +811,29 @@ impl Parser {
         }
 
         let body = self.parse_block()?;
-        Ok(ASTNode::Declaration(Declaration::Function(
-            FunctionDeclaration {
-                name,
-                parameters,
-                return_type,
-                body,
-            },
-        )))
+        Ok(Declaration::Function(FunctionDeclaration {
+            name,
+            parameters,
+            return_type,
+            body,
+        }))
+        // Ok(ASTNode::Declaration(Declaration::Function(
+        //     FunctionDeclaration {
+        //         name,
+        //         parameters,
+        //         return_type,
+        //         body,
+        //     },
+        // )))
     }
 
-    fn parse_struct_declaration(&mut self) -> Result<ASTNode, ParserError> {
+    fn parse_struct_declaration(&mut self) -> Result<Declaration, ParserError> {
         todo!()
     }
-    fn parse_class_declaration(&mut self) -> Result<ASTNode, ParserError> {
+    fn parse_class_declaration(&mut self) -> Result<Declaration, ParserError> {
         todo!()
     }
-    fn parse_enum_declaration(&mut self) -> Result<ASTNode, ParserError> {
+    fn parse_enum_declaration(&mut self) -> Result<Declaration, ParserError> {
         todo!()
     }
 
@@ -1037,27 +1049,7 @@ impl Parser {
             ))
         }
     }
-    // fn parse_statement(&mut self) -> Result<Statement, ParserError> {
-    //     println!("Début du parsing de l'instruction,Current token: {:?}", self.current_token());
-    //     let stament = if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]){
-    //         self.parse_return_statement()?
-    //     } else {
-    //         let expr = self.parse_expression()?;
-    //         self.consume_statement_end()?;
-    //         Statement::Expression(expr)
-    //     };
-    //     Ok(stament)
-    //     // if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]) {
-    //     //     self.parse_return_statement()
-    //     // } else {
-    //     //     let expr = self.parse_expression()?;
-    //     //     if self.syntax_mode == SyntaxMode::Braces {
-    //     //         self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON))?;
-    //     //     }
-    //     //     //self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON))?;
-    //     //     Ok(Statement::Expression(expr))
-    //     // }
-    // }
+
     fn parse_statement(&mut self) -> Result<Statement, ParserError> {
         println!("Début du parsing de l'instruction, Current token: {:?}", self.current_token());
 
@@ -1066,13 +1058,38 @@ impl Parser {
             self.advance();
         }
 
+        if self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) {
+            return Err(ParserError::new(UnexpectedToken, self.current_position()));
+        }
+
         if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]) {
             self.parse_return_statement()
-        } else {
+        } else if self.match_token(&[TokenType::KEYWORD(Keywords::LET)]) {
+            // Appeler une nouvelle méthode pour parser la déclaration de variable
+            self.parse_variable_declaration_statement()
+        }else if self.is_declaration_start() {
+            let declaration = self.parse_declaration()?;
+            Ok(Statement::Declaration(declaration))
+        }else {
             let expr = self.parse_expression()?;
             Ok(Statement::Expression(expr))
         }
     }
+
+    fn is_declaration_start(&self) -> bool {
+        self.match_token(&[
+            TokenType::KEYWORD(Keywords::LET),
+            TokenType::KEYWORD(Keywords::FN),
+            TokenType::KEYWORD(Keywords::STRUCT),
+            TokenType::KEYWORD(Keywords::CLASS),
+            TokenType::KEYWORD(Keywords::ENUM),
+        ])
+    }
+    fn parse_variable_declaration_statement(&mut self) -> Result<Statement, ParserError> {
+        let variable_decl = self.parse_variable_declaration()?; // Réutilise la méthode existante
+        Ok(Statement::Declaration(variable_decl))
+    }
+
 
 
     fn parse_return_statement(&mut self) -> Result<Statement, ParserError> {

@@ -81,8 +81,8 @@ pub enum Type {
     String,
     Bool,
     Char,
-    // Array(Box<Type>),
-    // Tuple(Vec<Type>),
+    Array(Box<Type>),
+    Tuple(Vec<Type>),
     Custom(String),
     Infer, // Type inféré déduire par le compilateur
 }
@@ -238,6 +238,7 @@ pub enum Statement {
     With(WithStatement),
     Yield(YieldStatement),
     TypeC,
+    Declaration(Declaration),
 }
 
 #[allow(dead_code)]
@@ -387,102 +388,24 @@ impl fmt::Display for ASTNode {
     }
 }
 
+impl Block {
+    pub fn is_indentation_mode(&self) -> bool{
+        matches!(self.syntax_mode, SyntaxMode::Indentation)
+    }
+    pub fn validate(&self) -> Result<(),String>{
+        match self.syntax_mode {
+            SyntaxMode::Indentation if self.indent_level.is_none() => {
+                Err("Indentation level is missing".to_string())
+            }
+            SyntaxMode::Braces if self.braces.is_none() => {
+                Err("Braces are missing".to_string())
+            }
+            _ => Ok(()),
+        }
+    }
+
+}
+
 // by YmC
 
 ////////////////////////////////////////////////////////////////
-
-// #[allow(dead_code)]
-// #[derive(Debug)]
-// pub enum ASTNode{
-//     Program(Vec<ASTNode>),
-//     FunctionDeclaration{
-//         name: String,
-//         parameters: Vec<ASTNode>,
-//         body: Vec<ASTNode>
-//     },
-//     VariableDeclaration{
-//         name: String,
-//         value: Box<ASTNode>
-//     },
-//     IfStatement{
-//         condition: Box<ASTNode>,
-//         then_block: Vec<ASTNode>,
-//         elif_blocks: Vec<(Box<ASTNode>, Vec<ASTNode>)>,
-//         else_block: Option<Box<ASTNode>>,
-//     },
-//     ElifStatement{
-//         condition: Box<ASTNode>,
-//         block:Vec<ASTNode>
-//     },
-//     ElseStatement{
-//         block: Vec<ASTNode>
-//     },
-//     WhiileStatment{
-//         condition: Box<ASTNode>,
-//         body: Vec<ASTNode>
-//     },
-//     ForStatement{
-//         variable: String,
-//         iterable: Box<ASTNode>,
-//         body: Vec<ASTNode>
-//     },
-//     ReturnStatement{
-//         value: Option<Box<ASTNode>>
-//     },
-//     Block(Vec<ASTNode>),
-//     BinaryOperation{
-//         left: Box<ASTNode>,
-//         operators: Operators,
-//         right: Box<ASTNode>
-//     },
-//     Identifier(String),
-//     Literal(LiteralValue),
-//     //UnaryOperation { operator: , operand: Box<ASTNode> },
-// }
-//
-// #[allow(dead_code)]
-// #[derive(Debug)]
-// pub enum LiteralValue{
-//     Integer{value:BigInt},
-//     Float{value:f64},
-//     String(String),
-//     Boolean(bool),
-// }
-//
-//
-
-//
-//
-//
-//
-// enum ASTNode {
-//     Program(Vec<Box<ASTNode>>),
-//     Statement(Box<ASTNode>),
-//     FunctionDef{
-//         name: String,
-//         params: Vec<String,String>,
-//         return_type: Option<String>,
-//         body:Box<ASTNode>
-//     },
-//     StructDef{
-//         name: String,
-//         fields: Vec<String,String>      // name, type
-//     },
-//
-//     // Statements
-//     LetStatement{
-//         name: String,
-//         mutable: bool,
-//         type_annotation: Option<String>,
-//         value: Box<ASTNode>
-//     },
-//     ifStatement{
-//         condition: Box<ASTNode>,
-//         then_branch: Box<ASTNode>,
-//         else_branch: Option<Box<ASTNode>>,
-//     },
-//     WhileStatement{
-//         condition: Box<ASTNode>,
-//         body: Box<ASTNode>,
-//     },
-// }
