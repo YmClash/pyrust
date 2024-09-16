@@ -123,6 +123,171 @@ mod tests {
         let result = parser.parse_function_declaration();
         assert!(result.is_err());
     }
+    // ///////////////////////////////////////////////////////////
+    // #[test]
+    // fn test_constant_declaration_braces() {
+    //     let source = "const PI: float = 3.14159;";
+    //     let mut parser = create_parser(source, SyntaxMode::Braces);
+    //     let result = parser.parse_constant_declaration();
+    //     assert!(result.is_ok());
+    //     if let Ok(Declaration::Constante(const_decl)) = result {
+    //         assert_eq!(const_decl.name, "PI");
+    //         assert!(matches!(const_decl.constant_type, Some(Type::Float)));
+    //         assert!(matches!(const_decl.value, Expression::Literal(Literal::Float { value }) if (value - 3.14159).abs() < f64::EPSILON));
+    //     } else {
+    //         panic!("Expected constant declaration");
+    //     }
+    // }
+    //
+    // #[test]
+    // fn test_constant_declaration_indentation() {
+    //     let source = "const E = 2.71828\n";
+    //     let mut parser = create_parser(source, SyntaxMode::Indentation);
+    //     let result = parser.parse_constant_declaration();
+    //     assert!(result.is_ok());
+    //     if let Ok(Declaration::Constante(const_decl)) = result {
+    //         assert_eq!(const_decl.name, "E");
+    //         assert!(const_decl.constant_type.is_none());
+    //         assert!(matches!(const_decl.value, Expression::Literal(Literal::Float { value }) if (value - 2.71828).abs() < f64::EPSILON));
+    //     } else {
+    //         panic!("Expected constant declaration");
+    //     }
+    // }
+    //
+    // #[test]
+    // fn test_constant_declaration_error() {
+    //     let source = "const 123 = 456;";
+    //     let mut parser = create_parser(source, SyntaxMode::Braces);
+    //     let result = parser.parse_constant_declaration();
+    //     assert!(result.is_err());
+    // }
+    // //////////////////////////////////////////////////////////////////////////
+
+    // // Tests pour les déclarations de structures
+    // #[test]
+    // fn test_struct_declaration_braces() {
+    //     let source = "struct Point { x: int, y: int }";
+    //     let mut parser = create_parser(source, SyntaxMode::Braces);
+    //     let result = parser.parse_struct_declaration();
+    //     assert!(result.is_ok());
+    //     if let Ok(Declaration::Structure(struct_decl)) = result {
+    //         assert_eq!(struct_decl.name, "Point");
+    //         assert_eq!(struct_decl.fields.len(), 2);
+    //         assert_eq!(struct_decl.fields[0].name, "x");
+    //         assert_eq!(struct_decl.fields[0].parameter_type, Some("int".to_string()));
+    //         assert_eq!(struct_decl.fields[1].name, "y");
+    //         assert_eq!(struct_decl.fields[1].parameter_type, Some("int".to_string()));
+    //     } else {
+    //         panic!("Expected struct declaration");
+    //     }
+    // }
+    //
+    // #[test]
+    // fn test_struct_declaration_indentation() {
+    //     let source = "struct Person:\n    name: str\n    age: int\n";
+    //     let mut parser = create_parser(source, SyntaxMode::Indentation);
+    //     let result = parser.parse_struct_declaration();
+    //     assert!(result.is_ok());
+    //     if let Ok(Declaration::Structure(struct_decl)) = result {
+    //         assert_eq!(struct_decl.name, "Person");
+    //         assert_eq!(struct_decl.fields.len(), 2);
+    //         assert_eq!(struct_decl.fields[0].name, "name");
+    //         assert_eq!(struct_decl.fields[0].parameter_type, Some("str".to_string()));
+    //         assert_eq!(struct_decl.fields[1].name, "age");
+    //         assert_eq!(struct_decl.fields[1].parameter_type, Some("int".to_string()));
+    //     } else {
+    //         panic!("Expected struct declaration");
+    //     }
+    // }
+    //
+    // // Tests pour les déclarations de classes
+    // #[test]
+    // fn test_class_declaration_braces() {
+    //     let source = "class Rectangle { width: float; height: float; fn area() -> float { return self.width * self.height; } }";
+    //     let mut parser = create_parser(source, SyntaxMode::Braces);
+    //     let result = parser.parse_class_declaration();
+    //     assert!(result.is_ok());
+    //     if let Ok(Declaration::Class(class_decl)) = result {
+    //         assert_eq!(class_decl.name, "Rectangle");
+    //         assert_eq!(class_decl.fields.len(), 2);
+    //         assert_eq!(class_decl.methods.len(), 1);
+    //         assert_eq!(class_decl.methods[0].name, "area");
+    //     } else {
+    //         panic!("Expected class declaration");
+    //     }
+    // }
+    //
+    // #[test]
+    // fn test_class_declaration_indentation() {
+    //     let source = "class Circle:\n    radius: float\n    fn circumference() -> float:\n        return 2 * 3.14159 * self.radius\n";
+    //     let mut parser = create_parser(source, SyntaxMode::Indentation);
+    //     let result = parser.parse_class_declaration();
+    //     assert!(result.is_ok());
+    //     if let Ok(Declaration::Class(class_decl)) = result {
+    //         assert_eq!(class_decl.name, "Circle");
+    //         assert_eq!(class_decl.fields.len(), 1);
+    //         assert_eq!(class_decl.methods.len(), 1);
+    //         assert_eq!(class_decl.methods[0].name, "circumference");
+    //     } else {
+    //         panic!("Expected class declaration");
+    //     }
+    // }
+    //
+    // // Tests pour les déclarations d'énumérations
+    // #[test]
+    // fn test_enum_declaration_braces() {
+    //     let source = "enum Color { Red, Green, Blue }";
+    //     let mut parser = create_parser(source, SyntaxMode::Braces);
+    //     let result = parser.parse_enum_declaration();
+    //     assert!(result.is_ok());
+    //     if let Ok(Declaration::Enum(enum_decl)) = result {
+    //         assert_eq!(enum_decl.name, "Color");
+    //         assert_eq!(enum_decl.variants.len(), 3);
+    //         assert_eq!(enum_decl.variants, vec!["Red", "Green", "Blue"]);
+    //     } else {
+    //         panic!("Expected enum declaration");
+    //     }
+    // }
+    //
+    // #[test]
+    // fn test_enum_declaration_indentation() {
+    //     let source = "enum DaysOfWeek:\n    Monday\n    Tuesday\n    Wednesday\n    Thursday\n    Friday\n";
+    //     let mut parser = create_parser(source, SyntaxMode::Indentation);
+    //     let result = parser.parse_enum_declaration();
+    //     assert!(result.is_ok());
+    //     if let Ok(Declaration::Enum(enum_decl)) = result {
+    //         assert_eq!(enum_decl.name, "DaysOfWeek");
+    //         assert_eq!(enum_decl.variants.len(), 5);
+    //         assert_eq!(enum_decl.variants, vec!["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]);
+    //     } else {
+    //         panic!("Expected enum declaration");
+    //     }
+    // }
+    //
+    // // Tests pour les cas d'erreur
+    // #[test]
+    // fn test_struct_declaration_error() {
+    //     let source = "struct 123 { x: int }";
+    //     let mut parser = create_parser(source, SyntaxMode::Braces);
+    //     let result = parser.parse_struct_declaration();
+    //     assert!(result.is_err());
+    // }
+    //
+    // #[test]
+    // fn test_class_declaration_error() {
+    //     let source = "class { field: int }";
+    //     let mut parser = create_parser(source, SyntaxMode::Braces);
+    //     let result = parser.parse_class_declaration();
+    //     assert!(result.is_err());
+    // }
+    //
+    // #[test]
+    // fn test_enum_declaration_error() {
+    //     let source = "enum Color { Red, 123, Blue }";
+    //     let mut parser = create_parser(source, SyntaxMode::Braces);
+    //     let result = parser.parse_enum_declaration();
+    //     assert!(result.is_err());
+    // }
 
 
 }

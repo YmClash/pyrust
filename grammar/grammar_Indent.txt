@@ -5,6 +5,9 @@
 
 <statement> ::= <variable_declaration>
               | <function_declaration>
+              | <struct_declaration>
+              | <class_declaration>
+              | <constant_declaration>
               | <function_call>
               | <print_statement>
               | <comment>
@@ -19,9 +22,24 @@
 
 <function_declaration> ::= "fn" <identifier> "(" <parameter_list> ")" [":" <type>] ":" <statement_list> "return" <expression>
 
+<struct_declaration> ::= "struct" <identifier> "{" <field_list> "}"
+
+<class_declaration> ::= "class", <identifier>, ["(", [base_classes], ")"], ":", <block>
+<constante_declaration> ::= "const" <identifier> [":" <type>] "=" <expression>
+
+
+
+
+
+
+
 <parameter_list> ::= <parameter>
                    | <parameter_list> "," <parameter>
                    | ""
+
+<field_list> ::= <field>
+              | <field_list> <field>
+
 
 <parameter> ::= <identifier> [":" <type>]
 

@@ -73,6 +73,14 @@ pub enum UnaryOperator {
     Negative,
 }
 
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct GenericType{
+    pub base: String,           // Nom du type
+    pub parameters: Vec<Type>, //   Paramètres génériques
+}
+
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum Type {
@@ -84,6 +92,7 @@ pub enum Type {
     Array(Box<Type>),
     Tuple(Vec<Type>),
     Custom(String),
+    Generic(GenericType),
     Infer, // Type inféré déduire par le compilateur
 }
 
@@ -96,6 +105,10 @@ pub enum Declaration {
     Structure(StructDeclaration),
     Class(ClassDeclaration),
     Enum(EnumDeclaration),
+    Trait(TraitDeclaration),
+    Impl(ImplDeclaration),
+    Module(ModuleDeclaration),
+    Macro(MacroDeclaration),
 }
 
 #[allow(dead_code)]
@@ -113,6 +126,7 @@ pub struct FunctionDeclaration {
     pub parameters: Vec<(String, Type)>, // (nom, type)
     pub return_type: Option<Type>,
     pub body: Block,
+    //pub annotations: Vec<Annotation>,
 }
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -126,15 +140,15 @@ pub struct ConstanteDeclaration {
 #[derive(Debug, Clone)]
 pub struct StructDeclaration {
     pub name: String,
-    pub fields: Vec<Parameters>,
-    //pub fileds_type: Vec<Type>,
+    pub fields: Vec<Field>,
+
 }
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct ClassDeclaration {
     pub name: String,
-    pub fields: Vec<Parameters>,
+    pub fields: Vec<Field>,
     pub methods: Vec<FunctionDeclaration>,
 }
 
@@ -142,8 +156,67 @@ pub struct ClassDeclaration {
 #[derive(Debug, Clone)]
 pub struct EnumDeclaration {
     pub name: String,
-    pub variants: Vec<String>,
+    pub variants: Vec<EnumVariant>,
 }
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct TraitDeclaration {
+    pub name: String,
+    pub methods: Vec<FunctionSignature>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct ImplDeclaration {
+    pub trait_name: String,
+    pub for_type: Type,
+    pub methods: Vec<FunctionDeclaration>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct ModuleDeclaration {
+    pub name: String,
+    pub statements: Vec<Statement>,
+}
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct MacroDeclaration {
+    pub name: String,
+    pub parameters: Vec<String>,
+    pub body: Block,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct Field{
+    pub name: String,
+    pub field_type: Type,
+    pub mutable: bool, //  si neccessaire
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct EnumVariant{
+    pub name: String,
+    pub associated_type: Option<Vec<Type>>, // None si pas de type associé
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct FunctionSignature{
+    pub name: String,
+    pub parameters: Vec<(String,Type)>,
+    pub return_type: Option<Type>,
+
+}
+// #[allow(dead_code)]
+// #[derive(Debug, Clone)]
+// pub struct Annotation{
+//     pub name: String,
+//     pub value: Option<Expression>,
+// }
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -159,6 +232,7 @@ pub enum Expression {
     MatchExpression(MatchExpression),
     MatchArms(Box<MatchArms>),
     TypeCast(TypeCast),
+    Conditional(Conditional),
 }
 
 #[allow(dead_code)]
@@ -176,7 +250,7 @@ pub enum Literal {
 #[derive(Debug, Clone)]
 pub struct Parameters {
     pub name: String,
-    pub parameter_type: Option<String>,
+    pub parameter_type: Option<Type>,
 }
 
 #[allow(dead_code)]
@@ -220,6 +294,15 @@ pub struct TypeCast {
 }
 
 #[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct Conditional {
+    pub condition: Box<Expression>,
+    pub then_block: Box<Expression>,
+    pub else_block: Box<Expression>,
+}
+
+
+#[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub enum Statement {
     Expression(Expression),
@@ -229,7 +312,7 @@ pub enum Statement {
     Raise(RaiseStatement),
     Del(DelStatement),
     If(IfStatement),
-    ElseIf(ElifStatement),
+    Elif(ElifStatement),
     While(WhileStatement),
     For(ForStatement),
     Break,
@@ -237,7 +320,7 @@ pub enum Statement {
     Try(TryStatement),
     With(WithStatement),
     Yield(YieldStatement),
-    TypeC,
+
     Declaration(Declaration),
 }
 
@@ -358,6 +441,7 @@ pub enum Pattern {
     Literal(Literal),
     Identifier(String),
     Wildcard,
+    EnumVariant(EnumVariant),
 }
 
 impl fmt::Display for ASTNode {
@@ -404,6 +488,30 @@ impl Block {
         }
     }
 
+}
+
+impl ASTNode{
+    pub fn program(statements: Vec<ASTNode>) -> Self{
+        ASTNode::Program(statements)
+    }
+    pub fn block(block: Block) -> Self{
+        ASTNode::Block(block)
+    }
+    pub fn declaration(declaration: Declaration) -> Self{
+        ASTNode::Declaration(declaration)
+    }
+    pub fn expression(expression: Expression) -> Self{
+        ASTNode::Expression(expression)
+    }
+    pub fn statement(statement: Statement) -> Self{
+        ASTNode::Statement(statement)
+    }
+    pub fn function(function: Function) -> Self{
+        ASTNode::Function(function)
+    }
+    pub fn error(error: ParserError) -> Self{
+        ASTNode::Error(error)
+    }
 }
 
 // by YmC

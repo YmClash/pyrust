@@ -116,6 +116,7 @@ pub enum Keywords {
     STATIC,
     STRUCT,
     SUPER,
+    TRAIT,
     TRUE,
     TRY,
     TYPE,
@@ -130,6 +131,7 @@ pub enum Keywords {
     STR,
     BOOL,
     CHAR,
+
 }
 
 #[allow(dead_code)]

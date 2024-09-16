@@ -102,6 +102,7 @@ impl<'a> Lexer<'a> {
         keywords.insert("break".to_string(), Keywords::BREAK);
         keywords.insert("const".to_string(), Keywords::CONST);
         keywords.insert("continue".to_string(), Keywords::CONTINUE);
+        keywords.insert("class".to_string(), Keywords::CLASS);
         keywords.insert("def".to_string(), Keywords::DEF);
         keywords.insert("del".to_string(), Keywords::DEL);
         keywords.insert("elif".to_string(), Keywords::ELIF);
@@ -134,6 +135,7 @@ impl<'a> Lexer<'a> {
         keywords.insert("static".to_string(), Keywords::STATIC);
         keywords.insert("struct".to_string(), Keywords::STRUCT);
         keywords.insert("super".to_string(), Keywords::SUPER);
+        keywords.insert("trait".to_string(), Keywords::TRAIT);
         keywords.insert("true".to_string(), Keywords::TRUE);
         keywords.insert("try".to_string(), Keywords::TRY);
         keywords.insert("type".to_string(), Keywords::TYPE);

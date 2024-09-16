@@ -5,7 +5,7 @@
 use pyrust::lexer::lex::{Lexer, Token};
 use pyrust::lexer::lex::SyntaxMode;
 use pyrust::parser::parser::Parser;
-use pyrust::parser::ast::{ASTNode,Declaration,VariableDeclaration,FunctionDeclaration};
+use pyrust::parser::ast::{ASTNode, Declaration, VariableDeclaration, FunctionDeclaration, ConstanteDeclaration};
 
 fn main() {
     println!("Pyrust Compiler Test");
@@ -13,10 +13,10 @@ fn main() {
 
     let test_cases = [
         ("Simple Function mode Braces", "fn add(a: int, b: float) -> float { return a + b; }",true),
-        ("simple Funtion mode Indentation", r#"fn add(a: int, b: int) -> int:
+        ("simple Funtion mode Indentation parser error if syntax braces", r#"fn add(a: int, b: int) -> int:
            return a + b"#,true),
 
-        ("Simple Function2", "fn add(a: int, b: float):
+        ("Simple Function 2 mode indentation parser error if syntax braces  ", "fn add(a: int, b: float):
             let mut x:int = 10 + a
             return x + 10 ",true),
         ("Function with Multiple Statements mode Braces", r#"fn calculate(x: int, y: int) -> int {
@@ -25,8 +25,8 @@ fn main() {
             }
         "#,true),
         ("Function without Return Type", "fn greet(name: str) { print(\"Hello, \" + name); }",true),
-        ("Variable Declaration", "let  x:int = 5",false),
-        ("Variable Declaration mutable ", "let mut x:float = 5.5",false),
+        ("Variable Declaration", "let  x:int = 5;",false),
+        ("Variable Declaration mutable ", "let mut x:float = 5.5;",false),
     ];
 
     for (test_name, source_code,is_function) in test_cases.iter() {
@@ -62,16 +62,17 @@ fn main() {
 }
 
 fn run_lexer(source_code: &str) -> Result<Vec<Token>, String> {
-    let mut lexer = Lexer::new(source_code, SyntaxMode::Braces);
+    let mut lexer = Lexer::new(source_code, SyntaxMode::Indentation);
     Ok(lexer.tokenize())
 }
 
 fn run_parser(tokens: &[Token], is_function: bool) -> Result<ASTNode, String> {
-    let mut parser = Parser::new(tokens.to_vec(), SyntaxMode::Braces);
+    let mut parser = Parser::new(tokens.to_vec(), SyntaxMode::Indentation);
     let result = if is_function {
         parser.parse_function_declaration()
     } else {
         parser.parse_variable_declaration()
+
     };
 
     result
@@ -100,6 +101,7 @@ fn print_declaration(decl: Declaration) {
     match decl {
         Declaration::Variable(var) => print_variable_declaration(var),
         Declaration::Function(func) => print_function_declaration(func),
+        Declaration::Constante(constant) => print_constant_declaration(constant),
         _ => println!("Other Declaration: {:?}", decl),
     }
 }
@@ -118,6 +120,13 @@ fn print_function_declaration(func: FunctionDeclaration) {
     println!("  Parameters: {:?}", func.parameters);
     println!("  Return Type: {:?}", func.return_type);
     println!("  Body: {:?}", func.body);
+}
+
+fn print_constant_declaration(constant: ConstanteDeclaration) {
+    println!("Constant Declaration:");
+    println!("  Name: {}", constant.name);
+    println!("  Type: {:?}", constant.constant_type);
+    println!("  Value: {:?}", constant.value);
 }
 
 
