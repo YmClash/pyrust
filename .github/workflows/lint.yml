@@ -12,7 +12,7 @@ jobs:
         with:
           toolchain: stable
           profile: minimal
-          components: clippy, rustfmt
+          components: rustfmt
           override: true
       - name: Run clippy
         run: make lint

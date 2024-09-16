@@ -26,7 +26,7 @@ pub struct Token {
 /// Implementation de la structure Token
 #[allow(dead_code)]
 impl Token {
-    fn new(text: String, token_type: TokenType, line: usize, column: usize) -> Self {
+    pub fn new(text: String, token_type: TokenType, line: usize, column: usize) -> Self {
         Token {
             text,
             token_type,
@@ -76,32 +76,6 @@ impl<'a> Lexer<'a> {
     }
 
     /// La Logique de la Methode pour compter l'indentation a ete trasferer dans la methode get_token()
-    // je vais d'abord gere les different mode de syntaxe
-
-    // fn handle_indentation(&mut self) -> Option<TokenType> {
-    //     let current_indent = self.count_indentation();
-    //     let previous_indent = *self.indent_level.last().unwrap_or(&0);
-    //
-    //     if current_indent > previous_indent {
-    //         self.indent_level.push(current_indent);
-    //         return Some(TokenType::INDENT);
-    //     } else if current_indent < previous_indent {
-    //         while current_indent < *self.indent_level.last().unwrap_or(&0) {
-    //             self.indent_level.pop();
-    //             return Some(TokenType::DEDENT);
-    //         }
-    //         if current_indent != *self.indent_level.last().unwrap_or(&0) {
-    //             return Some(TokenType::ERROR(LexerError::invalid_indentation(
-    //                 Position {
-    //                     line: self.current_line,
-    //                     column: self.current_column,
-    //                 },
-    //             )));
-    //         }
-    //     }
-    //     None
-    // }
-
     /// Methode pour compter l'indentation
 
     pub fn count_indentation(&mut self) -> usize {
@@ -128,6 +102,7 @@ impl<'a> Lexer<'a> {
         keywords.insert("break".to_string(), Keywords::BREAK);
         keywords.insert("const".to_string(), Keywords::CONST);
         keywords.insert("continue".to_string(), Keywords::CONTINUE);
+        keywords.insert("class".to_string(), Keywords::CLASS);
         keywords.insert("def".to_string(), Keywords::DEF);
         keywords.insert("del".to_string(), Keywords::DEL);
         keywords.insert("elif".to_string(), Keywords::ELIF);
@@ -160,6 +135,7 @@ impl<'a> Lexer<'a> {
         keywords.insert("static".to_string(), Keywords::STATIC);
         keywords.insert("struct".to_string(), Keywords::STRUCT);
         keywords.insert("super".to_string(), Keywords::SUPER);
+        keywords.insert("trait".to_string(), Keywords::TRAIT);
         keywords.insert("true".to_string(), Keywords::TRUE);
         keywords.insert("try".to_string(), Keywords::TRY);
         keywords.insert("type".to_string(), Keywords::TYPE);
@@ -731,6 +707,8 @@ impl<'a> Lexer<'a> {
 }
 
 //by YmC
+
+
 
 ////////////////////////essai/////////////////////////////////////////////
 pub fn lox(input: &str) -> Vec<Tok> {

@@ -40,11 +40,17 @@ pub enum ParserErrorType {
     ExpectIdentifier,
 
     ExpectedType,
+    ExpectedDeclaration,
 
     ExpectedOpenParenthesis,
     ExpectedCloseParenthesis,
+    ExpectedCommaOrCloseBrace,
+    ExpectedStructField,
+
     UnexpectedIndentation,
     UnexpectedEndOfInput,
+
+
 }
 
 // #[allow(dead_code)]
@@ -108,11 +114,15 @@ impl Display for ParserErrorType {
             ParserErrorType::ExpectedType => write!(f, "ExpectedType"),
             ParserErrorType::UnexpectedIndentation => write!(f, "UnexpectedIndentation"),
 
+            ParserErrorType::ExpectedDeclaration => write!(f, "ExpectedDeclaration"),
+
             ParserErrorType::ExpectedOpenParenthesis => write!(f, "ExpectedOpenParenthesis"),
             ParserErrorType::ExpectedCloseParenthesis => write!(f, "ExpectedCloseParenthesis"),
             ParserErrorType::UnexpectedEndOfInput => write!(f, "UnexpectedEndOfInput"),
             ParserErrorType::ExpectParameterName => write!(f, "ExpectParameterName"),
             ParserErrorType::ExpectFunctionName => write!(f, "ExpectFunctionName"),
+            ParserErrorType::ExpectedCommaOrCloseBrace => write!(f, "ExpectedCommaOrCloseBrace"),
+            ParserErrorType::ExpectedStructField => write!(f, "ExpectedStructField"),
 
             ParserErrorType::InvalidFunctionDeclaration => write!(f, "InvalidFunctionDeclaration"),
         }
@@ -152,6 +162,10 @@ impl ParserError {
             ParserErrorType::ExpectParameterName => "Expect parameter name".to_string(),
             ParserErrorType::ExpectFunctionName => "Expect function name".to_string(),
             ParserErrorType::ExpectIdentifier => "Expect identifier".to_string(),
+            ParserErrorType::ExpectedCommaOrCloseBrace => "Expected comma or close brace".to_string(),
+            ParserErrorType::ExpectedStructField => "Expected struct field".to_string(),
+
+            ParserErrorType::ExpectedDeclaration => "Expected declaration".to_string(),
 
             ParserErrorType::UnexpectedEndOfInput => "Unexpected end of input".to_string(),
         };

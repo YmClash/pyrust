@@ -24,8 +24,8 @@ pub struct Block {
     pub syntax_mode: SyntaxMode,
     pub indent_level: Option<usize>, // Pour le mode Indentation
     pub braces: Option<(Token, Token)>, // Pour le mode Braces (ouverture, fermeture)
-                                     // pub opening_brace: Option<Token>,  // pour le mode syntaxe Brace
-                                     // pub closing_brace: Option<Token>,
+    // pub opening_brace: Option<Token>,  // pour le mode syntaxe Brace
+    // pub closing_brace: Option<Token>,
 }
 
 #[allow(dead_code)]
@@ -73,17 +73,26 @@ pub enum UnaryOperator {
     Negative,
 }
 
+
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone,PartialEq,Eq)]
+pub struct GenericType{
+    pub base: String,           // Nom du type
+    pub parameters: Vec<Type>, //   Paramètres génériques
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone,PartialEq,Eq)]
 pub enum Type {
     Int,
     Float,
     String,
     Bool,
     Char,
-    // Array(Box<Type>),
-    // Tuple(Vec<Type>),
+    Array(Box<Type>),
+    Tuple(Vec<Type>),
     Custom(String),
+    Generic(GenericType),
     Infer, // Type inféré déduire par le compilateur
 }
 
@@ -96,6 +105,10 @@ pub enum Declaration {
     Structure(StructDeclaration),
     Class(ClassDeclaration),
     Enum(EnumDeclaration),
+    Trait(TraitDeclaration),
+    Impl(ImplDeclaration),
+    Module(ModuleDeclaration),
+    Macro(MacroDeclaration),
 }
 
 #[allow(dead_code)]
@@ -113,6 +126,7 @@ pub struct FunctionDeclaration {
     pub parameters: Vec<(String, Type)>, // (nom, type)
     pub return_type: Option<Type>,
     pub body: Block,
+    //pub annotations: Vec<Annotation>,
 }
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -126,15 +140,16 @@ pub struct ConstanteDeclaration {
 #[derive(Debug, Clone)]
 pub struct StructDeclaration {
     pub name: String,
-    pub fields: Vec<Parameters>,
-    //pub fileds_type: Vec<Type>,
+    pub fields: Vec<Field>,
+
 }
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct ClassDeclaration {
     pub name: String,
-    pub fields: Vec<Parameters>,
+    pub parent_class: Option<String>,
+    pub fields: Vec<Field>,
     pub methods: Vec<FunctionDeclaration>,
 }
 
@@ -142,8 +157,67 @@ pub struct ClassDeclaration {
 #[derive(Debug, Clone)]
 pub struct EnumDeclaration {
     pub name: String,
-    pub variants: Vec<String>,
+    pub variants: Vec<EnumVariant>,
 }
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct TraitDeclaration {
+    pub name: String,
+    pub methods: Vec<FunctionSignature>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct ImplDeclaration {
+    pub trait_name: String,
+    pub for_type: Type,
+    pub methods: Vec<FunctionDeclaration>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct ModuleDeclaration {
+    pub name: String,
+    pub statements: Vec<Statement>,
+}
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct MacroDeclaration {
+    pub name: String,
+    pub parameters: Vec<String>,
+    pub body: Block,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct Field{
+    pub name: String,
+    pub field_type: Type,
+    pub mutable: bool, //  si neccessaire
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct EnumVariant{
+    pub name: String,
+    pub associated_type: Option<Vec<Type>>, // None si pas de type associé
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct FunctionSignature{
+    pub name: String,
+    pub parameters: Vec<(String,Type)>,
+    pub return_type: Option<Type>,
+
+}
+// #[allow(dead_code)]
+// #[derive(Debug, Clone)]
+// pub struct Annotation{
+//     pub name: String,
+//     pub value: Option<Expression>,
+// }
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -159,6 +233,7 @@ pub enum Expression {
     MatchExpression(MatchExpression),
     MatchArms(Box<MatchArms>),
     TypeCast(TypeCast),
+    Conditional(Conditional),
 }
 
 #[allow(dead_code)]
@@ -176,7 +251,7 @@ pub enum Literal {
 #[derive(Debug, Clone)]
 pub struct Parameters {
     pub name: String,
-    pub parameter_type: Option<String>,
+    pub parameter_type: Option<Type>,
 }
 
 #[allow(dead_code)]
@@ -220,6 +295,15 @@ pub struct TypeCast {
 }
 
 #[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct Conditional {
+    pub condition: Box<Expression>,
+    pub then_block: Box<Expression>,
+    pub else_block: Box<Expression>,
+}
+
+
+#[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub enum Statement {
     Expression(Expression),
@@ -229,7 +313,7 @@ pub enum Statement {
     Raise(RaiseStatement),
     Del(DelStatement),
     If(IfStatement),
-    ElseIf(ElifStatement),
+    Elif(ElifStatement),
     While(WhileStatement),
     For(ForStatement),
     Break,
@@ -237,7 +321,8 @@ pub enum Statement {
     Try(TryStatement),
     With(WithStatement),
     Yield(YieldStatement),
-    TypeC,
+
+    Declaration(Declaration),
 }
 
 #[allow(dead_code)]
@@ -357,6 +442,7 @@ pub enum Pattern {
     Literal(Literal),
     Identifier(String),
     Wildcard,
+    EnumVariant(EnumVariant),
 }
 
 impl fmt::Display for ASTNode {
@@ -387,102 +473,48 @@ impl fmt::Display for ASTNode {
     }
 }
 
+impl Block {
+    pub fn is_indentation_mode(&self) -> bool{
+        matches!(self.syntax_mode, SyntaxMode::Indentation)
+    }
+    pub fn validate(&self) -> Result<(),String>{
+        match self.syntax_mode {
+            SyntaxMode::Indentation if self.indent_level.is_none() => {
+                Err("Indentation level is missing".to_string())
+            }
+            SyntaxMode::Braces if self.braces.is_none() => {
+                Err("Braces are missing".to_string())
+            }
+            _ => Ok(()),
+        }
+    }
+
+}
+
+impl ASTNode{
+    pub fn program(statements: Vec<ASTNode>) -> Self{
+        ASTNode::Program(statements)
+    }
+    pub fn block(block: Block) -> Self{
+        ASTNode::Block(block)
+    }
+    pub fn declaration(declaration: Declaration) -> Self{
+        ASTNode::Declaration(declaration)
+    }
+    pub fn expression(expression: Expression) -> Self{
+        ASTNode::Expression(expression)
+    }
+    pub fn statement(statement: Statement) -> Self{
+        ASTNode::Statement(statement)
+    }
+    pub fn function(function: Function) -> Self{
+        ASTNode::Function(function)
+    }
+    pub fn error(error: ParserError) -> Self{
+        ASTNode::Error(error)
+    }
+}
+
 // by YmC
 
 ////////////////////////////////////////////////////////////////
-
-// #[allow(dead_code)]
-// #[derive(Debug)]
-// pub enum ASTNode{
-//     Program(Vec<ASTNode>),
-//     FunctionDeclaration{
-//         name: String,
-//         parameters: Vec<ASTNode>,
-//         body: Vec<ASTNode>
-//     },
-//     VariableDeclaration{
-//         name: String,
-//         value: Box<ASTNode>
-//     },
-//     IfStatement{
-//         condition: Box<ASTNode>,
-//         then_block: Vec<ASTNode>,
-//         elif_blocks: Vec<(Box<ASTNode>, Vec<ASTNode>)>,
-//         else_block: Option<Box<ASTNode>>,
-//     },
-//     ElifStatement{
-//         condition: Box<ASTNode>,
-//         block:Vec<ASTNode>
-//     },
-//     ElseStatement{
-//         block: Vec<ASTNode>
-//     },
-//     WhiileStatment{
-//         condition: Box<ASTNode>,
-//         body: Vec<ASTNode>
-//     },
-//     ForStatement{
-//         variable: String,
-//         iterable: Box<ASTNode>,
-//         body: Vec<ASTNode>
-//     },
-//     ReturnStatement{
-//         value: Option<Box<ASTNode>>
-//     },
-//     Block(Vec<ASTNode>),
-//     BinaryOperation{
-//         left: Box<ASTNode>,
-//         operators: Operators,
-//         right: Box<ASTNode>
-//     },
-//     Identifier(String),
-//     Literal(LiteralValue),
-//     //UnaryOperation { operator: , operand: Box<ASTNode> },
-// }
-//
-// #[allow(dead_code)]
-// #[derive(Debug)]
-// pub enum LiteralValue{
-//     Integer{value:BigInt},
-//     Float{value:f64},
-//     String(String),
-//     Boolean(bool),
-// }
-//
-//
-
-//
-//
-//
-//
-// enum ASTNode {
-//     Program(Vec<Box<ASTNode>>),
-//     Statement(Box<ASTNode>),
-//     FunctionDef{
-//         name: String,
-//         params: Vec<String,String>,
-//         return_type: Option<String>,
-//         body:Box<ASTNode>
-//     },
-//     StructDef{
-//         name: String,
-//         fields: Vec<String,String>      // name, type
-//     },
-//
-//     // Statements
-//     LetStatement{
-//         name: String,
-//         mutable: bool,
-//         type_annotation: Option<String>,
-//         value: Box<ASTNode>
-//     },
-//     ifStatement{
-//         condition: Box<ASTNode>,
-//         then_branch: Box<ASTNode>,
-//         else_branch: Option<Box<ASTNode>>,
-//     },
-//     WhileStatement{
-//         condition: Box<ASTNode>,
-//         body: Box<ASTNode>,
-//     },
-// }
