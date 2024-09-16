@@ -75,14 +75,14 @@ pub enum UnaryOperator {
 
 
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone,PartialEq,Eq)]
 pub struct GenericType{
     pub base: String,           // Nom du type
     pub parameters: Vec<Type>, //   Paramètres génériques
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone,PartialEq,Eq)]
 pub enum Type {
     Int,
     Float,
@@ -148,6 +148,7 @@ pub struct StructDeclaration {
 #[derive(Debug, Clone)]
 pub struct ClassDeclaration {
     pub name: String,
+    pub parent_class: Option<String>,
     pub fields: Vec<Field>,
     pub methods: Vec<FunctionDeclaration>,
 }

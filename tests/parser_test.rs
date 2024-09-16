@@ -4,6 +4,8 @@ mod tests {
     use pyrust::parser::ast::{Declaration, Expression, Literal, Type};
     use pyrust::parser::parser::Parser;
     use pyrust::{Lexer, SyntaxMode};
+
+
     use pyrust::tok::{Delimiters, Keywords, Operators, TokenType};
     use super::*;
 
@@ -12,6 +14,33 @@ mod tests {
         let mut lexer = Lexer::new(source, syntax_mode);
         let tokens = lexer.tokenize();
         Parser::new(tokens, syntax_mode)
+    }
+
+    fn assert_type_eq(actual: &Type, expected: &Type) {
+        match (actual, expected) {
+            (Type::Int, Type::Int) => {},
+            (Type::Float, Type::Float) => {},
+            (Type::String, Type::String) => {},
+            (Type::Bool, Type::Bool) => {},
+            (Type::Char, Type::Char) => {},
+            (Type::Array(a), Type::Array(b)) => assert_type_eq(a, b),
+            (Type::Tuple(a), Type::Tuple(b)) => {
+                assert_eq!(a.len(), b.len());
+                for (a_type, b_type) in a.iter().zip(b.iter()) {
+                    assert_type_eq(a_type, b_type);
+                }
+            },
+            (Type::Custom(a), Type::Custom(b)) => assert_eq!(a, b),
+            (Type::Generic(a), Type::Generic(b)) => {
+                assert_eq!(a.base, b.base);
+                assert_eq!(a.parameters.len(), b.parameters.len());
+                for (a_param, b_param) in a.parameters.iter().zip(b.parameters.iter()) {
+                    assert_type_eq(a_param, b_param);
+                }
+            },
+            (Type::Infer, Type::Infer) => {},
+            _ => panic!("Types do not match: {:?} != {:?}", actual, expected),
+        }
     }
 
     #[test]
@@ -124,6 +153,270 @@ mod tests {
         assert!(result.is_err());
     }
     // ///////////////////////////////////////////////////////////
+
+    // // Tests pour les déclarations de constantes
+    #[test]
+    fn test_constant_declaration_indentation() {
+        let source = "const PI: float = 3.14159\n";
+        let mut parser = create_parser(source, SyntaxMode::Indentation);
+        let result = parser.parse_constant_declaration();
+        assert!(result.is_ok());
+        if let Ok(Declaration::Constante(const_decl)) = result {
+            assert_eq!(const_decl.name, "PI");
+
+            // Vérification du type
+            match const_decl.constant_type {
+                Some(Type::Float) => (), // C'est ce qu'on attend
+                _ => panic!("Expected Float type for constant"),
+            }
+
+            // Vérification de la valeur
+            match const_decl.value {
+                Expression::Literal(Literal::Float { value }) => {
+                    assert!((value - 3.14159).abs() < f64::EPSILON);
+                },
+                _ => panic!("Expected Float literal for constant value"),
+            }
+        } else {
+            panic!("Expected constant declaration");
+        }
+    }
+
+    fn test_constant_declaration_braces() {
+        let source = "const MAX_VALUE = 100;";
+        let mut parser = create_parser(source, SyntaxMode::Braces);
+        let result = parser.parse_constant_declaration();
+        assert!(result.is_ok());
+        if let Ok(Declaration::Constante(const_decl)) = result {
+            assert_eq!(const_decl.name, "MAX_VALUE");
+
+            // Vérification du type
+            assert!(const_decl.constant_type.is_none(), "Expected no type annotation");
+
+            // Vérification de la valeur
+            match const_decl.value {
+                Expression::Literal(Literal::Integer { value }) => {
+                    assert_eq!(value, 100.into());
+                },
+                _ => panic!("Expected Integer literal for constant value"),
+            }
+        } else {
+            panic!("Expected constant declaration");
+        }
+    }
+//////////////////////////////
+    // // Tests pour les déclarations de structures
+
+    #[test]
+    fn test_struct_declaration_indentation() {
+        let source = "struct Point { x: int, y: int }\n";
+        let mut parser = create_parser(source, SyntaxMode::Indentation);
+        let result = parser.parse_struct_declaration();
+        assert!(result.is_ok(), "Failed to parse struct declaration: {:?}", result.err());
+
+        if let Ok(Declaration::Structure(struct_decl)) = result {
+            assert_eq!(struct_decl.name, "Point");
+            assert_eq!(struct_decl.fields.len(), 2);
+            assert_eq!(struct_decl.fields[0].name, "x");
+            assert!(matches!(struct_decl.fields[0].field_type, Type::Int));
+            assert_eq!(struct_decl.fields[1].name, "y");
+            assert!(matches!(struct_decl.fields[1].field_type, Type::Int));
+        } else {
+            panic!("Expected struct declaration");
+        }
+    }
+
+
+    #[test]
+    fn test_struct_declaration_braces() {
+        let source = "struct Person { name: str, age: int }";
+        let mut parser = create_parser(source, SyntaxMode::Braces);
+        let result = parser.parse_struct_declaration();
+        assert!(result.is_ok());
+        if let Ok(Declaration::Structure(struct_decl)) = result {
+            assert_eq!(struct_decl.name, "Person");
+            assert_eq!(struct_decl.fields.len(), 2);
+            assert_eq!(struct_decl.fields[0].name, "name");
+            assert!(matches!(struct_decl.fields[0].field_type, Type::String));
+            assert_eq!(struct_decl.fields[1].name, "age");
+            assert!(matches!(struct_decl.fields[1].field_type, Type::Int));
+        } else {
+            panic!("Expected struct declaration");
+        }
+    }
+
+    #[test]
+    fn test_struct_declaration_empty() {
+        let source = "struct Empty {}";
+        let mut parser = create_parser(source, SyntaxMode::Braces);
+        let result = parser.parse_struct_declaration();
+        assert!(result.is_ok());
+        if let Ok(Declaration::Structure(struct_decl)) = result {
+            assert_eq!(struct_decl.name, "Empty");
+            assert_eq!(struct_decl.fields.len(), 0);
+        } else {
+            panic!("Expected struct declaration");
+        }
+    }
+
+    #[test]
+    fn test_struct_declaration_error() {
+        let source = "struct InvalidStruct {";  // Accolade fermante manquante
+        let mut parser = create_parser(source, SyntaxMode::Braces);
+        let result = parser.parse_struct_declaration();
+        assert!(result.is_err());
+    }
+///////////////////////////MULTILINE STRUCT DECLARATION////////////////////////////
+    // #[test]
+    // fn test_struct_declaration_indentation_multiline() {
+    //     let source = "struct Complex {\n    real: float,\n    imag: float\n}\n";
+    //     let mut parser = create_parser(source, SyntaxMode::Indentation);
+    //     let result = parser.parse_struct_declaration();
+    //     assert!(result.is_ok(), "Failed to parse multiline struct declaration: {:?}", result.err());
+    //
+    //     if let Ok(Declaration::Structure(struct_decl)) = result {
+    //         assert_eq!(struct_decl.name, "Complex");
+    //         assert_eq!(struct_decl.fields.len(), 2);
+    //         assert_eq!(struct_decl.fields[0].name, "real");
+    //         assert!(matches!(struct_decl.fields[0].field_type, Type::Float));
+    //         assert_eq!(struct_decl.fields[1].name, "imag");
+    //         assert!(matches!(struct_decl.fields[1].field_type, Type::Float));
+    //     } else {
+    //         panic!("Expected multiline struct declaration");
+    //     }
+    // }
+//////////////////////////////A TESTER A LA FIN /////////////////////////////////////
+
+    #[test]
+    fn test_class_declaration_indentation() {
+        let source = "class MyClass(ParentClass):
+        x: int
+        y: float
+        fn method1(self) -> int:
+            return 42
+        fn method2(self, a: int) -> float:
+            return 3.14
+            ";
+        let mut parser = create_parser(source, SyntaxMode::Indentation);
+        let result = parser.parse_class_declaration();
+
+        assert!(result.is_ok());
+        if let Ok(Declaration::Class(class_decl)) = result {
+            assert_eq!(class_decl.name, "MyClass");
+            assert_eq!(class_decl.parent_class, Some("ParentClass".to_string()));
+
+            // Vérifier les champs
+            assert_eq!(class_decl.fields.len(), 2);
+            assert_eq!(class_decl.fields[0].name, "x");
+            //assert_type_eq(&class_decl.fields[0].field_type, &Type::Int);
+            assert_eq!(&class_decl.fields[0].field_type, &Type::Int);
+            assert_eq!(class_decl.fields[1].name, "y");
+            //assert_type_eq(&class_decl.fields[1].field_type, &Type::Float);
+            assert_eq!(&class_decl.fields[1].field_type, &Type::Float);
+
+            // Vérifier les méthodes
+            assert_eq!(class_decl.methods.len(), 2);
+            assert_eq!(class_decl.methods[0].name, "method1");
+            assert_eq!(class_decl.methods[1].name, "method2");
+        } else {
+            panic!("Expected class declaration");
+        }
+    }
+
+    #[test]
+    fn test_class_declaration_braces() {
+        let source = r#"
+class SimpleClass {
+    z: string;
+    fn simple_method(self) {
+        return "Hello";
+    }
+}
+"#;
+        let mut parser = create_parser(source, SyntaxMode::Braces);
+        let result = parser.parse_class_declaration();
+
+        assert!(result.is_ok());
+        if let Ok(Declaration::Class(class_decl)) = result {
+            assert_eq!(class_decl.name, "SimpleClass");
+            assert_eq!(class_decl.parent_class, None);
+
+            assert_eq!(class_decl.fields.len(), 1);
+            assert_eq!(class_decl.fields[0].name, "z");
+            // assert_type_eq(&class_decl.fields[0].field_type, &Type::String);
+            assert_eq!(&class_decl.fields[0].field_type, &Type::String);
+
+            assert_eq!(class_decl.methods.len(), 1);
+            assert_eq!(class_decl.methods[0].name, "simple_method");
+        } else {
+            panic!("Expected class declaration");
+        }
+    }
+
+    // #[test]
+    // fn test_class_declaration_indentation() {
+    //     let source = "class MyClass(ParentClass):\n\
+    //                   \tx: int\n\
+    //                   \ty: float\n\
+    //                   \tfn method1(self) -> int:\n\
+    //                   \t\treturn 42\n\
+    //                   \tfn method2(self, a: int) -> float:\n\
+    //                   \t\treturn 3.14\n";
+    //     let mut parser = create_parser(source, SyntaxMode::Indentation);
+    //     let result = parser.parse_class_declaration();
+    //
+    //     assert!(result.is_ok(), "Failed to parse class declaration: {:?}", result.err());
+    //     if let Ok(Declaration::Class(class_decl)) = result {
+    //         assert_eq!(class_decl.name, "MyClass");
+    //         assert_eq!(class_decl.parent_class, Some("ParentClass".to_string()));
+    //
+    //         // Vérifier les champs
+    //         assert_eq!(class_decl.fields.len(), 2);
+    //         assert_eq!(class_decl.fields[0].name, "x");
+    //         assert_type_eq(&class_decl.fields[0].field_type, &Type::Int);
+    //         assert_eq!(class_decl.fields[1].name, "y");
+    //         assert_type_eq(&class_decl.fields[1].field_type, &Type::Float);
+    //
+    //         // Vérifier les méthodes
+    //         assert_eq!(class_decl.methods.len(), 2);
+    //         assert_eq!(class_decl.methods[0].name, "method1");
+    //         assert_eq!(class_decl.methods[1].name, "method2");
+    //     } else {
+    //         panic!("Expected class declaration");
+    //     }
+    // }
+    //
+    // #[test]
+    // fn test_class_declaration_braces() {
+    //     let source = "class SimpleClass {\n\
+    //                   \tz: string;\n\
+    //                   \tfn simple_method(self) {\n\
+    //                   \t\treturn \"Hello\";\n\
+    //                   \t}\n\
+    //                   }\n";
+    //     let mut parser = create_parser(source, SyntaxMode::Braces);
+    //     let result = parser.parse_class_declaration();
+    //
+    //     assert!(result.is_ok(), "Failed to parse class declaration: {:?}", result.err());
+    //     if let Ok(Declaration::Class(class_decl)) = result {
+    //         assert_eq!(class_decl.name, "SimpleClass");
+    //         assert_eq!(class_decl.parent_class, None);
+    //
+    //         assert_eq!(class_decl.fields.len(), 1);
+    //         assert_eq!(class_decl.fields[0].name, "z");
+    //         assert_type_eq(&class_decl.fields[0].field_type, &Type::String);
+    //
+    //         assert_eq!(class_decl.methods.len(), 1);
+    //         assert_eq!(class_decl.methods[0].name, "simple_method");
+    //     } else {
+    //         panic!("Expected class declaration");
+    //     }
+    // }
+    //
+
+
+
+
     // #[test]
     // fn test_constant_declaration_braces() {
     //     let source = "const PI: float = 3.14159;";
