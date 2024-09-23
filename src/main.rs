@@ -11,52 +11,79 @@ fn main() {
     println!("Pyrust Compiler Test");
     println!("===================\n");
 
-    let test_cases = [
-        ("Simple Function mode Braces", "fn add(a: int, b: float) -> float { return a + b; }",true),
-        ("simple Funtion mode Indentation parser error if syntax braces", r#"fn add(a: int, b: int) -> int:
-           return a + b"#,true),
+    let mode = ["Braces","Indentation"];
 
-        ("Simple Function 2 mode indentation parser error if syntax braces  ", "fn add(a: int, b: float):
-            let mut x:int = 10 + a
-            return x + 10 ",true),
-        ("Function with Multiple Statements mode Braces", r#"fn calculate(x: int, y: int) -> int {
-                let  result:int  = x * y;
-                return result + 10;
-            }
-        "#,true),
-        ("Function without Return Type", "fn greet(name: str) { print(\"Hello, \" + name); }",true),
-        ("Variable Declaration", "let  x:int = 5;",false),
-        ("Variable Declaration mutable ", "let mut x:float = 5.5;",false),
-    ];
+    let source_code = "struct Eleve { Nom: str, Age: int }";
 
-    for (test_name, source_code,is_function) in test_cases.iter() {
-        println!("Test Case: {}", test_name);
-        println!("Source Code:\n{}\n", source_code);
+    let mut lexer = Lexer::new(source_code, SyntaxMode::Braces);
 
-        // Lexer Test
-        println!("Lexer Output:");
-        match run_lexer(source_code) {
-            Ok(tokens) => {
-                for token in &tokens {
-                    println!("{:?}", token);
-                }
-                println!("Lexer completed successfully.\n");
-
-                // Parser Test
-                println!("Parser Output:");
-                match run_parser(&tokens,*is_function) {
-                    Ok(ast) => {
-                        print_ast(ast);
-                        println!("Parser completed successfully.\n");
-                    },
-                    Err(e) => println!("Parser Error: {}\n", e),
-                }
-            },
-            Err(e) => println!("Lexer Error: {}\n", e),
-        }
-
-        println!("----------------------------------------------------\n");
+    let tokens = lexer.tokenize();
+    for token in &tokens {
+        println!("{:?}", token);
     }
+
+    println!("\n");
+
+    let mut parser = Parser::new(tokens,SyntaxMode::Braces);
+    match parser.parse_struct_declaration(){
+        Ok(ast) => {
+            println!("AST For Function Declaration:");
+            println!("\n");
+            println!("AST mode :{} Parsing OK ",mode[0]);
+            println!("{:?}", ast);
+            println!("\n");
+        }
+        Err(e) => println!("Error parsing: {} at position {}", e.message, e.position.index),
+    }
+
+
+
+    // let test_cases = [
+    //     ("Simple Function mode Braces", "fn add(a: int, b: float) -> float { return a + b; }",true),
+    //     ("simple Funtion mode Indentation parser error if syntax braces", r#"fn add(a: int, b: int) -> int:
+    //        return a + b"#,true),
+    //
+    //     ("Simple Function 2 mode indentation parser error if syntax braces  ", "fn add(a: int, b: float):
+    //         let mut x:int = 10 + a
+    //         return x + 10 ",true),
+    //     ("Function with Multiple Statements mode Braces", r#"fn calculate(x: int, y: int) -> int {
+    //             let  result:int  = x * y;
+    //             return result + 10;
+    //         }
+    //     "#,true),
+    //     ("Function without Return Type", "fn greet(name: str) { print(\"Hello, \" + name); }",true),
+    //     ("Variable Declaration", "let  x:int = 5;",false),
+    //     ("Variable Declaration mutable ", "let mut x:float = 5.5;",false),
+    // ];
+    //
+    // for (test_name, source_code,is_function) in test_cases.iter() {
+    //     println!("Test Case: {}", test_name);
+    //     println!("Source Code:\n{}\n", source_code);
+    //
+    //     // Lexer Test
+    //     println!("Lexer Output:");
+    //     match run_lexer(source_code) {
+    //         Ok(tokens) => {
+    //             for token in &tokens {
+    //                 println!("{:?}", token);
+    //             }
+    //             println!("Lexer completed successfully.\n");
+    //
+    //             // Parser Test
+    //             println!("Parser Output:");
+    //             match run_parser(&tokens,*is_function) {
+    //                 Ok(ast) => {
+    //                     print_ast(ast);
+    //                     println!("Parser completed successfully.\n");
+    //                 },
+    //                 Err(e) => println!("Parser Error: {}\n", e),
+    //             }
+    //         },
+    //         Err(e) => println!("Lexer Error: {}\n", e),
+    //     }
+    //
+    //     println!("----------------------------------------------------\n");
+    // }
 
     println!("Pyrust Compiler Test Completed");
 }

@@ -382,9 +382,9 @@ impl Parser {
         let fields = self.parse_struct_fields()?;
         self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
         // Consommer un newline si nous sommes en mode indentation
-        if self.syntax_mode == SyntaxMode::Indentation {
-            self.consume(TokenType::NEWLINE)?;
-        }
+        // if self.syntax_mode == SyntaxMode::Indentation {
+        //     self.consume(TokenType::NEWLINE)?;
+        // }
         Ok(Declaration::Structure(StructDeclaration { name, fields }))
     }
 
