@@ -13,9 +13,12 @@ fn main() {
 
     let mode = ["Braces","Indentation"];
 
-    let source_code = "struct Eleve { Nom: str, Age: int }";
+    let source_code = "class MyClass(BaseClass):
+    var x: int = 0
+    def method1(self, y: int) -> int:
+        pass;";
 
-    let mut lexer = Lexer::new(source_code, SyntaxMode::Braces);
+    let mut lexer = Lexer::new(source_code, SyntaxMode::Indentation);
 
     let tokens = lexer.tokenize();
     for token in &tokens {
@@ -24,10 +27,10 @@ fn main() {
 
     println!("\n");
 
-    let mut parser = Parser::new(tokens,SyntaxMode::Braces);
-    match parser.parse_struct_declaration(){
+    let mut parser = Parser::new(tokens,SyntaxMode::Indentation);
+    match parser.parse_constant_declaration(){
         Ok(ast) => {
-            println!("AST For Function Declaration:");
+            println!("AST For Constante Declaration:");
             println!("\n");
             println!("AST mode :{} Parsing OK ",mode[0]);
             println!("{:?}", ast);
