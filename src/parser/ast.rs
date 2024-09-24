@@ -126,6 +126,7 @@ pub struct FunctionDeclaration {
     pub parameters: Vec<(String, Type)>, // (nom, type)
     pub return_type: Option<Type>,
     pub body: Block,
+    pub public_access: bool, // pub
     //pub annotations: Vec<Annotation>,
 }
 #[allow(dead_code)]
@@ -134,6 +135,7 @@ pub struct ConstanteDeclaration {
     pub name: String,
     pub constant_type: Option<Type>,
     pub value: Expression,
+    pub public_access: bool, // pub
 }
 
 #[allow(dead_code)]
@@ -141,6 +143,7 @@ pub struct ConstanteDeclaration {
 pub struct StructDeclaration {
     pub name: String,
     pub fields: Vec<Field>,
+    pub public_access: bool, // pub
 
 }
 
@@ -148,9 +151,12 @@ pub struct StructDeclaration {
 #[derive(Debug, Clone)]
 pub struct ClassDeclaration {
     pub name: String,
-    pub parent_class: Option<String>,
+    pub parent_classes: Vec<String>,
+    //pub interfaces: Vec<String>,
     pub fields: Vec<Field>,
+    pub constructor : Option<FunctionDeclaration>,
     pub methods: Vec<FunctionDeclaration>,
+    pub public_access: bool, // pub
 }
 
 #[allow(dead_code)]
@@ -158,13 +164,15 @@ pub struct ClassDeclaration {
 pub struct EnumDeclaration {
     pub name: String,
     pub variants: Vec<EnumVariant>,
+    //pub public_access: bool, // pub
 }
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct TraitDeclaration {
     pub name: String,
-    pub methods: Vec<FunctionSignature>,
+    pub method_signatures: Vec<FunctionSignature>,
+    pub public_access: bool, // pub
 }
 
 #[allow(dead_code)]

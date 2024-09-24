@@ -14,9 +14,11 @@ fn main() {
     let mode = ["Braces","Indentation"];
 
     let source_code = "class MyClass(BaseClass):
-    var x: int = 0
-    def method1(self, y: int) -> int:
-        pass;";
+    let x: int = 10
+    fn method1(self, y: int) -> void:
+        pass";
+
+    println!("Source Code:\n{}\n", source_code);
 
     let mut lexer = Lexer::new(source_code, SyntaxMode::Indentation);
 
@@ -28,11 +30,11 @@ fn main() {
     println!("\n");
 
     let mut parser = Parser::new(tokens,SyntaxMode::Indentation);
-    match parser.parse_constant_declaration(){
+    match parser.parse_class_declaration(){
         Ok(ast) => {
-            println!("AST For Constante Declaration:");
+            println!("AST For fonction Declaration:");
             println!("\n");
-            println!("AST mode :{} Parsing OK ",mode[0]);
+            println!("AST mode :{} Parsing OK ",mode[1]);
             println!("{:?}", ast);
             println!("\n");
         }

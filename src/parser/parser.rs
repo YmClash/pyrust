@@ -1,6 +1,6 @@
 #[allow(dead_code)]
 use crate::lexer::lex::{SyntaxMode, Token};
-use crate::parser::ast::{ASTNode, BinaryOperation, Block, ClassDeclaration, ConstanteDeclaration, Declaration, EnumDeclaration, Expression, Field, Function, FunctionDeclaration, Identifier, Literal, Operator, Parameters, ReturnStatement, Statement, StructDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration};
+use crate::parser::ast::{ASTNode, BinaryOperation, Block, ClassDeclaration, ConstanteDeclaration, Declaration, EnumDeclaration, Expression, Field, Function, FunctionDeclaration, FunctionSignature, Identifier, Literal, Operator, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration};
 use crate::parser::parser_error::ParserErrorType::{
     ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName,
     ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis,
@@ -212,6 +212,7 @@ impl Parser {
         }
     }
 
+
     pub fn parse_type(&mut self) -> Result<Type, ParserError> {
         let token = self
             .current_token()
@@ -306,6 +307,13 @@ impl Parser {
     }
 
     pub fn parse_function_declaration(&mut self) -> Result<Declaration, ParserError> {
+        let public_accees = if self.match_token(&[TokenType::KEYWORD(Keywords::PUB)]) {
+            self.advance();
+            true
+        } else {
+            false
+        };
+
         self.consume(TokenType::KEYWORD(Keywords::FN))?;
         let name = self.consume_identifier()?;
         self.consume(TokenType::DELIMITER(Delimiters::LPAR))?;
@@ -341,10 +349,19 @@ impl Parser {
             parameters,
             return_type,
             body,
+            public_access: public_accees,
         }))
     }
 
     pub fn parse_constant_declaration(&mut self) -> Result<Declaration, ParserError> {
+        let public_access = if self.match_token(&[TokenType::KEYWORD(Keywords::PUB)]){
+            self.advance();
+            true
+        } else {
+            false
+        };
+
+
         self.consume(TokenType::KEYWORD(Keywords::CONST))?;
         let name = self.consume_identifier()?;
         let constant_type = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
@@ -367,12 +384,19 @@ impl Parser {
             name,
             constant_type,
             value,
+            public_access,
         }))
 
     }
 
 
     pub fn parse_struct_declaration(&mut self) -> Result<Declaration, ParserError> {
+        let public_access = if self.match_token(&[TokenType::KEYWORD(Keywords::PUB)]) {
+            self.advance();
+            true
+        } else {
+            false
+        };
         // la declaration d'une structure commence par le mot-cle struct
         // la declaration est uniforme dans les deux modes de syntaxe
         self.consume(TokenType::KEYWORD(Keywords::STRUCT))?;
@@ -385,7 +409,11 @@ impl Parser {
         // if self.syntax_mode == SyntaxMode::Indentation {
         //     self.consume(TokenType::NEWLINE)?;
         // }
-        Ok(Declaration::Structure(StructDeclaration { name, fields }))
+        Ok(Declaration::Structure(StructDeclaration {
+            name,
+            fields,
+            public_access,
+        }))
     }
 
     // fn parse_struct_fields(&mut self) -> Result<Vec<Field>, ParserError> {
@@ -462,73 +490,131 @@ impl Parser {
     }
 
     pub fn parse_class_declaration(&mut self) -> Result<Declaration, ParserError> {
+        let public_access = if self.match_token(&[TokenType::KEYWORD(Keywords::PUB)]) {
+            self.advance();
+            true
+        } else {
+            false
+        };
+
         self.consume(TokenType::KEYWORD(Keywords::CLASS))?;
 
         // Ajout de logs pour le débogage
         println!("Parsing class name, current token: {:?}", self.current_token());
         let name = self.consume_identifier()?;
-        println!("Class name parsed: {}", name);
+        println!("Nom de la classe: {}", name);
 
-        let parent_class = if self.match_token(&[TokenType::DELIMITER(Delimiters::LPAR)]) {
-            self.advance();
-            let parent = self.consume_identifier()?;
-            self.consume(TokenType::DELIMITER(Delimiters::RPAR))?;
-            Some(parent)
-        } else {
-            None
+        let parent_classes = self.parse_class_inheritance()?;
+        println!("Parent classes: {:?}", parent_classes);
+
+        //maintenant on  vas parse le corps de la classe selon le mode de syntaxe
+        let (fields, methods,constructor) = match self.syntax_mode {
+            SyntaxMode::Indentation => {self.parse_indented_class_body()?},
+            SyntaxMode::Braces => {self.parse_braced_class_body()?},
         };
+
+        println!("Fin du parsing de la declaration de classe");
+
+        Ok(Declaration::Class(ClassDeclaration{
+            name,
+            parent_classes,
+            fields,
+            methods,
+            constructor,
+            public_access,
+        }))
+    }
+
+    fn parse_class_inheritance(&mut self) -> Result<Vec<String>,ParserError>{
+        let mut parent_classes = Vec::new();
+
+        if self.match_token(&[TokenType::DELIMITER(Delimiters::LPAR)]){
+            self.advance();
+            loop {
+                let parent = self.consume_identifier()?;
+                parent_classes.push(parent);
+                println!("Nom de classe parent: {}", parent);
+
+                if !self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]){
+                    break;
+                }
+                self.advance();
+            }
+            self.consume(TokenType::DELIMITER(Delimiters::RPAR))?;
+        }
+        println!("Classes parentes parsées: {:?}", parent_classes);
+        Ok(parent_classes)
+
+    }
+
+    fn parse_indented_class_body(&mut self) -> Result<(Vec<Field>, Vec<FunctionDeclaration>, Option<FunctionDeclaration>), ParserError> {
+        self.consume(TokenType::DELIMITER(Delimiters::COLON))?;
+        self.consume(TokenType::NEWLINE)?;
+        self.consume(TokenType::INDENT)?;
 
         let mut fields = Vec::new();
         let mut methods = Vec::new();
+        let mut constructor = None;
 
-        match self.syntax_mode {
-            SyntaxMode::Indentation => {
-                self.consume(TokenType::DELIMITER(Delimiters::COLON))?;
-                self.consume(TokenType::NEWLINE)?;
-                self.consume(TokenType::INDENT)?;
-            },
-            SyntaxMode::Braces => {
-                self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
-            },
-        }
-
-        while !self.is_class_end() {
-            println!("Parsing class member, current token: {:?}", self.current_token());
-            if self.match_token(&[TokenType::KEYWORD(Keywords::FN)]) {
-                let method = self.parse_function_declaration()?;
-                if let Declaration::Function(func_decl) = method {
-                    methods.push(func_decl);
-                }
-            } else {
-                let field = self.parse_class_field()?;
-                fields.push(field);
+        while !self.match_token(&[TokenType::DEDENT]) {
+            if self.is_at_end() {
+                return Err(ParserError::new(ParserErrorType::UnexpectedEOF, self.current_position()));
             }
 
-            // Consommer les séparateurs
-            self.consume_separators()?;
+            if self.match_token(&[TokenType::KEYWORD(Keywords::FN)]) {
+                let function = self.parse_function_declaration()?;
+                if function.name == "init" {
+                    constructor = Some(function);
+                } else {
+                    methods.push(function);
+                }
+            } else {
+                fields.push(self.parse_class_field()?);
+            }
+
+            self.consume_newline_or_semicolon()?;
         }
 
-        // Consommer le token de fin de classe
-        match self.syntax_mode {
-            SyntaxMode::Indentation => self.consume(TokenType::DEDENT)?,
-            SyntaxMode::Braces => self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?,
-        };
+        self.consume(TokenType::DEDENT)?;
 
-        Ok(Declaration::Class(ClassDeclaration {
-            name,
-            parent_class,
-            fields,
-            methods,
-        }))
+        Ok((fields, methods, constructor))
+    }
+    fn parse_braced_class_body(&mut self) -> Result<(Vec<Field>, Vec<FunctionDeclaration>, Option<FunctionDeclaration>), ParserError> {
+        self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
+
+        let mut fields = Vec::new();
+        let mut methods = Vec::new();
+        let mut constructor = None;
+
+        while !self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) {
+            if self.is_at_end() {
+                return Err(ParserError::new(ParserErrorType::UnexpectedEOF, self.current_position()));
+            }
+
+            if self.match_token(&[TokenType::KEYWORD(Keywords::FN)]) {
+                let function = self.parse_function_declaration()?;
+                if function.name == "init" {
+                    constructor = Some(function);
+                } else {
+                    methods.push(function);
+                }
+            } else {
+                fields.push(self.parse_class_field()?);
+            }
+
+            self.consume_newline_or_semicolon()?;
+        }
+
+        self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+
+        Ok((fields, methods, constructor))
     }
 
     fn parse_class_body(&mut self) -> Result<(Vec<Parameters>, Vec<FunctionDeclaration>), ParserError> {
        todo!()
     }
 
-    fn parse_indented_class_body(&mut self) -> Result<(Vec<Parameters>, Vec<FunctionDeclaration>), ParserError> {
-        todo!()
-    }
+
 
     fn parse_class_fields(&mut self) -> Result<Parameters,ParserError>{
         todo!()
@@ -559,10 +645,37 @@ impl Parser {
     }
 
     fn parse_impl_declaration(&mut self) -> Result<Declaration,ParserError>{
+        self.consume(TokenType::KEYWORD(Keywords::IMPL))?;
+        let trait_name = self.consume_identifier()?;
+        self.consume(TokenType::KEYWORD(Keywords::FOR))?;
+        let for_type = self.consume_identifier()?;
+        let methods = self.parse_impl_body()?;
         todo!()
     }
 
     fn parse_trait_declaration(&mut self) -> Result<Declaration,ParserError>{
+        let public_access = if self.match_token(&[TokenType::KEYWORD(Keywords::PUB)]) {
+            self.advance();
+            true
+        } else {
+            false
+        };
+        self.consume(TokenType::KEYWORD(Keywords::TRAIT))?;
+        let name = self.consume_identifier()?;
+
+        let method_signatures = self.parse_trait_body()?;
+
+        Ok(Declaration::Trait(TraitDeclaration {
+            name,
+            method_signatures,
+            public_access,
+        }))
+    }
+
+    fn parse_trait_body(&mut self) -> Result<Vec<FunctionSignature>, ParserError> {
+        todo!()
+    }
+    fn parse_impl_body(&mut self) -> Result<Vec<FunctionDeclaration>, ParserError> {
         todo!()
     }
 
@@ -1013,6 +1126,16 @@ impl Parser {
             SyntaxMode::Braces => self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]),
         }
     }
+
+    fn consume_newline_or_semicolon(&mut self) -> Result<(), ParserError> {
+        match self.syntax_mode {
+            SyntaxMode::Indentation => self.consume(TokenType::NEWLINE),
+            SyntaxMode::Braces => self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON)),
+        }.map(|_| ())
+    }
+
+
+
 }
 //by YmC
 
