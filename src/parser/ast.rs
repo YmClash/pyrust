@@ -203,6 +203,7 @@ pub struct Field{
     pub name: String,
     pub field_type: Type,
     pub mutable: bool, //  si neccessaire
+    //pub default_value, // si neccessaire
 }
 
 #[allow(dead_code)]

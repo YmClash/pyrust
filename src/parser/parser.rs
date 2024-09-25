@@ -532,8 +532,8 @@ impl Parser {
             self.advance();
             loop {
                 let parent = self.consume_identifier()?;
-                parent_classes.push(parent);
-                println!("Nom de classe parent: {}", parent);
+                parent_classes.push(parent.clone());
+              //  println!("Nom de classe parent: {}", parent);
 
                 if !self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]){
                     break;
@@ -563,10 +563,12 @@ impl Parser {
 
             if self.match_token(&[TokenType::KEYWORD(Keywords::FN)]) {
                 let function = self.parse_function_declaration()?;
-                if function.name == "init" {
-                    constructor = Some(function);
-                } else {
-                    methods.push(function);
+                if let Declaration::Function(func) = function {
+                    if func.name == "init" {
+                        constructor = Some(func);
+                    } else {
+                        methods.push(func);
+                    }
                 }
             } else {
                 fields.push(self.parse_class_field()?);
@@ -579,6 +581,7 @@ impl Parser {
 
         Ok((fields, methods, constructor))
     }
+    // Fonction pour parser le corps de la classe en mode accolades
     fn parse_braced_class_body(&mut self) -> Result<(Vec<Field>, Vec<FunctionDeclaration>, Option<FunctionDeclaration>), ParserError> {
         self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
 
@@ -593,10 +596,12 @@ impl Parser {
 
             if self.match_token(&[TokenType::KEYWORD(Keywords::FN)]) {
                 let function = self.parse_function_declaration()?;
-                if function.name == "init" {
-                    constructor = Some(function);
-                } else {
-                    methods.push(function);
+                if let Declaration::Function(func) = function {
+                    if func.name == "init" {
+                        constructor = Some(func);
+                    } else {
+                        methods.push(func);
+                    }
                 }
             } else {
                 fields.push(self.parse_class_field()?);
@@ -621,15 +626,33 @@ impl Parser {
     }
     fn parse_class_field(&mut self) -> Result<Field, ParserError> {
         println!("Parsing class field , current token: {:?}", self.current_token());
+        let mutable = if self.match_token(&[TokenType::KEYWORD(Keywords::MUT)]) {
+            self.advance();
+            true
+        } else {
+            false
+        };
         let name = self.consume_identifier()?;
+        println!("Nom du champ de classe: {}", name);
         self.consume(TokenType::DELIMITER(Delimiters::COLON))?;
         let field_type = self.parse_type()?;
+        println!("Type du champ de classe: {:?}", field_type);
+
+        // let default_value = if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
+        //     self.advance();
+        //     Some(self.parse_expression()?)
+        // } else {
+        //     None
+        // };
 
         Ok(Field {
             name,
             field_type,
-            mutable: false, // Par défaut, les champs ne sont pas mutables
+            mutable,
+            //default_value,
         })
+
+
     }
 
     fn parse_enum_declaration(&mut self) -> Result<Declaration, ParserError> {
