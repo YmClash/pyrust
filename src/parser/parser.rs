@@ -513,6 +513,8 @@ impl Parser {
             SyntaxMode::Braces => {self.parse_braced_class_body()?},
         };
 
+        let atrributes = self.parse_class_fields()?;
+
         println!("Fin du parsing de la declaration de classe");
 
         Ok(Declaration::Class(ClassDeclaration{
@@ -521,6 +523,7 @@ impl Parser {
             fields,
             methods,
             constructor,
+            atrributes,
             public_access,
         }))
     }

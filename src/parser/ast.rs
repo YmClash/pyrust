@@ -152,9 +152,11 @@ pub struct StructDeclaration {
 pub struct ClassDeclaration {
     pub name: String,
     pub parent_classes: Vec<String>,
-    //pub interfaces: Vec<String>,
-    pub fields: Vec<Field>,
     pub constructor : Option<FunctionDeclaration>,
+    //pub interfaces: Vec<String>,
+    pub atrributes: Vec<Field>,
+    pub fields: Vec<Field>,
+
     pub methods: Vec<FunctionDeclaration>,
     pub public_access: bool, // pub
 }
@@ -219,6 +221,13 @@ pub struct FunctionSignature{
     pub name: String,
     pub parameters: Vec<(String,Type)>,
     pub return_type: Option<Type>,
+
+}
+
+#[allow(dead_code)]
+pub struct Attributes{
+    name: String,
+    type_: Type,
 
 }
 // #[allow(dead_code)]
