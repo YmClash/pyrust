@@ -1,6 +1,6 @@
 #[allow(dead_code)]
 use crate::lexer::lex::{SyntaxMode, Token};
-use crate::parser::ast::{ASTNode, BinaryOperation, Block, ClassDeclaration, ConstanteDeclaration, Declaration, EnumDeclaration, Expression, Field, Function, FunctionDeclaration, FunctionSignature, Identifier, Literal, Operator, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration};
+use crate::parser::ast::{ASTNode, Attribute, BinaryOperation, Block, ClassDeclaration, ConstanteDeclaration, Declaration, EnumDeclaration, Expression, Field, Function, FunctionDeclaration, FunctionSignature, Identifier, Literal, Operator, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration};
 use crate::parser::parser_error::ParserErrorType::{
     ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName,
     ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis,
@@ -490,6 +490,7 @@ impl Parser {
     }
 
     pub fn parse_class_declaration(&mut self) -> Result<Declaration, ParserError> {
+        println!("Debut du parsing de la declaration de classe");
         let public_access = if self.match_token(&[TokenType::KEYWORD(Keywords::PUB)]) {
             self.advance();
             true
@@ -500,32 +501,77 @@ impl Parser {
         self.consume(TokenType::KEYWORD(Keywords::CLASS))?;
 
         // Ajout de logs pour le débogage
-        println!("Parsing class name, current token: {:?}", self.current_token());
+        println!("Debut de parsing: current token: {:?}", self.current_token());
         let name = self.consume_identifier()?;
         println!("Nom de la classe: {}", name);
 
         let parent_classes = self.parse_class_inheritance()?;
-        println!("Parent classes: {:?}", parent_classes);
+        //println!("Parent classes: {:?}", parent_classes);
 
-        //maintenant on  vas parse le corps de la classe selon le mode de syntaxe
-        let (fields, methods,constructor) = match self.syntax_mode {
+        println!("Debut du parsing des Attributes");
+
+        let (attribute,methods,constructor) = match self.syntax_mode {
             SyntaxMode::Indentation => {self.parse_indented_class_body()?},
             SyntaxMode::Braces => {self.parse_braced_class_body()?},
         };
 
-        let atrributes = self.parse_class_fields()?;
+        // let (attributes,methods,constructor) = match self.syntax_mode {
+        //     SyntaxMode::Indentation => {self.parse_indented_class_body()?},
+        //     SyntaxMode::Braces => {self.parse_braced_class_body()?},
+        // };
+
+
+        //maintenant on  vas parse le corps de la classe selon le mode de syntaxe
+
+
+        let attribute = self.parse_class_fields()?;
 
         println!("Fin du parsing de la declaration de classe");
 
         Ok(Declaration::Class(ClassDeclaration{
             name,
             parent_classes,
-            fields,
-            methods,
+            attributes,
             constructor,
-            atrributes,
+            methods,
             public_access,
         }))
+    }
+
+    fn parse_class_attributes_declaration(&mut self) -> Result<Attribute, ParserError> {
+        // let mut attributes = Vec::new();
+        self.consume(TokenType::KEYWORD(Keywords::LET))?;
+
+        //let name = self.consume_identifier()?;
+        let name = if let TokenType::IDENTIFIER { name } = &self.current_token().unwrap().token_type {
+            name.clone()
+        } else {
+            return Err(ParserError::new(ExpectVariableName, self.current_position()));
+        };
+        self.advance();
+
+        let variable_type = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
+            self.advance();
+            Some(self.parse_type()?)
+        }else {
+            None
+        };
+        self.consume(TokenType::OPERATOR(Operators::EQUAL))?;
+
+        println!("Parsing de l'expression de la valeur de l'attribut");
+        let value = self
+            .parse_expression()
+            .or_else(|_| Err(ParserError::new(ExpectValue, self.current_position())))?;
+
+        println!("Fin du parsing de la declaration d'attribut");
+
+        Ok(Attribute {
+            name,
+            attr_type: variable_type,
+            default_value: Some(value),
+            mutable,
+
+        })
     }
 
     fn parse_class_inheritance(&mut self) -> Result<Vec<String>,ParserError>{

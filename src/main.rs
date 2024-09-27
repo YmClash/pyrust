@@ -18,6 +18,10 @@ fn main() {
     fn method1(self, y: int) -> void:
         pass";
 
+
+    let code = "struct Point { x: int, y: int }";
+
+
     println!("Source Code:\n{}\n", source_code);
 
     let mut lexer = Lexer::new(source_code, SyntaxMode::Indentation);

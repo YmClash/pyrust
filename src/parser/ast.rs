@@ -109,6 +109,7 @@ pub enum Declaration {
     Impl(ImplDeclaration),
     Module(ModuleDeclaration),
     Macro(MacroDeclaration),
+    Attributes(Attribute),
 }
 
 #[allow(dead_code)]
@@ -152,13 +153,25 @@ pub struct StructDeclaration {
 pub struct ClassDeclaration {
     pub name: String,
     pub parent_classes: Vec<String>,
+    pub attributes: Vec<Attribute>,
     pub constructor : Option<FunctionDeclaration>,
-    //pub interfaces: Vec<String>,
-    pub atrributes: Vec<Field>,
-    pub fields: Vec<Field>,
-
     pub methods: Vec<FunctionDeclaration>,
     pub public_access: bool, // pub
+    //pub interfaces: Vec<String>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct Attribute{
+    // pub name: String,
+    // pub fields: Vec<Field>,
+    // pub public_access: bool, // pub
+
+    pub name: String,
+    pub attr_type: Option<Type>,
+    pub default_value: Option<Expression>,
+    pub mutable: bool,
+
 }
 
 #[allow(dead_code)]
@@ -224,12 +237,7 @@ pub struct FunctionSignature{
 
 }
 
-#[allow(dead_code)]
-pub struct Attributes{
-    name: String,
-    type_: Type,
 
-}
 // #[allow(dead_code)]
 // #[derive(Debug, Clone)]
 // pub struct Annotation{
