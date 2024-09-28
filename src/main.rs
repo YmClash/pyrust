@@ -14,8 +14,9 @@ fn main() {
     let mode = ["Braces","Indentation"];
 
     let source_code = "class MyClass(BaseClass):
-    let x: int = 10
-    fn method1(self, y: int) -> void:
+    let name: str
+    let age: int
+    fn __init__(self, name: str, age: int):
         pass";
 
 
@@ -27,8 +28,8 @@ fn main() {
     let mut lexer = Lexer::new(source_code, SyntaxMode::Indentation);
 
     let tokens = lexer.tokenize();
-    for token in &tokens {
-        println!("{:?}", token);
+    for (o,token) in tokens.iter().enumerate() {
+        println!("{}:{:?}",o, token);
     }
 
     println!("\n");

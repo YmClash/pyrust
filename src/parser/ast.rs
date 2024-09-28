@@ -154,24 +154,18 @@ pub struct ClassDeclaration {
     pub name: String,
     pub parent_classes: Vec<String>,
     pub attributes: Vec<Attribute>,
-    pub constructor : Option<FunctionDeclaration>,
+    pub constructor: Option<FunctionDeclaration>,
     pub methods: Vec<FunctionDeclaration>,
-    pub public_access: bool, // pub
-    //pub interfaces: Vec<String>,
+    pub public_access: bool,
 }
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
-pub struct Attribute{
-    // pub name: String,
-    // pub fields: Vec<Field>,
-    // pub public_access: bool, // pub
-
+pub struct Attribute {
     pub name: String,
-    pub attr_type: Option<Type>,
-    pub default_value: Option<Expression>,
+    pub attr_type: Type,
     pub mutable: bool,
-
+    pub default_value: Option<Expression>,
 }
 
 #[allow(dead_code)]

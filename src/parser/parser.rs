@@ -416,23 +416,6 @@ impl Parser {
         }))
     }
 
-    // fn parse_struct_fields(&mut self) -> Result<Vec<Field>, ParserError> {
-    //     let mut fields = Vec::new();
-    //     if self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) {
-    //         return Ok(fields); // Structure vide
-    //     }
-    //     while !self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) {
-    //         let field = self.parse_struct_field()?;
-    //         fields.push(field);
-    //
-    //         if self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]) {
-    //             self.advance();
-    //         } else if !self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) {
-    //             return Err(ParserError::new(ParserErrorType::ExpectedCommaOrCloseBrace, self.current_position()));
-    //         }
-    //     }
-    //     Ok(fields)
-    // }
 
     fn parse_struct_fields(&mut self) -> Result<Vec<Field>, ParserError> {
         let mut fields = Vec::new();
@@ -489,6 +472,7 @@ impl Parser {
         Ok(fields)
     }
 
+
     pub fn parse_class_declaration(&mut self) -> Result<Declaration, ParserError> {
         println!("Debut du parsing de la declaration de classe");
         let public_access = if self.match_token(&[TokenType::KEYWORD(Keywords::PUB)]) {
@@ -499,32 +483,25 @@ impl Parser {
         };
 
         self.consume(TokenType::KEYWORD(Keywords::CLASS))?;
-
         // Ajout de logs pour le débogage
         println!("Debut de parsing: current token: {:?}", self.current_token());
+
         let name = self.consume_identifier()?;
         println!("Nom de la classe: {}", name);
 
         let parent_classes = self.parse_class_inheritance()?;
-        //println!("Parent classes: {:?}", parent_classes);
+        println!("Parent classes: {:?}", parent_classes);
 
         println!("Debut du parsing des Attributes");
 
-        let (attribute,methods,constructor) = match self.syntax_mode {
+        let (attributes,methods,constructor) = match self.syntax_mode {
             SyntaxMode::Indentation => {self.parse_indented_class_body()?},
             SyntaxMode::Braces => {self.parse_braced_class_body()?},
         };
 
-        // let (attributes,methods,constructor) = match self.syntax_mode {
-        //     SyntaxMode::Indentation => {self.parse_indented_class_body()?},
-        //     SyntaxMode::Braces => {self.parse_braced_class_body()?},
-        // };
-
-
         //maintenant on  vas parse le corps de la classe selon le mode de syntaxe
 
-
-        let attribute = self.parse_class_fields()?;
+        // let attribute = self.parse_class_fields()?;
 
         println!("Fin du parsing de la declaration de classe");
 
@@ -538,39 +515,29 @@ impl Parser {
         }))
     }
 
-    fn parse_class_attributes_declaration(&mut self) -> Result<Attribute, ParserError> {
-        // let mut attributes = Vec::new();
+    fn parse_attribute(&mut self) -> Result<Attribute, ParserError> {
+
         self.consume(TokenType::KEYWORD(Keywords::LET))?;
+        let mutable = self.consume_if(TokenType::KEYWORD(Keywords::MUT));
+        let name = self.consume_identifier()?;
+        println!("Nom de l'attribut: {}", name);
+        self.consume(TokenType::DELIMITER(Delimiters::COLON))?;
+        let attr_type = self.parse_type()?;
+        println!("Type de l'attribut: {:?}", attr_type);
 
-        //let name = self.consume_identifier()?;
-        let name = if let TokenType::IDENTIFIER { name } = &self.current_token().unwrap().token_type {
-            name.clone()
-        } else {
-            return Err(ParserError::new(ExpectVariableName, self.current_position()));
-        };
-        self.advance();
-
-        let variable_type = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
+        let default_value = if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
             self.advance();
-            Some(self.parse_type()?)
-        }else {
+            Some(self.parse_expression()?)
+        } else {
             None
         };
-        self.consume(TokenType::OPERATOR(Operators::EQUAL))?;
-
-        println!("Parsing de l'expression de la valeur de l'attribut");
-        let value = self
-            .parse_expression()
-            .or_else(|_| Err(ParserError::new(ExpectValue, self.current_position())))?;
-
-        println!("Fin du parsing de la declaration d'attribut");
+        println!("Parsing Reussie de l'attribut");
 
         Ok(Attribute {
             name,
-            attr_type: variable_type,
-            default_value: Some(value),
+            attr_type,
             mutable,
-
+            default_value,
         })
     }
 
@@ -596,18 +563,18 @@ impl Parser {
 
     }
 
-    fn parse_indented_class_body(&mut self) -> Result<(Vec<Field>, Vec<FunctionDeclaration>, Option<FunctionDeclaration>), ParserError> {
+    fn parse_indented_class_body(&mut self) -> Result<(Vec<Attribute>, Vec<FunctionDeclaration>, Option<FunctionDeclaration>), ParserError> {
         self.consume(TokenType::DELIMITER(Delimiters::COLON))?;
         self.consume(TokenType::NEWLINE)?;
         self.consume(TokenType::INDENT)?;
 
-        let mut fields = Vec::new();
+        let mut attributes = Vec::new();
         let mut methods = Vec::new();
         let mut constructor = None;
 
         while !self.match_token(&[TokenType::DEDENT]) {
             if self.is_at_end() {
-                return Err(ParserError::new(ParserErrorType::UnexpectedEOF, self.current_position()));
+                return Err(ParserError::new(UnexpectedEOF, self.current_position()));
             }
 
             if self.match_token(&[TokenType::KEYWORD(Keywords::FN)]) {
@@ -620,7 +587,7 @@ impl Parser {
                     }
                 }
             } else {
-                fields.push(self.parse_class_field()?);
+                attributes.push(self.parse_attribute()?);
             }
 
             self.consume_newline_or_semicolon()?;
@@ -628,13 +595,13 @@ impl Parser {
 
         self.consume(TokenType::DEDENT)?;
 
-        Ok((fields, methods, constructor))
+        Ok((attributes, methods, constructor))
     }
     // Fonction pour parser le corps de la classe en mode accolades
-    fn parse_braced_class_body(&mut self) -> Result<(Vec<Field>, Vec<FunctionDeclaration>, Option<FunctionDeclaration>), ParserError> {
+    fn parse_braced_class_body(&mut self) -> Result<(Vec<Attribute>, Vec<FunctionDeclaration>, Option<FunctionDeclaration>), ParserError> {
         self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
 
-        let mut fields = Vec::new();
+        let mut attributes = Vec::new();
         let mut methods = Vec::new();
         let mut constructor = None;
 
@@ -653,7 +620,7 @@ impl Parser {
                     }
                 }
             } else {
-                fields.push(self.parse_class_field()?);
+                attributes.push(self.parse_attribute()?);
             }
 
             self.consume_newline_or_semicolon()?;
@@ -661,7 +628,7 @@ impl Parser {
 
         self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
 
-        Ok((fields, methods, constructor))
+        Ok((attributes, methods, constructor))
     }
 
     fn parse_class_body(&mut self) -> Result<(Vec<Parameters>, Vec<FunctionDeclaration>), ParserError> {
@@ -669,40 +636,10 @@ impl Parser {
     }
 
 
-
     fn parse_class_fields(&mut self) -> Result<Parameters,ParserError>{
         todo!()
     }
-    fn parse_class_field(&mut self) -> Result<Field, ParserError> {
-        println!("Parsing class field , current token: {:?}", self.current_token());
-        let mutable = if self.match_token(&[TokenType::KEYWORD(Keywords::MUT)]) {
-            self.advance();
-            true
-        } else {
-            false
-        };
-        let name = self.consume_identifier()?;
-        println!("Nom du champ de classe: {}", name);
-        self.consume(TokenType::DELIMITER(Delimiters::COLON))?;
-        let field_type = self.parse_type()?;
-        println!("Type du champ de classe: {:?}", field_type);
 
-        // let default_value = if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
-        //     self.advance();
-        //     Some(self.parse_expression()?)
-        // } else {
-        //     None
-        // };
-
-        Ok(Field {
-            name,
-            field_type,
-            mutable,
-            //default_value,
-        })
-
-
-    }
 
     fn parse_enum_declaration(&mut self) -> Result<Declaration, ParserError> {
         todo!()
