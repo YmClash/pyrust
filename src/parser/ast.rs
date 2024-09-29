@@ -24,10 +24,15 @@ pub struct Block {
     pub syntax_mode: SyntaxMode,
     pub indent_level: Option<usize>, // Pour le mode Indentation
     pub braces: Option<(Token, Token)>, // Pour le mode Braces (ouverture, fermeture)
-    // pub opening_brace: Option<Token>,  // pour le mode syntaxe Brace
-    // pub closing_brace: Option<Token>,
 }
-
+//////
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub enum BlockSyntax {
+    Indentation{indent_level: usize},
+    Braces {opening_brace: Token, closing_brace: Token},
+}
+////////
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct ParseError {
@@ -110,6 +115,7 @@ pub enum Declaration {
     Module(ModuleDeclaration),
     Macro(MacroDeclaration),
     Attributes(Attribute),
+    Constructor(Constructor),
 }
 
 #[allow(dead_code)]
@@ -154,8 +160,8 @@ pub struct ClassDeclaration {
     pub name: String,
     pub parent_classes: Vec<String>,
     pub attributes: Vec<Attribute>,
-    pub constructor: Option<FunctionDeclaration>,
-    pub methods: Vec<FunctionDeclaration>,
+    pub constructor: Option<Constructor>,
+    pub methods: Vec<Declaration>,
     pub public_access: bool,
 }
 
@@ -164,8 +170,16 @@ pub struct ClassDeclaration {
 pub struct Attribute {
     pub name: String,
     pub attr_type: Type,
-    pub mutable: bool,
-    pub default_value: Option<Expression>,
+    // pub mutable: bool,
+    // pub default_value: Option<Expression>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct Constructor { // Keyword  pour  le constructeur serai def  et le methods  utiliserai fn
+    pub name: String,       //  def init (self, parameters) init est le nom du constructeur par defaut
+    pub parameters: Vec<Attribute>,
+    pub body: Block,
 }
 
 #[allow(dead_code)]
@@ -343,6 +357,7 @@ pub enum Statement {
     Yield(YieldStatement),
 
     Declaration(Declaration),
+    Assignment(Expression, Expression),
 }
 
 #[allow(dead_code)]
@@ -420,6 +435,12 @@ pub struct WithStatement {
 #[derive(Debug, Clone)]
 pub struct YieldStatement {
     pub value: Option<Expression>,
+}
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct AssignementStatement {
+    pub target: Expression,
+    pub value: Expression,
 }
 
 #[allow(dead_code)]
