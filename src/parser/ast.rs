@@ -268,7 +268,16 @@ pub enum Expression {
     MatchArms(Box<MatchArms>),
     TypeCast(TypeCast),
     Conditional(Conditional),
+    Assignment(Assignment),
 }
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct Assignment{
+    pub left: Box<Expression>,
+    pub right: Box<Expression>,
+}
+
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]

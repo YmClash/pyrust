@@ -1,7 +1,7 @@
 #[allow(dead_code)]
 use crate::lexer::lex::{SyntaxMode, Token};
-use crate::parser::ast::{ASTNode, Attribute, BinaryOperation, Block, ClassDeclaration, ConstanteDeclaration, Constructor, Declaration, EnumDeclaration, Expression, Field, Function, FunctionDeclaration, FunctionSignature, Identifier, Literal, Operator, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration};
-use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName};
+use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, ClassDeclaration, ConstanteDeclaration, Constructor, Declaration, EnumDeclaration, Expression, Field, Function, FunctionDeclaration, FunctionSignature, Identifier, Literal, MemberAccess, Operator, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration};
+use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget};
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::tok::{Delimiters, Keywords, Operators, TokenType};
 
@@ -957,23 +957,53 @@ impl Parser {
         let expression = self.parse_equality()?;
 
         if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
+            self.advance(); // Consomme '='
             let value = self.parse_assignment()?;
-            if let Expression::Identifier(name) = expression {
-                Ok(Expression::BinaryOperation(BinaryOperation {
+            match expression {
+                Expression::Identifier(name) => Ok(Expression::Assignment(Assignment {
                     left: Box::new(Expression::Identifier(name)),
-                    operator: Operator::Equal,
                     right: Box::new(value),
-                }))
-            } else {
-                Err(ParserError::new(
+                })),
+                Expression::MemberAccess(member_access) => Ok(Expression::Assignment(Assignment {
+                    left: Box::new(Expression::MemberAccess(member_access)),
+                    right: Box::new(value),
+                })),
+                _ => Err(ParserError::new(
                     ParserErrorType::InvalidAssignmentTarget,
                     self.current_position(),
-                ))
+                )),
             }
         } else {
             Ok(expression)
         }
     }
+
+
+
+
+
+
+    // fn parse_assignment(&mut self) -> Result<Expression, ParserError> {
+    //     let expression = self.parse_equality()?;
+    //
+    //     if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
+    //         let value = self.parse_assignment()?;
+    //         if let Expression::Identifier(name) = expression {
+    //             Ok(Expression::BinaryOperation(BinaryOperation {
+    //                 left: Box::new(Expression::Identifier(name)),
+    //                 operator: Operator::Equal,
+    //                 right: Box::new(value),
+    //             }))
+    //         } else {
+    //             Err(ParserError::new(
+    //                 ParserErrorType::InvalidAssignmentTarget,
+    //                 self.current_position(),
+    //             ))
+    //         }
+    //     } else {
+    //         Ok(expression)
+    //     }
+    // }
 
     fn parse_equality(&mut self) -> Result<Expression, ParserError> {
         let mut expression = self.parse_comparison()?;
@@ -1079,10 +1109,43 @@ impl Parser {
                 operand: Box::new(right),
             }));
         }
-
-        self.parse_primary()
+        self.parse_postfix()
+        //self.parse_primary()
     }
+
+    fn parse_postfix(&mut self) -> Result<Expression, ParserError> {
+        let mut expr = self.parse_primary()?;
+        loop {
+            if self.match_token(&[TokenType::DELIMITER(Delimiters::DOT)]) {
+                self.advance(); // Consomme '.'
+                let member_name = self.consume_identifier()?;
+                expr = Expression::MemberAccess(MemberAccess {
+                    object: Box::new(expr),
+                    member: member_name,
+                });
+            } else {
+                break;
+            }
+        }
+        Ok(expr)
+    }
+
     fn parse_primary(&mut self) -> Result<Expression, ParserError> {
+        let mut expr = self.parse_simple_primary()?;
+
+        while self.match_token(&[TokenType::DELIMITER(Delimiters::DOT)]) {
+            self.advance(); // Consomme le '.'
+            let member = self.consume_identifier()?;
+            expr = Expression::MemberAccess(MemberAccess {
+                object: Box::new(expr),
+                member,
+            });
+        }
+
+        Ok(expr)
+    }
+
+    fn parse_simple_primary(&mut self) -> Result<Expression, ParserError> {
         println!("Début du parsing de l'expression primaire, current_token = {:?}", self.current_token());
         if let Some(token) = self.current_token() {
             let expr = match &token.token_type {
@@ -1100,6 +1163,14 @@ impl Parser {
                 }
                 TokenType::KEYWORD(Keywords::TRUE) => Expression::Literal(Literal::Boolean(true)),
                 TokenType::KEYWORD(Keywords::FALSE) => Expression::Literal(Literal::Boolean(false)),
+
+                TokenType::KEYWORD(Keywords::SELF) =>{
+                    let name = "self".to_string();
+                    Expression::Identifier(name)
+
+                }
+
+
                 TokenType::IDENTIFIER { name } => {
                     let name = name.clone();
                     Expression::Identifier(name)
@@ -1168,7 +1239,13 @@ impl Parser {
         let left = self.parse_expression()?;
         self.consume(TokenType::OPERATOR(Operators::EQUAL))?;
         let right = self.parse_expression()?;
-        Ok(Statement::Assignment(left, right))
+
+        match left {
+            Expression::Identifier(_) | Expression::MemberAccess(_) => {
+                Ok(Statement::Assignment(left, right))
+            },
+            _ => Err(ParserError::new(InvalidAssignmentTarget, self.current_position()))
+        }
     }
 
     fn is_assignment_start(&self) -> bool {
