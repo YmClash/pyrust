@@ -1,6 +1,6 @@
 #[allow(dead_code)]
 use crate::lexer::lex::{SyntaxMode, Token};
-use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, ClassDeclaration, ConstanteDeclaration, Constructor, Declaration, EnumDeclaration, Expression, Field, Function, FunctionDeclaration, FunctionSignature, Identifier, Literal, MemberAccess, Operator, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration};
+use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, ClassDeclaration, ConstanteDeclaration, Constructor, Declaration, EnumDeclaration, Expression, Field, Function, FunctionDeclaration, FunctionSignature, Identifier, Literal, MemberAccess, Operator, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration};
 use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget};
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::tok::{Delimiters, Keywords, Operators, TokenType};
@@ -71,9 +71,9 @@ impl Parser {
 
         Ok(Block {
             statements,
-            syntax_mode: BlockSyntax::Indentation,
-            // indent_level: Some(initial_indent),
-            // braces: None,
+            syntax_mode: SyntaxMode::Indentation,
+            indent_level: Some(initial_indent),
+            braces: None,
         })
     }
 
@@ -106,7 +106,7 @@ impl Parser {
 
         Ok(Block {
             statements,
-            syntax_mode: BlockSyntax::Braces,
+            syntax_mode: SyntaxMode::Braces,
             indent_level: None,
             braces: Some((self.previous().clone(), self.current_token().unwrap().clone())),
         })
@@ -114,7 +114,7 @@ impl Parser {
 
 
 
-//////////////////////////////////////////Original////////////
+    //////////////////////////////////////////Original////////////
     // pub fn parse_indented_block(&mut self) -> Result<Block, ParserError> {
     //     println!("Début du parsing du bloc indenté");
     //     self.consume(TokenType::DELIMITER(Delimiters::COLON))?; // Consommer le token ':'
@@ -204,7 +204,7 @@ impl Parser {
     //         braces: Some((opening_brace, closing_brace)),
     //     })
     // }
-///////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////
     pub fn get_syntax_mode(&self) -> SyntaxMode {
         self.syntax_mode
     }
@@ -708,7 +708,7 @@ impl Parser {
             loop {
                 let parent = self.consume_identifier()?;
                 parent_classes.push(parent.clone());
-              //  println!("Nom de classe parent: {}", parent);
+                //  println!("Nom de classe parent: {}", parent);
 
                 if !self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]){
                     break;
@@ -842,27 +842,27 @@ impl Parser {
     // fn parse_constructor(&mut self,attributes: &[Attribute]) -> Result<Constructor, ParserError> {
 
 
-        // println!("Début du parsing du constructeur");
-        // self.consume(TokenType::KEYWORD(Keywords::DEF))?;
-        // let name = self.consume_identifier()?;
-        // if name != "init" {
-        //     return Err(ParserError::new(ExpectFunctionName, self.current_position()));
-        // }
-        //
-        // let parameters = self.parse_constructor_parameters()?;
-        // let body = self.parse_block()?;
-        //
-        // Ok(Constructor {
-        //     name,
-        //     parameters,
-        //     body,
-        // })
+    // println!("Début du parsing du constructeur");
+    // self.consume(TokenType::KEYWORD(Keywords::DEF))?;
+    // let name = self.consume_identifier()?;
+    // if name != "init" {
+    //     return Err(ParserError::new(ExpectFunctionName, self.current_position()));
+    // }
+    //
+    // let parameters = self.parse_constructor_parameters()?;
+    // let body = self.parse_block()?;
+    //
+    // Ok(Constructor {
+    //     name,
+    //     parameters,
+    //     body,
+    // })
 
 
     // }
 
     fn parse_class_body(&mut self) -> Result<(Vec<Parameters>, Vec<FunctionDeclaration>), ParserError> {
-       todo!()
+        todo!()
     }
 
 
@@ -880,7 +880,7 @@ impl Parser {
     }
 
     fn parse_indented_enum_variants(&mut self) -> Result<Vec<String>, ParserError> {
-       todo!()
+        todo!()
     }
 
     // fn parse_impl_declaration(&mut self) -> Result<Declaration,ParserError>{

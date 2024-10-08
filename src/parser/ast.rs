@@ -21,9 +21,9 @@ pub enum ASTNode {
 #[derive(Debug, Clone)]
 pub struct Block {
     pub statements: Vec<Statement>,
-    pub syntax_mode: SyntaxMode,
-    pub indent_level: Option<usize>, // Pour le mode Indentation
-    pub braces: Option<(Token, Token)>, // Pour le mode Braces (ouverture, fermeture)
+    pub syntax_mode: BlockSyntax,
+    // pub indent_level: Option<usize>, // Pour le mode Indentation
+    // pub braces: Option<(Token, Token)>, // Pour le mode Braces (ouverture, fermeture)
 }
 //////
 #[allow(dead_code)]
@@ -32,7 +32,30 @@ pub enum BlockSyntax {
     Indentation{indent_level: usize},
     Braces {opening_brace: Token, closing_brace: Token},
 }
-////////
+
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub enum Visibility {
+    Private,     // default mode
+    Public   // keyword PUB
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub enum Access {
+    Read,       //
+    Write,
+    ReadWrite,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub enum Mutability {
+    Immutable, // default mode
+    Mutable,   // keyword MUT
+}
+
+
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct ParseError {
@@ -106,7 +129,7 @@ pub enum Type {
 pub enum Declaration {
     Variable(VariableDeclaration),
     Function(FunctionDeclaration),
-    Constante(ConstanteDeclaration),
+    Constante(ConstDeclaration),
     Structure(StructDeclaration),
     Class(ClassDeclaration),
     Enum(EnumDeclaration),
@@ -125,6 +148,7 @@ pub struct VariableDeclaration {
     pub variable_type: Option<Type>,
     pub value: Option<Expression>,
     pub mutable: bool,
+    //pub mutability: Mutability
 }
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -138,7 +162,7 @@ pub struct FunctionDeclaration {
 }
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
-pub struct ConstanteDeclaration {
+pub struct ConstDeclaration {
     pub name: String,
     pub constant_type: Option<Type>,
     pub value: Expression,
@@ -161,7 +185,7 @@ pub struct ClassDeclaration {
     pub parent_classes: Vec<String>,
     pub attributes: Vec<Attribute>,
     pub constructor: Option<Constructor>,
-    pub methods: Vec<Declaration>,
+    pub methods: Vec<FunctionDeclaration>,
     pub public_access: bool,
 }
 
@@ -525,14 +549,14 @@ impl fmt::Display for ASTNode {
 
 impl Block {
     pub fn is_indentation_mode(&self) -> bool{
-        matches!(self.syntax_mode, SyntaxMode::Indentation)
+        matches!(self.syntax_mode, BlockSyntax::Indentation)
     }
     pub fn validate(&self) -> Result<(),String>{
         match self.syntax_mode {
-            SyntaxMode::Indentation if self.indent_level.is_none() => {
+            BlockSyntax::Indentation if self.indent_level.is_none() => {
                 Err("Indentation level is missing".to_string())
             }
-            SyntaxMode::Braces if self.braces.is_none() => {
+            BlockSyntax::Braces if self.braces.is_none() => {
                 Err("Braces are missing".to_string())
             }
             _ => Ok(()),
