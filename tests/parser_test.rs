@@ -181,7 +181,7 @@ mod tests {
             panic!("Expected constant declaration");
         }
     }
-
+    #[test]
     fn test_constant_declaration_braces() {
         let source = "const MAX_VALUE = 100;";
         let mut parser = create_parser(source, SyntaxMode::Braces);

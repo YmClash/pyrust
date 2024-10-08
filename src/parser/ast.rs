@@ -21,12 +21,40 @@ pub enum ASTNode {
 #[derive(Debug, Clone)]
 pub struct Block {
     pub statements: Vec<Statement>,
-    pub syntax_mode: SyntaxMode,
-    pub indent_level: Option<usize>, // Pour le mode Indentation
-    pub braces: Option<(Token, Token)>, // Pour le mode Braces (ouverture, fermeture)
-    // pub opening_brace: Option<Token>,  // pour le mode syntaxe Brace
-    // pub closing_brace: Option<Token>,
+    pub syntax_mode: BlockSyntax,
+    // pub indent_level: Option<usize>, // Pour le mode Indentation
+    // pub braces: Option<(Token, Token)>, // Pour le mode Braces (ouverture, fermeture)
 }
+//////
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub enum BlockSyntax {
+    Indentation{indent_level: usize},
+    Braces {opening_brace: Token, closing_brace: Token},
+}
+
+#[allow(dead_code)]
+#[derive(Debug,Clone)]
+pub enum Visibility {
+    Private,     // default mode
+    Public   // keyword PUB
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub enum Access {
+    Read,       //
+    Write,
+    ReadWrite,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub enum Mutability {
+    Immutable, // default mode
+    Mutable,   // keyword MUT
+}
+
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -101,7 +129,7 @@ pub enum Type {
 pub enum Declaration {
     Variable(VariableDeclaration),
     Function(FunctionDeclaration),
-    Constante(ConstanteDeclaration),
+    Constante(ConstDeclaration),
     Structure(StructDeclaration),
     Class(ClassDeclaration),
     Enum(EnumDeclaration),
@@ -109,6 +137,8 @@ pub enum Declaration {
     Impl(ImplDeclaration),
     Module(ModuleDeclaration),
     Macro(MacroDeclaration),
+    Attributes(Attribute),
+    Constructor(Constructor),
 }
 
 #[allow(dead_code)]
@@ -118,6 +148,7 @@ pub struct VariableDeclaration {
     pub variable_type: Option<Type>,
     pub value: Option<Expression>,
     pub mutable: bool,
+    //pub mutability: Mutability
 }
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -126,14 +157,16 @@ pub struct FunctionDeclaration {
     pub parameters: Vec<(String, Type)>, // (nom, type)
     pub return_type: Option<Type>,
     pub body: Block,
+    pub public_access: bool, // pub
     //pub annotations: Vec<Annotation>,
 }
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
-pub struct ConstanteDeclaration {
+pub struct ConstDeclaration {
     pub name: String,
     pub constant_type: Option<Type>,
     pub value: Expression,
+    pub public_access: bool, // pub
 }
 
 #[allow(dead_code)]
@@ -141,6 +174,7 @@ pub struct ConstanteDeclaration {
 pub struct StructDeclaration {
     pub name: String,
     pub fields: Vec<Field>,
+    pub public_access: bool, // pub
 
 }
 
@@ -148,9 +182,28 @@ pub struct StructDeclaration {
 #[derive(Debug, Clone)]
 pub struct ClassDeclaration {
     pub name: String,
-    pub parent_class: Option<String>,
-    pub fields: Vec<Field>,
+    pub parent_classes: Vec<String>,
+    pub attributes: Vec<Attribute>,
+    pub constructor: Option<Constructor>,
     pub methods: Vec<FunctionDeclaration>,
+    pub public_access: bool,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct Attribute {
+    pub name: String,
+    pub attr_type: Type,
+    // pub mutable: bool,
+    // pub default_value: Option<Expression>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct Constructor { // Keyword  pour  le constructeur serai def  et le methods  utiliserai fn
+    pub name: String,       //  def init (self, parameters) init est le nom du constructeur par defaut
+    pub parameters: Vec<Attribute>,
+    pub body: Block,
 }
 
 #[allow(dead_code)]
@@ -158,13 +211,15 @@ pub struct ClassDeclaration {
 pub struct EnumDeclaration {
     pub name: String,
     pub variants: Vec<EnumVariant>,
+    //pub public_access: bool, // pub
 }
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct TraitDeclaration {
     pub name: String,
-    pub methods: Vec<FunctionSignature>,
+    pub method_signatures: Vec<FunctionSignature>,
+    pub public_access: bool, // pub
 }
 
 #[allow(dead_code)]
@@ -195,6 +250,7 @@ pub struct Field{
     pub name: String,
     pub field_type: Type,
     pub mutable: bool, //  si neccessaire
+    //pub default_value, // si neccessaire
 }
 
 #[allow(dead_code)]
@@ -212,6 +268,8 @@ pub struct FunctionSignature{
     pub return_type: Option<Type>,
 
 }
+
+
 // #[allow(dead_code)]
 // #[derive(Debug, Clone)]
 // pub struct Annotation{
@@ -234,7 +292,16 @@ pub enum Expression {
     MatchArms(Box<MatchArms>),
     TypeCast(TypeCast),
     Conditional(Conditional),
+    Assignment(Assignment),
 }
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct Assignment{
+    pub left: Box<Expression>,
+    pub right: Box<Expression>,
+}
+
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -323,6 +390,7 @@ pub enum Statement {
     Yield(YieldStatement),
 
     Declaration(Declaration),
+    Assignment(Expression, Expression),
 }
 
 #[allow(dead_code)]
@@ -401,6 +469,12 @@ pub struct WithStatement {
 pub struct YieldStatement {
     pub value: Option<Expression>,
 }
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct AssignementStatement {
+    pub target: Expression,
+    pub value: Expression,
+}
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -475,14 +549,14 @@ impl fmt::Display for ASTNode {
 
 impl Block {
     pub fn is_indentation_mode(&self) -> bool{
-        matches!(self.syntax_mode, SyntaxMode::Indentation)
+        matches!(self.syntax_mode, BlockSyntax::Indentation)
     }
     pub fn validate(&self) -> Result<(),String>{
         match self.syntax_mode {
-            SyntaxMode::Indentation if self.indent_level.is_none() => {
+            BlockSyntax::Indentation if self.indent_level.is_none() => {
                 Err("Indentation level is missing".to_string())
             }
-            SyntaxMode::Braces if self.braces.is_none() => {
+            BlockSyntax::Braces if self.braces.is_none() => {
                 Err("Braces are missing".to_string())
             }
             _ => Ok(()),

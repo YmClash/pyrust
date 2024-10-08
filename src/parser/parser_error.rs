@@ -50,6 +50,15 @@ pub enum ParserErrorType {
     UnexpectedIndentation,
     UnexpectedEndOfInput,
 
+    ExpectedParameterName,
+    ExpectedSelfParameter,
+    MultipleConstructors,
+    UnexpectedParameterName,
+    MismatchedParametersAndAttributes,
+
+
+
+
 
 }
 
@@ -109,10 +118,18 @@ impl Display for ParserErrorType {
             ParserErrorType::ExpectValue => write!(f, "ExpectValue"),
             ParserErrorType::ExpectColon => write!(f, "ExpectColon"),
 
+            ParserErrorType::UnexpectedParameterName => write!(f, "UnexpectedParameterName"),
+
             ParserErrorType::ExpectedTypeAnnotation => write!(f, "ExpectedTypeAnnotation"),
             ParserErrorType::ExpectIdentifier => write!(f, "ExpectIdentifier"),
             ParserErrorType::ExpectedType => write!(f, "ExpectedType"),
+
+
             ParserErrorType::UnexpectedIndentation => write!(f, "UnexpectedIndentation"),
+            ParserErrorType::ExpectedParameterName => write!(f, "ExpectedParameterName"),
+
+
+            ParserErrorType::ExpectedSelfParameter => write!(f, "ExpectedSelfParameter"),
 
             ParserErrorType::ExpectedDeclaration => write!(f, "ExpectedDeclaration"),
 
@@ -123,6 +140,10 @@ impl Display for ParserErrorType {
             ParserErrorType::ExpectFunctionName => write!(f, "ExpectFunctionName"),
             ParserErrorType::ExpectedCommaOrCloseBrace => write!(f, "ExpectedCommaOrCloseBrace"),
             ParserErrorType::ExpectedStructField => write!(f, "ExpectedStructField"),
+
+            ParserErrorType::MultipleConstructors => write!(f, "MultipleConstructors"),
+            ParserErrorType::MismatchedParametersAndAttributes => write!(f, "MismatchedParametersAndAttributes"),
+
 
             ParserErrorType::InvalidFunctionDeclaration => write!(f, "InvalidFunctionDeclaration"),
         }
@@ -166,7 +187,19 @@ impl ParserError {
             ParserErrorType::ExpectedStructField => "Expected struct field".to_string(),
 
             ParserErrorType::ExpectedDeclaration => "Expected declaration".to_string(),
+            ParserErrorType::ExpectedParameterName => "Expected parameter name".to_string(),
 
+            ParserErrorType::ExpectedSelfParameter => "Expected self parameter".to_string(),
+
+            ParserErrorType::MultipleConstructors => "Multiple constructors".to_string(),
+            ParserErrorType::MismatchedParametersAndAttributes => "Mismatched parameters and attributes".to_string(),
+
+
+
+
+
+
+            ParserErrorType::UnexpectedParameterName => "Unexpected parameter name".to_string(),
             ParserErrorType::UnexpectedEndOfInput => "Unexpected end of input".to_string(),
         };
 
