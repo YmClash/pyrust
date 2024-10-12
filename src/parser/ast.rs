@@ -147,8 +147,7 @@ pub struct VariableDeclaration {
     pub name: String,
     pub variable_type: Option<Type>,
     pub value: Option<Expression>,
-    pub mutable: bool,
-    //pub mutability: Mutability
+    pub mutability: Mutability,
 }
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -167,6 +166,7 @@ pub struct ConstDeclaration {
     pub constant_type: Option<Type>,
     pub value: Expression,
     pub public_access: bool, // pub
+    //pub visibility: Visibility
 }
 
 #[allow(dead_code)]
@@ -175,6 +175,7 @@ pub struct StructDeclaration {
     pub name: String,
     pub fields: Vec<Field>,
     pub public_access: bool, // pub
+    //pub visibility: Visibility,
 
 }
 
@@ -187,6 +188,7 @@ pub struct ClassDeclaration {
     pub constructor: Option<Constructor>,
     pub methods: Vec<FunctionDeclaration>,
     pub public_access: bool,
+    //pub visibility: Visibility,
 }
 
 #[allow(dead_code)]
@@ -293,6 +295,7 @@ pub enum Expression {
     TypeCast(TypeCast),
     Conditional(Conditional),
     Assignment(Assignment),
+
 }
 
 #[allow(dead_code)]
@@ -323,17 +326,19 @@ pub struct Parameters {
 
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
-pub struct BinaryOperation {
-    pub left: Box<Expression>,
-    pub operator: Operator, ///////////////////// a changer
-    pub right: Box<Expression>,
-}
-#[allow(dead_code)]
-#[derive(Clone, Debug)]
 pub struct UnaryOperation {
     pub operator: UnaryOperator,
     pub operand: Box<Expression>,
 }
+
+#[allow(dead_code)]
+#[derive(Clone, Debug)]
+pub struct BinaryOperation {
+    pub left: Box<Expression>,
+    pub operator: Operator,             ///////////////////// a changer
+    pub right: Box<Expression>,
+}
+
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
