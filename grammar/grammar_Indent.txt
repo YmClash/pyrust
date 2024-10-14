@@ -8,6 +8,8 @@
               | <struct_declaration>
               | <class_declaration>
               | <constant_declaration>
+              | <enum_declaration>
+              | <trait_declaration>
               | <function_call>
               | <print_statement>
               | <comment>
@@ -26,6 +28,9 @@
 
 <class_declaration> ::= "class", <identifier>, ["(", [base_classes], ")"], ":", <block>
 <constante_declaration> ::= "const" <identifier> [":" <type>] "=" <expression>
+<enum_declaration> ::= "enum" <identifier> "{" <variant_list> "}"
+<trait_declaration> ::= "trait" <identifier> "{" <method_list> "}"
+
 
 
 

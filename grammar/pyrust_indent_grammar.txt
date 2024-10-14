@@ -1,0 +1,125 @@
+(* Programme *)
+program = statement_list ;
+
+(* Liste d'instructions *)
+statement_list = statement, { statement } ;
+
+(* Instruction *)
+statement = variable_declaration | function_declaration | function_call | print_statement
+          | comment | control_statement | loop_statement | import_statement
+          | struct_declaration | trait_declaration | enum_declaration ;
+
+(* Commentaire *)
+comment = "#", text ;
+
+(* Déclaration de variable *)
+variable_declaration = "let", ["mut"], identifier, [":", type], "=", expression ;
+
+(* Déclaration de fonction *)
+function_declaration = ["async"], "fn", identifier, "(", [parameter_list], ")", [":", type], ":",
+                       statement_list, "return", expression ;
+
+(* Déclaration de structure *)
+struct_declaration = "struct", identifier, ":", statement_list ;
+
+(* Déclaration de trait *)
+trait_declaration = "trait", identifier, ":", { trait_item } ;
+trait_item = function_signature, ":" ;
+
+(* Déclaration d'énumération *)
+enum_declaration = "enum", identifier, ":", enum_variant_list ;
+enum_variant_list = enum_variant, { enum_variant } ;
+enum_variant = identifier, [ "(", type_list, ")" ] ;
+
+(* Liste de paramètres *)
+parameter_list = parameter, { ",", parameter } ;
+parameter = identifier, [":", type] ;
+
+(* Appel de fonction *)
+function_call = identifier, "(", [argument_list], ")" ;
+
+(* Liste d'arguments *)
+argument_list = expression, { ",", expression } ;
+
+(* Instruction d'impression *)
+print_statement = "print", "(", [argument_list], ")" ;
+
+
+
+/////Special///
+block = BRACE_BLOCK | INDENT_BLOCK ;
+BRACE_BLOCK = "{", { statement }, "}" ;
+INDENT_BLOCK = ":", INDENT, { statement }, DEDENT ;
+/////Special///
+
+
+
+(* Expression *)
+expression = identifier | number | string
+           | expression, binary_operator, expression
+           | unary_operator, expression
+           | function_call
+           | "(", expression, ")" ;
+
+(* Identificateur *)
+identifier = letter, { letter | digit } ;
+
+(* Nombre *)
+number = digit, { digit } ;
+
+(* Chaîne de caractères *)
+string = '"', text, '"' ;
+
+(* Opérateurs binaires *)
+binary_operator = "==" | "!=" | "<" | ">" | "<=" | ">="
+                | "+" | "-" | "*" | "/" | "%"
+                | "&&" | "||"
+                | "&" | "|" | "^" | "<<" | ">>" ;
+
+(* Opérateurs unaires *)
+unary_operator = "-" | "!" | "~" ;
+
+(* Instruction de contrôle *)
+control_statement = if_statement | match_statement ;
+
+(* Instruction if-elif-else *)
+if_statement = "if", expression, ":", statement_list,
+               { "elif", expression, ":", statement_list },
+               [ "else", ":", statement_list ] ;
+
+(* Instruction match *)
+match_statement = "match", expression, ":", case_list ;
+case_list = case, { case } ;
+case = expression, "=>", statement_list ;
+
+(* Instruction de boucle *)
+loop_statement = for_statement | while_statement | loop_statement | "continue" | "break" ;
+for_statement = "for", identifier, "in", expression, ":", statement_list ;
+while_statement = "while", expression, ":", statement_list ;
+loop_statement = "loop", ":", statement_list ;
+
+(* Instruction d'importation *)
+import_statement = "import", identifier
+                 | "from", identifier, "import", identifier ;
+
+(* Instruction use *)
+use_statement = "use", identifier ;
+
+(* Mots-clés *)
+keyword = "and" | "as" | "async" | "await" | "break" | "const" | "class" | "continue"
+        | "def" | "del" | "elif" | "else" | "enum" | "except" | "false" | "fn" | "for"
+        | "from" | "if" | "impl" | "import" | "in" | "is" | "lambda" | "let" | "loop"
+        | "match" | "mod" | "mut" | "none" | "not" | "or" | "pub" | "pass" | "raise"
+        | "return" | "self" | "static" | "struct" | "super" | "true" | "try" | "type"
+        | "typeof" | "use" | "with" | "while" | "yield" ;
+
+(* Délimiteurs *)
+delimiter = "(" | ")" | "[" | "]" | "{" | "}" | ":" | "," | ";" | "." | "..." | "::" ;
+
+(* Caractères de base *)
+letter = "a" | ... | "z" | "A" | ... | "Z" ;
+digit = "0" | ... | "9" ;
+text = ? any character except newline ? ;
+
+(* Types *)
+type = "int" | "float" | "string" | "bool" | identifier ;

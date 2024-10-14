@@ -13,7 +13,7 @@ pub enum ASTNode {
     Declaration(Declaration),
     Expression(Expression),
     Statement(Statement),
-    Function(Function),
+
     Error(ParserError),
 }
 
@@ -29,9 +29,22 @@ pub struct Block {
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum BlockSyntax {
-    Indentation{indent_level: usize},
-    Braces {opening_brace: Token, closing_brace: Token},
+    Indentation,
+    Braces ,
 }
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct Indentation{
+    pub indent_level: usize,
+}
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct Braces{
+    pub opening_brace: Token,
+    pub closing_brace: Token,
+}
+
 
 #[allow(dead_code)]
 #[derive(Debug,Clone)]
@@ -94,6 +107,7 @@ pub enum UnaryOperator {
     Increment,
     Decrement,
     Reference,
+    ReferenceMutable,
     Dereference,
     BitwiseNot,
     LogicalNot,
@@ -295,6 +309,7 @@ pub enum Expression {
     TypeCast(TypeCast),
     Conditional(Conditional),
     Assignment(Assignment),
+    Borrow(Box<Expression>),
 
 }
 
@@ -536,7 +551,7 @@ impl fmt::Display for ASTNode {
             ASTNode::Declaration(decl) => write!(f, "{:?}", decl),
             ASTNode::Expression(expr) => write!(f, "{:?}", expr),
             ASTNode::Statement(stmt) => write!(f, "{:?}", stmt),
-            ASTNode::Function(func) => write!(f, "{:?}", func),
+            //ASTNode::Function(func) => write!(f, "{:?}", func),
             ASTNode::Block(block) => write!(f, "{:?}", block),
             // ASTNode::IfStatement(ifstmt) => write!(f, "{}", ifstmt),
             // ASTNode::ForStatement(forstmt) => write!(f, "{}", forstmt),
@@ -552,23 +567,7 @@ impl fmt::Display for ASTNode {
     }
 }
 
-impl Block {
-    pub fn is_indentation_mode(&self) -> bool{
-        matches!(self.syntax_mode, BlockSyntax::Indentation)
-    }
-    pub fn validate(&self) -> Result<(),String>{
-        match self.syntax_mode {
-            BlockSyntax::Indentation if self.indent_level.is_none() => {
-                Err("Indentation level is missing".to_string())
-            }
-            BlockSyntax::Braces if self.braces.is_none() => {
-                Err("Braces are missing".to_string())
-            }
-            _ => Ok(()),
-        }
-    }
 
-}
 
 impl ASTNode{
     pub fn program(statements: Vec<ASTNode>) -> Self{
@@ -586,14 +585,36 @@ impl ASTNode{
     pub fn statement(statement: Statement) -> Self{
         ASTNode::Statement(statement)
     }
-    pub fn function(function: Function) -> Self{
-        ASTNode::Function(function)
-    }
+    // pub fn function(function: Function) -> Self{ ASTNode::Function(function)
+    // }
     pub fn error(error: ParserError) -> Self{
         ASTNode::Error(error)
     }
 }
 
 // by YmC
+
+
+
+
+
+
+impl Block {
+    pub fn is_indentation_mode(&self) -> bool{
+        matches!(self.syntax_mode, BlockSyntax::Indentation)
+    }
+    // pub fn validate(&self) -> Result<(),String>{
+    //     match self.syntax_mode {
+    //         BlockSyntax::Indentation if self.indent_level.is_none() => {
+    //             Err("Indentation level is missing".to_string())
+    //         }
+    //         BlockSyntax::Braces if self.braces.is_none() => {
+    //             Err("Braces are missing".to_string())
+    //         }
+    //         _ => Ok(()),
+    //     }
+    // }
+
+}
 
 ////////////////////////////////////////////////////////////////

@@ -1,7 +1,7 @@
 #[allow(dead_code)]
 use crate::lexer::lex::{SyntaxMode, Token};
-use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, ClassDeclaration, ConstDeclaration, Constructor, Declaration, EnumDeclaration, Expression, Field, Function, FunctionDeclaration, FunctionSignature, Identifier, Literal, MemberAccess, Operator, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration};
-use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget};
+use crate::parser::ast::{ Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, ClassDeclaration, ConstDeclaration, Constructor, Declaration, EnumDeclaration, Expression, Field, Function, FunctionDeclaration, FunctionSignature, Identifier, Literal, MemberAccess, Operator, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration};
+use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget, ExpectedDeclaration};
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::tok::{Delimiters, Keywords, Operators, TokenType};
 
@@ -43,7 +43,84 @@ impl Parser {
 
     /// fonction pour aider le parsing des blocs
     fn parse_block(&mut self, syntax: BlockSyntax) -> Result<Block, ParserError> {
-        todo!()
+        match self.syntax_mode{
+            SyntaxMode::Indentation => self.parse_indented_block(),
+            SyntaxMode::Braces => self.parse_braced_block(),
+
+        }
+    }
+    fn current_indent_level(&self) -> usize {
+        if let Some(TokenType::INDENT) = self.current_token().map(|t| &t.token_type) {
+            self.get_current_indent_level()
+        } else {
+            0
+        }
+    }
+    pub fn get_current_indent_level(&self) -> usize {
+        *self.indent_level.last().unwrap_or(&0)
+    }
+
+    fn parse_indented_block(&mut self) -> Result<Block, ParserError> {
+        println!("Parsing indented block");
+        self.consume(TokenType::NEWLINE)?;
+        self.consume(TokenType::INDENT)?;
+
+        let mut statements = Vec::new();
+        let initial_indent = self.current_indent_level();
+
+        while !self.is_at_end() && self.current_indent_level() >= initial_indent {
+            if self.match_token(&[TokenType::DEDENT]) {
+                break;
+            }
+
+            let stmt = self.parse_statement()?;
+            statements.push(stmt);
+
+            // Consommer les newlines après chaque instruction
+            while self.match_token(&[TokenType::NEWLINE]) {
+                self.advance();
+            }
+        }
+
+        self.consume(TokenType::DEDENT)?;
+        Ok(Block{
+            statements,
+            syntax_mode:BlockSyntax::Indentation,
+        })
+    }
+
+    fn parse_braced_block(&mut self) -> Result<Block, ParserError> {
+        println!("Parsing braced block");
+        self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
+
+        let mut statements = Vec::new();
+
+        while !self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) {
+            if self.is_at_end() {
+                return Err(ParserError::new(UnexpectedEndOfInput, self.current_position()));
+            }
+
+            let stmt = self.parse_statement()?;
+            statements.push(stmt);
+
+            // Consommer le point-virgule si présent
+            if self.match_token(&[TokenType::DELIMITER(Delimiters::SEMICOLON)]) {
+                self.advance();
+            }
+
+            // Consommer les newlines
+            while self.match_token(&[TokenType::NEWLINE]) {
+                self.advance();
+            }
+        }
+
+        self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+
+        Ok(Block{
+            statements,
+            syntax_mode:BlockSyntax::Braces,
+        })
+
     }
 
     fn begin_block(&mut self) {
@@ -59,7 +136,18 @@ impl Parser {
 
 
     fn parse_statement(&mut self) -> Result<Statement, ParserError> {
-        todo!()
+        if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]) {
+            self.parse_return_statement()
+        } else if self.match_token(&[TokenType::KEYWORD(Keywords::IF)]){
+            self.parse_if_statement()
+        } else if self.match_token(&[TokenType::KEYWORD(Keywords::WHILE)]) {
+            self.parse_while_statement()
+        } else if self.match_token(&[TokenType::KEYWORD(Keywords::FOR)]) {
+            self.parse_for_statement()
+        } else {
+            self.parse_expression_statement()
+        }
+
     }
 
     /// fonction pour parser les expressions
@@ -87,6 +175,32 @@ impl Parser {
         todo!()
     }
 
+    fn parse_assignement(&mut self) -> Result<Expression,ParserError>{
+        todo!()
+    }
+
+    fn parse_equality(&mut self) -> Result<Expression,ParserError>{
+        todo!()
+    }
+    fn parse_comparison(&mut self) -> Result<Expression,ParserError>{
+        todo!()
+    }
+    fn parse_term(&mut self) -> Result<Expression,ParserError>{
+        todo!()
+    }
+    fn parse_factor(&mut self) -> Result<Expression,ParserError>{
+        todo!()
+    }
+
+    fn parse_postfix(&mut self) -> Result<Expression,ParserError>{
+        todo!()
+    }
+
+    /// fonction pour parser les parametres
+
+    fn parse_function_parameters(&mut self) -> Result<Vec<(String, Type)>, ParserError> {
+        todo!()
+    }
 
 
 
@@ -94,7 +208,23 @@ impl Parser {
     /// fonction pour parser les declarations
 
     fn parse_declaration(&mut self) -> Result<Declaration, ParserError> {
-        todo!()
+        if self.match_token(&[TokenType::KEYWORD(Keywords::LET)]){
+            self.parse_variable_declaration()
+        } else if self.match_token(&[TokenType::KEYWORD(Keywords::FN)]) {
+            self.parse_function_declaration()
+        } else if self.match_token(&[TokenType::KEYWORD(Keywords::STRUCT)]) {
+            self.parse_struct_declaration()
+        } else if self.match_token(&[TokenType::KEYWORD(Keywords::ENUM)]) {
+            self.parse_enum_declaration()
+        } else if self.match_token(&[TokenType::KEYWORD(Keywords::TRAIT)]) {
+            self.parse_trait_declaration()
+        } else if self.match_token(&[TokenType::KEYWORD(Keywords::CLASS)]) {
+            self.parse_class_declaration()
+        } else{
+            Err(ParserError::new(ExpectedDeclaration,self.current_position()))
+        }
+
+
     }
 
     fn parse_variable_declaration(&mut self) -> Result<Declaration, ParserError> {
@@ -125,8 +255,51 @@ impl Parser {
         todo!()
     }
 
+    fn parse_methode_declaration(&mut self) -> Result<Declaration, ParserError> {
+        todo!()
+    }
+
     /// fonction pour parser les types
     fn parse_type(&mut self) -> Result<Type, ParserError> {
+        let token = self
+            .current_token()
+            .ok_or_else(|| ParserError::new(ExpectedTypeAnnotation, self.current_position()))?;
+
+        println!("Parsing type: {:?}", token);
+
+        match &token.token_type {
+            TokenType::KEYWORD(Keywords::INT) => {
+                self.advance(); // Consomme le token `int`
+                Ok(Type::Int)
+            }
+            TokenType::KEYWORD(Keywords::FLOAT) => {
+                self.advance(); // Consomme le token `float`
+                Ok(Type::Float)
+            }
+            TokenType::KEYWORD(Keywords::BOOL) => {
+                self.advance(); // Consomme le token `bool`
+                Ok(Type::Bool)
+            }
+            TokenType::KEYWORD(Keywords::STR) => {
+                self.advance(); // Consomme le token `string`
+                Ok(Type::String)
+            }
+            TokenType::KEYWORD(Keywords::CHAR) => {
+                self.advance(); // Consomme le token `char`
+                Ok(Type::Char)
+            }
+            _ => {
+                println!("Unexpected token: {:?}", token);
+                // Si le token actuel n'est pas un type valide, renvoyer une erreur
+                Err(ParserError::new(
+                    InvalidTypeAnnotation,
+                    self.current_position(),
+                ))
+            }
+        }
+    }
+
+    fn parse_type_cast(&mut self,expr: Expression) -> Result<Expression, ParserError> {
         todo!()
     }
 
@@ -160,7 +333,17 @@ impl Parser {
 
     /// fonction pour la gestion des emprunts
     fn parse_borrow(&mut self) -> Result<Expression, ParserError> {
-        todo!()
+        if self.match_token(&[TokenType::OPERATOR(Operators::AMPER)]){
+            let mutable = self.match_token(&[TokenType::KEYWORD(Keywords::MUT)]);
+            let expression = self.parse_expression()?;
+            Ok(Expression::UnaryOperation(UnaryOperation{
+                operator: if mutable { UnaryOperator::ReferenceMutable} else {UnaryOperator::Reference},
+                operand: Box::new(expression),
+            }))
+        } else {
+            self.parse_primary_expression()
+        }
+
     }
 
     // fn parse_annotation(&mut self) -> Result<Attribute, ParserError> {
@@ -188,21 +371,25 @@ impl Parser {
     fn current_token(&self) -> Option<&Token> {
         self.tokens.get(self.current)
     }
-    fn advance(&mut self){
-        if !self.is_at_end(){
+    fn advance(&mut self) -> Option<&Token> {
+        if !self.is_at_end() {
             self.current += 1;
         }
+        self.previous_token()
     }
 
     fn peek_token(&self) -> Option<&Token>{
-        todo!()
+        self.tokens.get(self.current)
     }
     fn peek_next_token(&self) -> Option<&Token>{
         todo!()
     }
 
-    fn previous_token(&self) -> &Token {
-        &self.tokens[self.current - 1]
+    fn previous_token(&self) -> Option<&Token> {
+        if self.current > 0 {
+            // &self.tokens(self.current - 1)
+            Some(&self.tokens[self.current - 1])
+        } else { None }
     }
 
     fn is_at_end(&self) -> bool{
@@ -218,7 +405,7 @@ impl Parser {
         } else {
             false
         }
-        todo!()
+
     }
 
     fn check(&self,expected:&[TokenType]) -> bool {
@@ -241,6 +428,18 @@ impl Parser {
         }
     }
 
+    /// fonctontion  pour aider a comsume les tokens
+
+    fn consume_identifier(&mut self) -> Result<String, ParserError> {
+        let current_token = self.current_token().ok_or_else(|| ParserError::new(UnexpectedEOF,self.current_position()))?;
+        if let TokenType::IDENTIFIER {name:_} = &current_token.token_type{
+            let name = current_token.text.clone();
+            self.advance();
+            Ok(name)
+        } else { Err(ParserError::new(ExpectIdentifier,self.current_position())) }
+
+    }
+
     /// Fonction pour afficher les tokens autour de l'erreur
     pub fn create_error_with_context(&self, error_type: ParserErrorType) -> ParserError {
         self.print_surrounding_tokens();
@@ -252,12 +451,49 @@ impl Parser {
         )
     }
 
-    fn print_surrounding_tokens(&self){
-        todo!()
+    fn print_surrounding_tokens(&self) {
+        let prev_token = if self.current > 0 {
+            Some(&self.tokens[self.current - 1])
+        } else {
+            None
+        };
+        let current_token = self.current_token();
+        let next_token = if self.current + 1 < self.tokens.len() {
+            Some(&self.tokens[self.current + 1])
+        } else {
+            None
+        };
+        println!("");
+        println!("---------------- Token Error Context--by-YmC ----------");
+        if let Some(prev) = prev_token {
+            println!("Previous Token: {:?}", prev);
+        }
+        if let Some(current) = current_token {
+            println!("Current Token: {:?}", current);
+        }
+        if let Some(next) = next_token {
+            println!("Next Token: {:?}", next);
+        }
+        println!("----------------------------------------------------------");
+        println!("");
     }
 
-    fn synchronize(&mut self){
-        todo!()
+    fn synchronize(&mut self) {
+        self.advance();
+        while !self.is_at_end() {
+            if self.previous_token().map_or(false, |t| t.token_type == TokenType::DELIMITER(Delimiters::SEMICOLON)) {
+                return;
+            }
+
+            match self.peek_token().map(|t| &t.token_type) {
+                Some(TokenType::KEYWORD(Keywords::CLASS)) | Some(TokenType::KEYWORD(Keywords::FN)) | Some(TokenType::KEYWORD(Keywords::LET)) |
+                Some(TokenType::KEYWORD(Keywords::FOR)) | Some(TokenType::KEYWORD(Keywords::IF)) | Some(TokenType::KEYWORD(Keywords::WHILE)) |
+                Some(TokenType::KEYWORD(Keywords::RETURN)) => return,
+                _ => {}
+            }
+
+            self.advance();
+        }
     }
 
 
