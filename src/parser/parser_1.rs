@@ -1,4 +1,4 @@
-
+/*
 #[allow(dead_code)]
 use crate::lexer::lex::{SyntaxMode, Token};
 use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, ClassDeclaration, ConstanteDeclaration, Constructor, Declaration, EnumDeclaration, Expression, Field, Function, FunctionDeclaration, FunctionSignature, Identifier, Literal, MemberAccess, Operator, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration};
@@ -509,7 +509,8 @@ impl Parser {
             parameters,
             return_type,
             body,
-            public_access: public_accees,
+            visibility: public_accees,
+            //public_access: public_accees,
         }))
     }
 
@@ -971,7 +972,7 @@ impl Parser {
                     right: Box::new(value),
                 })),
                 _ => Err(ParserError::new(
-                    ParserErrorType::InvalidAssignmentTarget,
+                    ParserError::InvalidAssignmentTarget,
                     self.current_position(),
                 )),
             }

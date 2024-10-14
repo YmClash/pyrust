@@ -20,7 +20,7 @@ pub enum ASTNode {
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Block {
-    pub statements: Vec<Statement>,
+    pub statements: Vec<ASTNode>,
     pub syntax_mode: BlockSyntax,
     // pub indent_level: Option<usize>, // Pour le mode Indentation
     // pub braces: Option<(Token, Token)>, // Pour le mode Braces (ouverture, fermeture)
@@ -85,34 +85,34 @@ pub struct Position {
 #[allow(dead_code)]
 #[derive(Debug, PartialEq, Clone)]
 pub enum Operator {
-    Addition,
-    Substraction,
-    Multiplication,
-    Division,
-    Modulo,
-    Equal,
-    NotEqual,
-    LessThan,
-    GreaterThan,
-    And,
-    Or,
-    LesshanOrEqual,
-    GreaterThanOrEqual,
+    Addition,       // +
+    Substraction,   // -
+    Multiplication, // *
+    Division,       // /
+    Modulo,     // %
+    Equal,  // ==
+    NotEqual,   // !=
+    LessThan,   // <
+    GreaterThan,   // >
+    And, // &&
+    Or, // ||
+    LesshanOrEqual, // <=
+    GreaterThanOrEqual, // >=
 }
 
 #[derive(Debug, Clone)]
 pub enum UnaryOperator {
-    Negate,
-    Not,
-    Increment,
-    Decrement,
-    Reference,
-    ReferenceMutable,
-    Dereference,
-    BitwiseNot,
-    LogicalNot,
-    Positive,
-    Negative,
+    Negate,     // -
+    Not,      // !
+    Increment,      // ++
+    Decrement,      // --
+    Reference,      // &
+    ReferenceMutable,       // &mut
+    Dereference,        // *
+    BitwiseNot,     // ~
+    LogicalNot,     // !
+    Positive,       // +
+    Negative,       // -
 }
 
 
@@ -170,7 +170,7 @@ pub struct FunctionDeclaration {
     pub parameters: Vec<(String, Type)>, // (nom, type)
     pub return_type: Option<Type>,
     pub body: Block,
-    pub public_access: bool, // pub
+    pub visibility: Visibility
     //pub annotations: Vec<Annotation>,
 }
 #[allow(dead_code)]
@@ -201,8 +201,7 @@ pub struct ClassDeclaration {
     pub attributes: Vec<Attribute>,
     pub constructor: Option<Constructor>,
     pub methods: Vec<FunctionDeclaration>,
-    pub public_access: bool,
-    //pub visibility: Visibility,
+    pub visibility: Visibility,
 }
 
 #[allow(dead_code)]
@@ -227,7 +226,7 @@ pub struct Constructor { // Keyword  pour  le constructeur serai def  et le meth
 pub struct EnumDeclaration {
     pub name: String,
     pub variants: Vec<EnumVariant>,
-    //pub public_access: bool, // pub
+    pub visibility: Visibility,
 }
 
 #[allow(dead_code)]
@@ -491,7 +490,7 @@ pub struct YieldStatement {
 }
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
-pub struct AssignementStatement {
+pub struct AssignmentStatement {
     pub target: Expression,
     pub value: Expression,
 }

@@ -42,7 +42,7 @@ impl Parser {
     }
 
     /// fonction pour aider le parsing des blocs
-    fn parse_block(&mut self, syntax: BlockSyntax) -> Result<Block, ParserError> {
+    fn parse_block(&mut self, syntax: BlockSyntax) -> Result<ASTNode, ParserError> {
         match self.syntax_mode{
             SyntaxMode::Indentation => self.parse_indented_block(),
             SyntaxMode::Braces => self.parse_braced_block(),
@@ -60,7 +60,7 @@ impl Parser {
         *self.indent_level.last().unwrap_or(&0)
     }
 
-    fn parse_indented_block(&mut self) -> Result<Block, ParserError> {
+    fn parse_indented_block(&mut self) -> Result<ASTNode, ParserError> {
         println!("Parsing indented block");
         self.consume(TokenType::NEWLINE)?;
         self.consume(TokenType::INDENT)?;
@@ -83,13 +83,13 @@ impl Parser {
         }
 
         self.consume(TokenType::DEDENT)?;
-        Ok(Block{
+        Ok(ASTNode::Block(Block{
             statements,
             syntax_mode:BlockSyntax::Indentation,
-        })
+        }))
     }
 
-    fn parse_braced_block(&mut self) -> Result<Block, ParserError> {
+    fn parse_braced_block(&mut self) -> Result<ASTNode, ParserError> {
         println!("Parsing braced block");
         self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
 
@@ -116,10 +116,10 @@ impl Parser {
 
         self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
 
-        Ok(Block{
+        Ok(ASTNode::Block(Block{
             statements,
             syntax_mode:BlockSyntax::Braces,
-        })
+        }))
 
     }
 
@@ -135,7 +135,7 @@ impl Parser {
 
 
 
-    fn parse_statement(&mut self) -> Result<Statement, ParserError> {
+    fn parse_statement(&mut self) -> Result<ASTNode, ParserError> {
         if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]) {
             self.parse_return_statement()
         } else if self.match_token(&[TokenType::KEYWORD(Keywords::IF)]){
@@ -153,53 +153,280 @@ impl Parser {
     /// fonction pour parser les expressions
 
     fn parse_expression(&mut self) -> Result<Expression, ParserError> {
-        todo!()
+        self.parse_binary_expression(0)
+
     }
 
-    fn parse_expression_statement(&mut self) -> Result<Statement, ParserError> {
+    fn parse_expression_statement(&mut self) -> Result<ASTNode, ParserError> {
         todo!()
     }
 
     fn parse_unary_expression(&mut self) -> Result<Expression, ParserError> {
-        todo!()
+        if self.match_token(&[
+            TokenType::OPERATOR(Operators::MINUS),
+            TokenType::OPERATOR(Operators::EXCLAMATION),
+            TokenType::OPERATOR(Operators::AMPER),
+        ]) {
+            let operator = match self.previous_token().unwrap().token_type {
+                TokenType::OPERATOR(Operators::MINUS) => UnaryOperator::Negative,
+                TokenType::OPERATOR(Operators::EXCLAMATION) => UnaryOperator::Not,
+                TokenType::OPERATOR(Operators::AMPER) => UnaryOperator::Reference,
+                _ => unreachable!(),
+            };
+            let right = self.parse_unary_expression()?;
+            return Ok(Expression::UnaryOperation(UnaryOperation {
+                operator,
+                operand: Box::new(right),
+            }));
+        }
+        self.parse_postfix()
+
     }
 
     fn parse_primary_expression(&mut self) -> Result<Expression, ParserError> {
-        todo!()
+        println!("Début du parsing de l'expression primaire, current_token = {:?}", self.current_token());
+        if let Some(token) = self.current_token() {
+            let expr = match &token.token_type {
+                TokenType::INTEGER { value } => {
+                    let value = value.clone();
+                    Expression::Literal(Literal::Integer { value })
+                }
+                TokenType::FLOAT { value } => {
+                    let value = *value;
+                    Expression::Literal(Literal::Float { value })
+                }
+                TokenType::STRING { value, .. } => {
+                    let value = value.clone();
+                    Expression::Literal(Literal::String(value))
+                }
+                TokenType::KEYWORD(Keywords::TRUE) => Expression::Literal(Literal::Boolean(true)),
+                TokenType::KEYWORD(Keywords::FALSE) => Expression::Literal(Literal::Boolean(false)),
+
+                TokenType::KEYWORD(Keywords::SELF) =>{
+                    let name = "self".to_string();
+                    Expression::Identifier(name)
+
+                }
+
+
+                TokenType::IDENTIFIER { name } => {
+                    let name = name.clone();
+                    Expression::Identifier(name)
+                }
+                TokenType::DELIMITER(Delimiters::LPAR) => {
+                    self.advance();
+                    let expr = self.parse_expression()?;
+                    if let Some(token) = self.current_token() {
+                        if matches!(token.token_type, TokenType::DELIMITER(Delimiters::RPAR)) {
+                            expr
+                        } else {
+                            return Err(ParserError::new(
+                                ExpectedCloseParenthesis,
+                                self.current_position(),
+                            ));
+                        }
+                    } else {
+                        return Err(ParserError::new(
+                            UnexpectedEndOfInput,
+                            self.current_position(),
+                        ));
+                    }
+                }
+                _ => return Err(ParserError::new(UnexpectedToken, self.current_position())),
+            };
+            self.advance();
+            Ok(expr)
+        } else {
+            Err(ParserError::new(
+                UnexpectedEndOfInput,
+                self.current_position(),
+            ))
+        }
+
     }
 
-    fn parse_binary_expression(&mut self, precedence: i32) -> Result<Expression, ParserError> {
-        todo!()
+    fn parse_binary_expression(&mut self, min_precedence: u8) -> Result<Expression, ParserError> {
+        let mut left = self.parse_unary_expression()?;
+        while let Some(op) = self.peek_operator() {
+            let precedence = self.get_operator_precedence(&op);
+            if precedence < min_precedence {
+                break;
+            }
+            self.advance(); // Consomme l'opérateur
+            let right = self.parse_binary_expression(precedence + 1)?;
+            left = Expression::BinaryOperation(BinaryOperation {
+                left: Box::new(left),
+                operator: op,
+                right: Box::new(right),
+            });
+        }
+        Ok(left)
     }
     fn parse_lambda_expression(&mut self) -> Result<Expression, ParserError> {
         todo!()
     }
 
-    fn parse_assignement(&mut self) -> Result<Expression,ParserError>{
-        todo!()
+    fn parse_assignment(&mut self) -> Result<Expression, ParserError> {
+        let expression = self.parse_equality()?;
+
+        if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
+            self.advance(); // Consomme '='
+            let value = self.parse_assignment()?;
+            match expression {
+                Expression::Identifier(name) => Ok(Expression::Assignment(Assignment {
+                    left: Box::new(Expression::Identifier(name)),
+                    right: Box::new(value),
+                })),
+                Expression::MemberAccess(member_access) => Ok(Expression::Assignment(Assignment {
+                    left: Box::new(Expression::MemberAccess(member_access)),
+                    right: Box::new(value),
+                })),
+                _ => Err(ParserError::new(
+                    InvalidAssignmentTarget,
+                    self.current_position(),
+                )),
+            }
+        } else {
+            Ok(expression)
+        }
     }
 
     fn parse_equality(&mut self) -> Result<Expression,ParserError>{
-        todo!()
+        let mut expression = self.parse_comparison()?;
+        while self.match_token(&[
+            TokenType::OPERATOR(Operators::EQEQUAL),
+            TokenType::OPERATOR(Operators::NOTEQUAL)]){
+            let operator = match self.previous_token().unwrap().token_type {
+                TokenType::OPERATOR(Operators::EQEQUAL) => Operator::Equal,
+                TokenType::OPERATOR(Operators::NOTEQUAL) => Operator::NotEqual,
+                _ => unreachable!(),
+            };
+            let right = self.parse_comparison()?;
+            expression = Expression::BinaryOperation(BinaryOperation {
+                left: Box::new(expression),
+                operator,
+                right: Box::new(right),
+            });
+        }
+        Ok(expression)
     }
     fn parse_comparison(&mut self) -> Result<Expression,ParserError>{
-        todo!()
+        let mut expression = self.parse_term()?;
+
+        while self.match_token(&[
+            TokenType::OPERATOR(Operators::LESS),
+            TokenType::OPERATOR(Operators::GREATER),
+            TokenType::OPERATOR(Operators::LESSEQUAL),
+            TokenType::OPERATOR(Operators::GREATEREQUAL),
+        ]) {
+            let operator = match self.previous_token().unwrap().token_type {
+                TokenType::OPERATOR(Operators::LESS) => Operator::LessThan,
+                TokenType::OPERATOR(Operators::GREATER) => Operator::GreaterThan,
+                TokenType::OPERATOR(Operators::LESSEQUAL) => Operator::LesshanOrEqual,
+                TokenType::OPERATOR(Operators::GREATEREQUAL) => Operator::GreaterThanOrEqual,
+                _ => unreachable!(),
+            };
+            let right = self.parse_term()?;
+            expression = Expression::BinaryOperation(BinaryOperation {
+                left: Box::new(expression),
+                operator,
+                right: Box::new(right),
+            })
+        }
+        Ok(expression)
+
     }
     fn parse_term(&mut self) -> Result<Expression,ParserError>{
-        todo!()
+        let mut expression = self.parse_factor()?;
+        while self.match_token(&[
+            TokenType::OPERATOR(Operators::PLUS),
+            TokenType::OPERATOR(Operators::MINUS),
+        ]) {
+            let operator = match self.previous_token().unwrap().token_type {
+                TokenType::OPERATOR(Operators::PLUS) => Operator::Addition,
+                TokenType::OPERATOR(Operators::MINUS) => Operator::Substraction,
+                _ => unreachable!(),
+            };
+            let right = self.parse_factor()?;
+            expression = Expression::BinaryOperation(BinaryOperation{
+                left: Box::new(expression),
+                operator,
+                right: Box::new(right),
+            })
+
+        }
+        Ok(expression)
     }
     fn parse_factor(&mut self) -> Result<Expression,ParserError>{
-        todo!()
+        let mut expression = self.parse_unary_expression()?;
+        while self.match_token(&[
+            TokenType::OPERATOR(Operators::STAR),
+            TokenType::OPERATOR(Operators::SLASH),
+        ]) {
+            let operator = match self.previous_token().unwrap().token_type {
+                TokenType::OPERATOR(Operators::STAR) => Operator::Multiplication,
+                TokenType::OPERATOR(Operators::SLASH) => Operator::Division,
+                _ => unreachable!(),
+            };
+            let right = self.parse_unary_expression()?;
+            expression = Expression::BinaryOperation(BinaryOperation{
+                left: Box::new(expression),
+                operator,
+                right: Box::new(right),
+            })
+
+        }
+        Ok(expression)
     }
 
     fn parse_postfix(&mut self) -> Result<Expression,ParserError>{
-        todo!()
+        let mut expression = self.parse_primary_expression()?;
+        loop {
+            if self.match_token(&[TokenType::DELIMITER(Delimiters::DOT)]){
+                self.advance();
+                let member_name = self.consume_identifier()?;
+                expression = Expression::MemberAccess(MemberAccess{
+                    object: Box::new(expression),
+                    member: member_name,
+                });
+            } else { break; }
+        }
+        Ok(expression)
     }
 
     /// fonction pour parser les parametres
 
     fn parse_function_parameters(&mut self) -> Result<Vec<(String, Type)>, ParserError> {
-        todo!()
+        println!("Début du parsing des paramètres de fonction");
+        let mut parameters = Vec::new();
+
+        if !self.match_token(&[TokenType::DELIMITER(Delimiters::RPAR)]) {
+            loop {
+                //let name = self.consume_parameter_name()?;
+                let name = self.consume_identifier()?;
+                println!("Nom du paramètre parsé : {}", name);
+
+                if name == "self" {
+                    // Si le paramètre est 'self', on n'attend pas de type
+                    parameters.push((name, Type::Custom("Self".to_string())));
+                } else {
+                    self.consume(TokenType::DELIMITER(Delimiters::COLON))?;
+
+                    let param_type = self.parse_type()?;
+                    println!("Type du paramètre parsé : {:?}", param_type);
+                    parameters.push((name, param_type));
+                }
+                if self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]) {
+                    self.consume(TokenType::DELIMITER(Delimiters::COMMA))?;
+                } else {
+                    break;
+                }
+            }
+        } else {
+
+        }
+        //println!("Paramètres parsés : {:?}", parameters);
+        Ok(parameters)
     }
 
 
@@ -207,7 +434,7 @@ impl Parser {
 
     /// fonction pour parser les declarations
 
-    fn parse_declaration(&mut self) -> Result<Declaration, ParserError> {
+    fn parse_declaration(&mut self) -> Result<ASTNode, ParserError> {
         if self.match_token(&[TokenType::KEYWORD(Keywords::LET)]){
             self.parse_variable_declaration()
         } else if self.match_token(&[TokenType::KEYWORD(Keywords::FN)]) {
@@ -227,35 +454,36 @@ impl Parser {
 
     }
 
-    fn parse_variable_declaration(&mut self) -> Result<Declaration, ParserError> {
+    fn parse_variable_declaration(&mut self) -> Result<ASTNode, ParserError> {
+
         todo!()
     }
 
-    fn parse_const_declaration(&mut self) -> Result<Declaration, ParserError> {
+    fn parse_const_declaration(&mut self) -> Result<ASTNode, ParserError> {
         todo!()
     }
 
-    fn parse_function_declaration(&mut self) -> Result<Declaration, ParserError> {
+    fn parse_function_declaration(&mut self) -> Result<ASTNode, ParserError> {
         todo!()
     }
 
-    fn parse_struct_declaration(&mut self) -> Result<Declaration, ParserError> {
+    fn parse_struct_declaration(&mut self) -> Result<ASTNode, ParserError> {
         todo!()
     }
 
-    fn parse_enum_declaration(&mut self) -> Result<Declaration, ParserError> {
+    fn parse_enum_declaration(&mut self) -> Result<ASTNode, ParserError> {
         todo!()
     }
 
-    fn parse_trait_declaration(&mut self) -> Result<Declaration, ParserError> {
+    fn parse_trait_declaration(&mut self) -> Result<ASTNode, ParserError> {
         todo!()
     }
 
-    fn parse_class_declaration(&mut self) -> Result<Declaration, ParserError> {
+    fn parse_class_declaration(&mut self) -> Result<ASTNode, ParserError> {
         todo!()
     }
 
-    fn parse_methode_declaration(&mut self) -> Result<Declaration, ParserError> {
+    fn parse_methode_declaration(&mut self) -> Result<ASTNode, ParserError> {
         todo!()
     }
 
@@ -310,6 +538,7 @@ impl Parser {
 
     /// fonction  pour parser la mutabilité et la visibilité
     fn parse_mutability(&mut self) -> Result<bool, ParserError> {
+
         todo!()
     }
     fn parse_visibility(&mut self) -> Result<bool, ParserError> {
@@ -317,16 +546,16 @@ impl Parser {
     }
 
     /// fonction pour le gestion de structure de controle
-    fn parse_if_statement(&mut self) -> Result<Statement, ParserError> {
+    fn parse_if_statement(&mut self) -> Result<ASTNode, ParserError> {
         todo!()
     }
-    fn parse_while_statement(&mut self) -> Result<Statement, ParserError> {
+    fn parse_while_statement(&mut self) -> Result<ASTNode, ParserError> {
         todo!()
     }
-    fn parse_for_statement(&mut self) -> Result<Statement, ParserError> {
+    fn parse_for_statement(&mut self) -> Result<ASTNode, ParserError> {
         todo!()
     }
-    fn parse_return_statement(&mut self) -> Result<Statement, ParserError> {
+    fn parse_return_statement(&mut self) -> Result<ASTNode, ParserError> {
         todo!()
     }
 
@@ -361,8 +590,26 @@ impl Parser {
         todo!()
     }
 
-    fn get_operator_precedence(&self, operator: &Operator) -> i32 {
-        todo!()
+    fn get_operator_precedence(&self, operator: &Operator) -> u8 {
+        match operator {
+            Operator::Multiplication | Operator::Division => 3,
+            Operator::Addition | Operator::Substraction => 2,
+            Operator::Equal | Operator::NotEqual => 1,
+
+            _ => 0,
+        }
+    }
+
+    fn peek_operator(&self) -> Option<Operator> {
+        match self.current_token()?.token_type {
+            TokenType::OPERATOR(Operators::PLUS) => Some(Operator::Addition),
+            TokenType::OPERATOR(Operators::MINUS) => Some(Operator::Substraction),
+            TokenType::OPERATOR(Operators::STAR) => Some(Operator::Multiplication),
+            TokenType::OPERATOR(Operators::SLASH) => Some(Operator::Division),
+            TokenType::OPERATOR(Operators::PERCENT) => Some(Operator::Modulo),
+            _ => None,
+        }
+
     }
 
     /// fonction pour la gestion des
@@ -393,7 +640,7 @@ impl Parser {
     }
 
     fn is_at_end(&self) -> bool{
-        self.current <= self.tokens.len()
+        self.current >= self.tokens.len()
     }
 
     ///  Fonctions de Vérification et de Correspondance des Tokens
@@ -409,7 +656,11 @@ impl Parser {
     }
 
     fn check(&self,expected:&[TokenType]) -> bool {
-        todo!()
+        if let Some(token) = self.current_token(){
+            expected.contains(&token.token_type)
+        } else {
+            false
+        }
     }
 
     pub fn consume(&mut self, expected: TokenType) -> Result<Token, ParserError> {
