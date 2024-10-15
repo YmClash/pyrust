@@ -214,24 +214,30 @@ impl Parser {
                     Expression::Identifier(name)
                 }
                 TokenType::DELIMITER(Delimiters::LPAR) => {
-                    self.advance();
+                    self.advance(); // Consomme '('
                     let expr = self.parse_expression()?;
-                    if let Some(token) = self.current_token() {
-                        if matches!(token.token_type, TokenType::DELIMITER(Delimiters::RPAR)) {
-                            expr
-                        } else {
-                            return Err(ParserError::new(
-                                ExpectedCloseParenthesis,
-                                self.current_position(),
-                            ));
-                        }
-                    } else {
-                        return Err(ParserError::new(
-                            UnexpectedEndOfInput,
-                            self.current_position(),
-                        ));
-                    }
+                    self.consume(TokenType::DELIMITER(Delimiters::RPAR))?; // Consomme ')'
+                    expr
                 }
+                // TokenType::DELIMITER(Delimiters::LPAR) => {
+                //     self.advance();
+                //     let expr = self.parse_expression()?;
+                //     if let Some(token) = self.current_token() {
+                //         if matches!(token.token_type, TokenType::DELIMITER(Delimiters::RPAR)) {
+                //             expr
+                //         } else {
+                //             return Err(ParserError::new(
+                //                 ExpectedCloseParenthesis,
+                //                 self.current_position(),
+                //             ));
+                //         }
+                //     } else {
+                //         return Err(ParserError::new(
+                //             UnexpectedEndOfInput,
+                //             self.current_position(),
+                //         ));
+                //     }
+                // }
                 _ => return Err(ParserError::new(UnexpectedToken, self.current_position())),
             };
             self.advance();
@@ -455,8 +461,24 @@ impl Parser {
     }
 
     fn parse_variable_declaration(&mut self) -> Result<ASTNode, ParserError> {
+        println!("Début du parsing de la déclaration de variable");
+        let mutable = self.parse_mutability()?;
+        let name = self.consume_identifier()?;
 
-        todo!()
+        let variable_type = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]){
+            self.advance();
+            Some(self.parse_type()?)
+        } else {
+            None
+        };
+
+        let value = if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]){
+            self.advance();
+            Some(self.parse_expression()?)
+        } else {
+            None
+        };
+
     }
 
     fn parse_const_declaration(&mut self) -> Result<ASTNode, ParserError> {
@@ -592,10 +614,11 @@ impl Parser {
 
     fn get_operator_precedence(&self, operator: &Operator) -> u8 {
         match operator {
-            Operator::Multiplication | Operator::Division => 3,
-            Operator::Addition | Operator::Substraction => 2,
-            Operator::Equal | Operator::NotEqual => 1,
-
+            Operator::Multiplication | Operator::Division | Operator::Modulo => 5,
+            Operator::Addition | Operator::Substraction => 4,
+            Operator::LessThan | Operator::GreaterThan | Operator::LesshanOrEqual | Operator::GreaterThanOrEqual => 3,
+            Operator::Equal | Operator::NotEqual => 2,
+            Operator::And | Operator::Or => 1,
             _ => 0,
         }
     }
@@ -607,6 +630,14 @@ impl Parser {
             TokenType::OPERATOR(Operators::STAR) => Some(Operator::Multiplication),
             TokenType::OPERATOR(Operators::SLASH) => Some(Operator::Division),
             TokenType::OPERATOR(Operators::PERCENT) => Some(Operator::Modulo),
+            TokenType::OPERATOR(Operators::LESS) => Some(Operator::LessThan),
+            TokenType::OPERATOR(Operators::GREATER) => Some(Operator::GreaterThan),
+            TokenType::OPERATOR(Operators::LESSEQUAL) => Some(Operator::LesshanOrEqual),
+            TokenType::OPERATOR(Operators::GREATEREQUAL) => Some(Operator::GreaterThanOrEqual),
+            TokenType::OPERATOR(Operators::EQEQUAL) => Some(Operator::Equal),
+            TokenType::OPERATOR(Operators::NOTEQUAL) => Some(Operator::NotEqual),
+            TokenType::OPERATOR(Operators::AND) => Some(Operator::And),
+            TokenType::OPERATOR(Operators::OR) => Some(Operator::Or),
             _ => None,
         }
 

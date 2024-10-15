@@ -1,4 +1,4 @@
-/*
+
 #[allow(dead_code)]
 use crate::lexer::lex::{SyntaxMode, Token};
 use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, ClassDeclaration, ConstanteDeclaration, Constructor, Declaration, EnumDeclaration, Expression, Field, Function, FunctionDeclaration, FunctionSignature, Identifier, Literal, MemberAccess, Operator, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration};
