@@ -19,7 +19,7 @@ fn main() {
     let tokens = lexer.tokenize();
 
     for token in tokens {
-        println!("{:?}", token);
+        println!("{:?}", token.text);
     }
 
 

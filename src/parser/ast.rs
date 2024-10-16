@@ -55,17 +55,18 @@ pub enum Visibility {
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
+pub enum Mutability {
+    Immutable, // default mode
+    Mutable,   // keyword MUT
+}
+
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
 pub enum Access {
     Read,       //
     Write,
     ReadWrite,
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Clone)]
-pub enum Mutability {
-    Immutable, // default mode
-    Mutable,   // keyword MUT
 }
 
 
@@ -311,6 +312,20 @@ pub enum Expression {
     Borrow(Box<Expression>),
 
 }
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub enum BorrowType {
+    Mutable,
+    Immutable,
+}
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct Borrow {
+    pub borrowed_value: Box<Expression>,
+    pub borrowed_type: BorrowType,
+    pub access: Access,
+}
+
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]

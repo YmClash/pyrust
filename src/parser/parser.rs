@@ -1,12 +1,12 @@
 #[allow(dead_code)]
 use crate::lexer::lex::{SyntaxMode, Token};
-use crate::parser::ast::{ Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, ClassDeclaration, ConstDeclaration, Constructor, Declaration, EnumDeclaration, Expression, Field, Function, FunctionDeclaration, FunctionSignature, Identifier, Literal, MemberAccess, Operator, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration};
+use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, ClassDeclaration, ConstDeclaration, Constructor, Declaration, EnumDeclaration, Expression, Field, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, Literal, MemberAccess, Mutability, Operator, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility};
 use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget, ExpectedDeclaration};
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::tok::{Delimiters, Keywords, Operators, TokenType};
 
 use num_bigint::BigInt;
-
+use crate::parser::ast::Declaration::Variable;
 //////////////////////Debut///////////////////////////
 
 pub struct Parser {
@@ -189,20 +189,32 @@ impl Parser {
             let expr = match &token.token_type {
                 TokenType::INTEGER { value } => {
                     let value = value.clone();
+                    self.advance();
                     Expression::Literal(Literal::Integer { value })
                 }
                 TokenType::FLOAT { value } => {
                     let value = *value;
+                    self.advance();
                     Expression::Literal(Literal::Float { value })
                 }
                 TokenType::STRING { value, .. } => {
                     let value = value.clone();
+                    self.advance();
                     Expression::Literal(Literal::String(value))
                 }
-                TokenType::KEYWORD(Keywords::TRUE) => Expression::Literal(Literal::Boolean(true)),
-                TokenType::KEYWORD(Keywords::FALSE) => Expression::Literal(Literal::Boolean(false)),
+                TokenType::KEYWORD(Keywords::TRUE) => {
+                    self.advance(); // Consomme le token
+                    Expression::Literal(Literal::Boolean(true))
+                }
+                TokenType::KEYWORD(Keywords::FALSE) => {
+                    self.advance(); // Consomme le token
+                    Expression::Literal(Literal::Boolean(false))
+                }
+                // TokenType::KEYWORD(Keywords::TRUE) => Expression::Literal(Literal::Boolean(true)),
+                // TokenType::KEYWORD(Keywords::FALSE) => Expression::Literal(Literal::Boolean(false)),
 
                 TokenType::KEYWORD(Keywords::SELF) =>{
+                    self.advance();
                     let name = "self".to_string();
                     Expression::Identifier(name)
 
@@ -211,6 +223,7 @@ impl Parser {
 
                 TokenType::IDENTIFIER { name } => {
                     let name = name.clone();
+                    self.advance();
                     Expression::Identifier(name)
                 }
                 TokenType::DELIMITER(Delimiters::LPAR) => {
@@ -240,7 +253,6 @@ impl Parser {
                 // }
                 _ => return Err(ParserError::new(UnexpectedToken, self.current_position())),
             };
-            self.advance();
             Ok(expr)
         } else {
             Err(ParserError::new(
@@ -276,7 +288,6 @@ impl Parser {
         let expression = self.parse_equality()?;
 
         if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
-            self.advance(); // Consomme '='
             let value = self.parse_assignment()?;
             match expression {
                 Expression::Identifier(name) => Ok(Expression::Assignment(Assignment {
@@ -389,18 +400,31 @@ impl Parser {
         let mut expression = self.parse_primary_expression()?;
         loop {
             if self.match_token(&[TokenType::DELIMITER(Delimiters::DOT)]){
-                self.advance();
                 let member_name = self.consume_identifier()?;
                 expression = Expression::MemberAccess(MemberAccess{
                     object: Box::new(expression),
                     member: member_name,
                 });
-            } else { break; }
+            // } else if self.match_token(&[TokenType::DELIMITER(Delimiters::LPAR)]) {
+            //     // Consomme '('
+            //     let arguments = self.parse_arguments_list()?;
+            //     expression = Expression::FunctionCall(FunctionCall {
+            //         name: Box::new(expression),
+            //         arguments: arguments,
+            //     });
+            //     self.consume(TokenType::DELIMITER(Delimiters::RPAR))?; // Consomme ')'
+            // } else {
+                break;
+            }
         }
         Ok(expression)
     }
 
     /// fonction pour parser les parametres
+
+    fn parse_arguments_list(&mut self) -> Result<Vec<Expression>, ParserError> {
+        todo!()
+    }
 
     fn parse_function_parameters(&mut self) -> Result<Vec<(String, Type)>, ParserError> {
         println!("Début du parsing des paramètres de fonction");
@@ -460,32 +484,50 @@ impl Parser {
 
     }
 
+    fn oo(&mut self) -> Result<ASTNode, ParserError> {
+        let a: bool;
+
+
+        todo!()
+    }
+
+
+
+    /// fonction pour parser les déclarations de variables
+    /// Exemple: Brace Mode
+    /// // let mut x: int = 5;
+    /// // let y: float = 3.14;
+    /// // let z = 42;
+    /// // let a:bool = true;
+    /// Exemple: Indentation Mode
+    /// // let mut x: int = 5
+    /// // let y: float = 3.14
+    /// // let z = 42
+    /// // let a:bool = true
+
+
     fn parse_variable_declaration(&mut self) -> Result<ASTNode, ParserError> {
         println!("Début du parsing de la déclaration de variable");
-        let mutable = self.parse_mutability()?;
-        let name = self.consume_identifier()?;
-
-        let variable_type = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]){
-            self.advance();
+        let mutability = self.parse_mutability()?;
+        let  name = self.consume_identifier()?;
+        let variable_type = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
             Some(self.parse_type()?)
         } else {
             None
         };
 
-        let value = if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]){
-            self.advance();
-            Some(self.parse_expression()?)
-        } else {
-            None
-        };
+        todo!()
 
     }
 
+
     fn parse_const_declaration(&mut self) -> Result<ASTNode, ParserError> {
+        println!("Début du parsing de la déclaration de constante");
         todo!()
     }
 
     fn parse_function_declaration(&mut self) -> Result<ASTNode, ParserError> {
+        println!("Début du parsing de la déclaration de fonction");
         todo!()
     }
 
@@ -559,12 +601,19 @@ impl Parser {
     }
 
     /// fonction  pour parser la mutabilité et la visibilité
-    fn parse_mutability(&mut self) -> Result<bool, ParserError> {
-
-        todo!()
+    fn parse_mutability(&mut self) -> Result<Mutability, ParserError> {
+        if self.match_token(&[TokenType::KEYWORD(Keywords::MUT)]){
+            Ok(Mutability::Mutable)
+        } else {
+            Ok(Mutability::Immutable)
+        }
     }
-    fn parse_visibility(&mut self) -> Result<bool, ParserError> {
-        todo!()
+    fn parse_visibility(&mut self) -> Result<Visibility, ParserError> {
+        if self.match_token(&[TokenType::KEYWORD(Keywords::PUB)]){
+            Ok(Visibility::Public)
+        } else {
+            Ok(Visibility::Private)
+        }
     }
 
     /// fonction pour le gestion de structure de controle
