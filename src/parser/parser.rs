@@ -42,7 +42,12 @@ impl Parser {
     }
 
     /// fonction pour aider le parsing des blocs
-    fn parse_block(&mut self, syntax: BlockSyntax) -> Result<ASTNode, ParserError> {
+
+    fn get_syntax_mode(&self) ->SyntaxMode{
+        self.syntax_mode
+    }
+
+    fn parse_block(&mut self, syntax: SyntaxMode) -> Result<ASTNode, ParserError> {
         match self.syntax_mode{
             SyntaxMode::Indentation => self.parse_indented_block(),
             SyntaxMode::Braces => self.parse_braced_block(),
@@ -153,6 +158,7 @@ impl Parser {
     /// fonction pour parser les expressions
 
     fn parse_expression(&mut self) -> Result<Expression, ParserError> {
+        println!("Début du parsing de l'expression");
         self.parse_binary_expression(0)
 
     }
@@ -264,6 +270,7 @@ impl Parser {
     }
 
     fn parse_binary_expression(&mut self, min_precedence: u8) -> Result<Expression, ParserError> {
+        println!("Début du parsing de l'expression binaire");
         let mut left = self.parse_unary_expression()?;
         while let Some(op) = self.peek_operator() {
             let precedence = self.get_operator_precedence(&op);
@@ -506,17 +513,35 @@ impl Parser {
     /// // let a:bool = true
 
 
-    fn parse_variable_declaration(&mut self) -> Result<ASTNode, ParserError> {
+    pub fn parse_variable_declaration(&mut self) -> Result<ASTNode, ParserError> {
         println!("Début du parsing de la déclaration de variable");
+        self.consume(TokenType::KEYWORD(Keywords::LET))?;
         let mutability = self.parse_mutability()?;
+
         let  name = self.consume_identifier()?;
+        println!("Nom de la variable parsé : {}", name);
         let variable_type = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
-            Some(self.parse_type()?)
+            self.parse_type()?
+
         } else {
-            None
+            Type::Infer
+        };
+        println!("Type de la variable parsé : {:?}", variable_type);
+
+        println!("Debut de la valeur de la variable");
+        let value = if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
+            self.parse_expression()?
+        } else {
+            return Err(ParserError::new(ExpectValue,self.current_position(),));
         };
 
-        todo!()
+
+        Ok(ASTNode::Declaration(Declaration::Variable(VariableDeclaration{
+            name,
+            variable_type: Some(variable_type),
+            value: Some(value),
+            mutability,
+        })))
 
     }
 
@@ -527,8 +552,37 @@ impl Parser {
     }
 
     fn parse_function_declaration(&mut self) -> Result<ASTNode, ParserError> {
-        println!("Début du parsing de la déclaration de fonction");
+        // println!("Début du parsing de la déclaration de fonction");
+        //
+        // let visibility = self.parse_visibility()?;
+        //
+        // self.consume(TokenType::KEYWORD(Keywords::FN))?;
+        //
+        // let name = self.consume_identifier()?;
+        //
+        // self.consume(TokenType::DELIMITER(Delimiters::LPAR))?;
+        //
+        // let parameters = self.parse_function_parameters()?;
+        //
+        // self.consume(TokenType::DELIMITER(Delimiters::RPAR))?;
+        //
+        // let return_type = if self.match_token(&[TokenType::OPERATOR(Operators::RARROW)]) {
+        //     self.parse_type()?
+        // } else {
+        //     Type::Infer // Ou un type par défaut
+        // };
+        //
+        // let body = self.parse_block(self.get_syntax_mode())?;
+        //
+        // Ok(ASTNode::Declaration(Declaration::Function(FunctionDeclaration {
+        //     name,
+        //     parameters,
+        //     return_type: Some(return_type),
+        //     body,
+        //     visibility,
+        // })))
         todo!()
+
     }
 
     fn parse_struct_declaration(&mut self) -> Result<ASTNode, ParserError> {
