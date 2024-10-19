@@ -159,7 +159,8 @@ impl Parser {
 
     fn parse_expression(&mut self) -> Result<Expression, ParserError> {
         println!("Début du parsing de l'expression");
-        self.parse_binary_expression(0)
+        //self.parse_binary_expression(0)
+        self.parse_assignment()
 
     }
 
@@ -168,6 +169,7 @@ impl Parser {
     }
 
     fn parse_unary_expression(&mut self) -> Result<Expression, ParserError> {
+        println!("Début du parsing de l'expression unaire");
         if self.match_token(&[
             TokenType::OPERATOR(Operators::MINUS),
             TokenType::OPERATOR(Operators::EXCLAMATION),
@@ -179,6 +181,7 @@ impl Parser {
                 TokenType::OPERATOR(Operators::AMPER) => UnaryOperator::Reference,
                 _ => unreachable!(),
             };
+
             let right = self.parse_unary_expression()?;
             return Ok(Expression::UnaryOperation(UnaryOperation {
                 operator,
@@ -195,16 +198,19 @@ impl Parser {
             let expr = match &token.token_type {
                 TokenType::INTEGER { value } => {
                     let value = value.clone();
+                    println!("Valeur entière parsée : {}", value);
                     self.advance();
                     Expression::Literal(Literal::Integer { value })
                 }
                 TokenType::FLOAT { value } => {
                     let value = *value;
+                    println!("Valeur flottante parsée : {}", value);
                     self.advance();
                     Expression::Literal(Literal::Float { value })
                 }
                 TokenType::STRING { value, .. } => {
                     let value = value.clone();
+                    println!("Valeur de chaîne parsée : {}", value);
                     self.advance();
                     Expression::Literal(Literal::String(value))
                 }
@@ -232,31 +238,31 @@ impl Parser {
                     self.advance();
                     Expression::Identifier(name)
                 }
-                TokenType::DELIMITER(Delimiters::LPAR) => {
-                    self.advance(); // Consomme '('
-                    let expr = self.parse_expression()?;
-                    self.consume(TokenType::DELIMITER(Delimiters::RPAR))?; // Consomme ')'
-                    expr
-                }
                 // TokenType::DELIMITER(Delimiters::LPAR) => {
-                //     self.advance();
+                //     self.advance(); // Consomme '('
                 //     let expr = self.parse_expression()?;
-                //     if let Some(token) = self.current_token() {
-                //         if matches!(token.token_type, TokenType::DELIMITER(Delimiters::RPAR)) {
-                //             expr
-                //         } else {
-                //             return Err(ParserError::new(
-                //                 ExpectedCloseParenthesis,
-                //                 self.current_position(),
-                //             ));
-                //         }
-                //     } else {
-                //         return Err(ParserError::new(
-                //             UnexpectedEndOfInput,
-                //             self.current_position(),
-                //         ));
-                //     }
+                //     self.consume(TokenType::DELIMITER(Delimiters::RPAR))?; // Consomme ')'
+                //     expr
                 // }
+                TokenType::DELIMITER(Delimiters::LPAR) => {
+                    self.advance();
+                    let expr = self.parse_expression()?;
+                    if let Some(token) = self.current_token() {
+                        if matches!(token.token_type, TokenType::DELIMITER(Delimiters::RPAR)) {
+                            expr
+                        } else {
+                            return Err(ParserError::new(
+                                ExpectedCloseParenthesis,
+                                self.current_position(),
+                            ));
+                        }
+                    } else {
+                        return Err(ParserError::new(
+                            UnexpectedEndOfInput,
+                            self.current_position(),
+                        ));
+                    }
+                }
                 _ => return Err(ParserError::new(UnexpectedToken, self.current_position())),
             };
             Ok(expr)
@@ -274,17 +280,20 @@ impl Parser {
         let mut left = self.parse_unary_expression()?;
         while let Some(op) = self.peek_operator() {
             let precedence = self.get_operator_precedence(&op);
+            println!("Opérateur trouvé : {:?}, précédence : {}", op, precedence);
             if precedence < min_precedence {
                 break;
             }
             self.advance(); // Consomme l'opérateur
-            let right = self.parse_binary_expression(precedence + 1)?;
+            let right = self.parse_binary_expression(precedence)?;
             left = Expression::BinaryOperation(BinaryOperation {
                 left: Box::new(left),
                 operator: op,
                 right: Box::new(right),
             });
+
         }
+        println!("Fin du parsing de l'expression binaire");
         Ok(left)
     }
     fn parse_lambda_expression(&mut self) -> Result<Expression, ParserError> {
@@ -292,6 +301,7 @@ impl Parser {
     }
 
     fn parse_assignment(&mut self) -> Result<Expression, ParserError> {
+        println!("Début du parsing de l'assignation");
         let expression = self.parse_equality()?;
 
         if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
@@ -316,6 +326,7 @@ impl Parser {
     }
 
     fn parse_equality(&mut self) -> Result<Expression,ParserError>{
+        println!("Début du parsing de l'égalité");
         let mut expression = self.parse_comparison()?;
         while self.match_token(&[
             TokenType::OPERATOR(Operators::EQEQUAL),
@@ -491,12 +502,12 @@ impl Parser {
 
     }
 
-    fn oo(&mut self) -> Result<ASTNode, ParserError> {
-        let a: bool;
-
-
-        todo!()
-    }
+    // fn oo(&mut self) -> Result<ASTNode, ParserError> {
+    //     let a: bool;
+    //
+    //
+    //     todo!()
+    // }
 
 
 
@@ -551,7 +562,7 @@ impl Parser {
         todo!()
     }
 
-    fn parse_function_declaration(&mut self) -> Result<ASTNode, ParserError> {
+    pub fn parse_function_declaration(&mut self) -> Result<ASTNode, ParserError> {
         // println!("Début du parsing de la déclaration de fonction");
         //
         // let visibility = self.parse_visibility()?;
