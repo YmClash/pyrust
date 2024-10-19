@@ -180,8 +180,7 @@ pub struct ConstDeclaration {
     pub name: String,
     pub constant_type: Option<Type>,
     pub value: Expression,
-    pub public_access: bool, // pub
-    //pub visibility: Visibility
+    pub visibility: Visibility
 }
 
 #[allow(dead_code)]

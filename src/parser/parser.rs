@@ -7,6 +7,7 @@ use crate::tok::{Delimiters, Keywords, Operators, TokenType};
 
 use num_bigint::BigInt;
 use crate::parser::ast::Declaration::Variable;
+use crate::tok::TokenType::EOF;
 //////////////////////Debut///////////////////////////
 
 pub struct Parser {
@@ -160,7 +161,10 @@ impl Parser {
     fn parse_expression(&mut self) -> Result<Expression, ParserError> {
         println!("Début du parsing de l'expression");
         //self.parse_binary_expression(0)
-        self.parse_assignment()
+        //self.parse_assignment();
+
+        let left = self.parse_primary_expression()?;
+        Ok(left)
 
     }
 
@@ -540,12 +544,18 @@ impl Parser {
         println!("Type de la variable parsé : {:?}", variable_type);
 
         println!("Debut de la valeur de la variable");
-        let value = if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
-            self.parse_expression()?
-        } else {
-            return Err(ParserError::new(ExpectValue,self.current_position(),));
-        };
+        self.consume(TokenType::OPERATOR(Operators::EQUAL))?;
 
+        let value = self.parse_expression()?;
+
+        // let value = if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
+        //     self.parse_expression()?
+        // } else {
+        //     return Err(ParserError::new(ExpectValue,self.current_position(),));
+        // };
+
+        // self.consume_seperator();
+        println!("Valeur de la variable parsée : {:?}", value);
 
         Ok(ASTNode::Declaration(Declaration::Variable(VariableDeclaration{
             name,
@@ -557,9 +567,29 @@ impl Parser {
     }
 
 
-    fn parse_const_declaration(&mut self) -> Result<ASTNode, ParserError> {
+    pub fn parse_const_declaration(&mut self) -> Result<ASTNode, ParserError> {
         println!("Début du parsing de la déclaration de constante");
-        todo!()
+        let visibility = self.parse_visibility()?;
+        self.consume(TokenType::KEYWORD(Keywords::CONST))?;
+        let name = self.consume_identifier()?;
+        let variable_type = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
+            self.parse_type()?
+        } else {
+            Type::Infer
+        };
+        self.consume(TokenType::OPERATOR(Operators::EQUAL))?;
+        let value = self.parse_expression()?;
+        self.consume_seperator();
+
+        Ok(ASTNode::Declaration(Declaration::Constante(ConstDeclaration{
+            name,
+            constant_type: Some(variable_type),
+            value,
+            visibility,
+        })))
+
+
+
     }
 
     pub fn parse_function_declaration(&mut self) -> Result<ASTNode, ParserError> {
@@ -738,20 +768,45 @@ impl Parser {
     }
 
     fn peek_operator(&self) -> Option<Operator> {
-        match self.current_token()?.token_type {
-            TokenType::OPERATOR(Operators::PLUS) => Some(Operator::Addition),
-            TokenType::OPERATOR(Operators::MINUS) => Some(Operator::Substraction),
-            TokenType::OPERATOR(Operators::STAR) => Some(Operator::Multiplication),
-            TokenType::OPERATOR(Operators::SLASH) => Some(Operator::Division),
-            TokenType::OPERATOR(Operators::PERCENT) => Some(Operator::Modulo),
-            TokenType::OPERATOR(Operators::LESS) => Some(Operator::LessThan),
-            TokenType::OPERATOR(Operators::GREATER) => Some(Operator::GreaterThan),
-            TokenType::OPERATOR(Operators::LESSEQUAL) => Some(Operator::LesshanOrEqual),
-            TokenType::OPERATOR(Operators::GREATEREQUAL) => Some(Operator::GreaterThanOrEqual),
-            TokenType::OPERATOR(Operators::EQEQUAL) => Some(Operator::Equal),
-            TokenType::OPERATOR(Operators::NOTEQUAL) => Some(Operator::NotEqual),
-            TokenType::OPERATOR(Operators::AND) => Some(Operator::And),
-            TokenType::OPERATOR(Operators::OR) => Some(Operator::Or),
+        // let token = self.current_token()?;
+        // println!("Token: {:?}", token);
+        // match self.current_token()?.token_type {
+        //     TokenType::OPERATOR(Operators::PLUS) => Some(Operator::Addition),
+        //     TokenType::OPERATOR(Operators::MINUS) => Some(Operator::Substraction),
+        //     TokenType::OPERATOR(Operators::STAR) => Some(Operator::Multiplication),
+        //     TokenType::OPERATOR(Operators::SLASH) => Some(Operator::Division),
+        //     TokenType::OPERATOR(Operators::PERCENT) => Some(Operator::Modulo),
+        //     TokenType::OPERATOR(Operators::LESS) => Some(Operator::LessThan),
+        //     TokenType::OPERATOR(Operators::GREATER) => Some(Operator::GreaterThan),
+        //     TokenType::OPERATOR(Operators::LESSEQUAL) => Some(Operator::LesshanOrEqual),
+        //     TokenType::OPERATOR(Operators::GREATEREQUAL) => Some(Operator::GreaterThanOrEqual),
+        //     TokenType::OPERATOR(Operators::EQEQUAL) => Some(Operator::Equal),
+        //     TokenType::OPERATOR(Operators::NOTEQUAL) => Some(Operator::NotEqual),
+        //     TokenType::OPERATOR(Operators::AND) => Some(Operator::And),
+        //     TokenType::OPERATOR(Operators::OR) => Some(Operator::Or),
+        //     _ => None,
+        // }
+        let token = self.current_token()?;
+        println!("Token: {:?}", token);
+        match &token.token_type {
+            TokenType::OPERATOR(op) => {
+                match op {
+                    Operators::PLUS => Some(Operator::Addition),
+                    Operators::MINUS => Some(Operator::Substraction),
+                    Operators::STAR => Some(Operator::Multiplication),
+                    Operators::SLASH => Some(Operator::Division),
+                    Operators::PERCENT => Some(Operator::Modulo),
+                    Operators::LESS => Some(Operator::LessThan),
+                    Operators::GREATER => Some(Operator::GreaterThan),
+                    Operators::LESSEQUAL => Some(Operator::LesshanOrEqual),
+                    Operators::GREATEREQUAL => Some(Operator::GreaterThanOrEqual),
+                    Operators::EQEQUAL => Some(Operator::Equal),
+                    Operators::NOTEQUAL => Some(Operator::NotEqual),
+                    Operators::AND => Some(Operator::And),
+                    Operators::OR => Some(Operator::Or),
+                    _ => None,
+                }
+            }
             _ => None,
         }
 
@@ -889,6 +944,17 @@ impl Parser {
             }
 
             self.advance();
+        }
+    }
+
+    fn consume_seperator(&mut self)  {
+        match self.syntax_mode{
+            SyntaxMode::Indentation =>{
+                self.consume(TokenType::NEWLINE);
+            }
+            SyntaxMode::Braces =>{
+                self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON));
+            }
         }
     }
 
