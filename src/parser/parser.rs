@@ -282,20 +282,27 @@ impl Parser {
     fn parse_binary_expression(&mut self, min_precedence: u8) -> Result<Expression, ParserError> {
         println!("Début du parsing de l'expression binaire");
         let mut left = self.parse_unary_expression()?;
-        while let Some(op) = self.peek_operator() {
+        loop {
+            println!("Current position: {}", self.current);
+            let op = match self.peek_operator() {
+                Some(op) => op,
+                None => {
+                    println!("No operator found, breaking loop");
+                    break;
+                }
+            };
             let precedence = self.get_operator_precedence(&op);
-            println!("Opérateur trouvé : {:?}, précédence : {}", op, precedence);
+            println!("Operator found: {:?} with precedence {}", op, precedence);
             if precedence < min_precedence {
                 break;
             }
             self.advance(); // Consomme l'opérateur
-            let right = self.parse_binary_expression(precedence)?;
+            let right = self.parse_binary_expression(precedence )?;
             left = Expression::BinaryOperation(BinaryOperation {
                 left: Box::new(left),
                 operator: op,
                 right: Box::new(right),
             });
-
         }
         println!("Fin du parsing de l'expression binaire");
         Ok(left)
@@ -486,23 +493,25 @@ impl Parser {
 
     /// fonction pour parser les declarations
 
-    fn parse_declaration(&mut self) -> Result<ASTNode, ParserError> {
-        if self.match_token(&[TokenType::KEYWORD(Keywords::LET)]){
+    pub fn parse_declaration(&mut self) -> Result<ASTNode, ParserError> {
+
+        if self.check(&[TokenType::KEYWORD(Keywords::LET)]){
             self.parse_variable_declaration()
-        } else if self.match_token(&[TokenType::KEYWORD(Keywords::FN)]) {
+        } else if self.check(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::CONST)]) {
+            self.parse_const_declaration()
+        } else if self.check(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::FN)]) {
             self.parse_function_declaration()
-        } else if self.match_token(&[TokenType::KEYWORD(Keywords::STRUCT)]) {
+        } else if self.check(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::STRUCT)]) {
             self.parse_struct_declaration()
-        } else if self.match_token(&[TokenType::KEYWORD(Keywords::ENUM)]) {
+        } else if self.check(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::ENUM)]) {
             self.parse_enum_declaration()
-        } else if self.match_token(&[TokenType::KEYWORD(Keywords::TRAIT)]) {
+        } else if self.check(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::TRAIT)]) {
             self.parse_trait_declaration()
-        } else if self.match_token(&[TokenType::KEYWORD(Keywords::CLASS)]) {
+        } else if self.check(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::CLASS)]) {
             self.parse_class_declaration()
         } else{
             Err(ParserError::new(ExpectedDeclaration,self.current_position()))
         }
-
 
     }
 
@@ -531,6 +540,7 @@ impl Parser {
     pub fn parse_variable_declaration(&mut self) -> Result<ASTNode, ParserError> {
         println!("Début du parsing de la déclaration de variable");
         self.consume(TokenType::KEYWORD(Keywords::LET))?;
+
         let mutability = self.parse_mutability()?;
 
         let  name = self.consume_identifier()?;
@@ -548,11 +558,6 @@ impl Parser {
 
         let value = self.parse_expression()?;
 
-        // let value = if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
-        //     self.parse_expression()?
-        // } else {
-        //     return Err(ParserError::new(ExpectValue,self.current_position(),));
-        // };
 
         self.consume_seperator();
         println!("Valeur de la variable parsée : {:?}", value);
@@ -569,8 +574,11 @@ impl Parser {
 
     pub fn parse_const_declaration(&mut self) -> Result<ASTNode, ParserError> {
         println!("Début du parsing de la déclaration de constante");
+
         let visibility = self.parse_visibility()?;
+
         self.consume(TokenType::KEYWORD(Keywords::CONST))?;
+
         let name = self.consume_identifier()?;
         let variable_type = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
             self.parse_type()?
@@ -589,8 +597,6 @@ impl Parser {
             value,
             visibility,
         })))
-
-
 
     }
 
@@ -629,7 +635,21 @@ impl Parser {
     }
 
     fn parse_struct_declaration(&mut self) -> Result<ASTNode, ParserError> {
-        todo!()
+        println!("Début du parsing de la déclaration de structure");
+        let visibility = self.parse_visibility()?;
+        self.consume(TokenType::KEYWORD(Keywords::STRUCT))?;
+        let name = self.consume_identifier()?;
+        self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
+
+        let fields = self.parse_struct_fields()?;
+        self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+
+        Ok(ASTNode::Declaration(Declaration::Structure(StructDeclaration{
+            name,
+            fields,
+            visibility,
+        })))
+
     }
 
     fn parse_enum_declaration(&mut self) -> Result<ASTNode, ParserError> {
@@ -713,6 +733,44 @@ impl Parser {
         }
     }
 
+    ///fonction pour parser les champs de structure STRUCT
+
+    fn parse_struct_fields(&mut self) -> Result<Vec<Field>, ParserError> {
+        let mut fields = Vec::new();
+        if self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]){
+            return Ok(fields)
+        }
+        loop {
+            let field = self.parse_struct_field()?;
+            fields.push(field);
+            if self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]){
+                if self.syntax_mode == SyntaxMode::Indentation{
+                    self.consume(TokenType::NEWLINE)?;
+                }
+            } else if self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]){
+                break;
+            } else {
+                return Err(ParserError::new(ExpectColon,self.current_position()))
+            }
+        }
+        Ok(fields)
+
+    }
+    fn parse_struct_field(&mut self) -> Result<Field, ParserError> {
+        let visibility = self.parse_visibility()?;
+        let name = self.consume_identifier()?;
+        self.consume(TokenType::DELIMITER(Delimiters::COLON))?;
+        let field_type = self.parse_type()?;
+        Ok(Field{
+            name,
+            field_type,
+            visibility
+
+        })
+
+    }
+
+
     /// fonction pour le gestion de structure de controle
     fn parse_if_statement(&mut self) -> Result<ASTNode, ParserError> {
         todo!()
@@ -770,24 +828,6 @@ impl Parser {
     }
 
     fn peek_operator(&self) -> Option<Operator> {
-        // let token = self.current_token()?;
-        // println!("Token: {:?}", token);
-        // match self.current_token()?.token_type {
-        //     TokenType::OPERATOR(Operators::PLUS) => Some(Operator::Addition),
-        //     TokenType::OPERATOR(Operators::MINUS) => Some(Operator::Substraction),
-        //     TokenType::OPERATOR(Operators::STAR) => Some(Operator::Multiplication),
-        //     TokenType::OPERATOR(Operators::SLASH) => Some(Operator::Division),
-        //     TokenType::OPERATOR(Operators::PERCENT) => Some(Operator::Modulo),
-        //     TokenType::OPERATOR(Operators::LESS) => Some(Operator::LessThan),
-        //     TokenType::OPERATOR(Operators::GREATER) => Some(Operator::GreaterThan),
-        //     TokenType::OPERATOR(Operators::LESSEQUAL) => Some(Operator::LesshanOrEqual),
-        //     TokenType::OPERATOR(Operators::GREATEREQUAL) => Some(Operator::GreaterThanOrEqual),
-        //     TokenType::OPERATOR(Operators::EQEQUAL) => Some(Operator::Equal),
-        //     TokenType::OPERATOR(Operators::NOTEQUAL) => Some(Operator::NotEqual),
-        //     TokenType::OPERATOR(Operators::AND) => Some(Operator::And),
-        //     TokenType::OPERATOR(Operators::OR) => Some(Operator::Or),
-        //     _ => None,
-        // }
         let token = self.current_token()?;
         println!("Token: {:?}", token);
         match &token.token_type {
@@ -959,6 +999,16 @@ impl Parser {
                 let _ = self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON));
             }
         }
+    }
+
+    /// fonction pour verifier la sequence de tokens a utiliser plus tard
+    pub fn check_sequence(&self, tokens: &[TokenType]) -> bool {
+        for (i, token_type) in tokens.iter().enumerate() {
+            if self.current + i >= self.tokens.len() || self.tokens[self.current + i].token_type != *token_type {
+                return false;
+            }
+        }
+        true
     }
 
 

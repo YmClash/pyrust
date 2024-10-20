@@ -47,14 +47,14 @@ pub struct Braces{
 
 
 #[allow(dead_code)]
-#[derive(Debug,Clone)]
+#[derive(Debug,Clone,PartialEq)]
 pub enum Visibility {
     Private,     // default mode
     Public   // keyword PUB
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone,PartialEq)]
 pub enum Mutability {
     Immutable, // default mode
     Mutable,   // keyword MUT
@@ -188,8 +188,7 @@ pub struct ConstDeclaration {
 pub struct StructDeclaration {
     pub name: String,
     pub fields: Vec<Field>,
-    pub public_access: bool, // pub
-    //pub visibility: Visibility,
+    pub visibility: Visibility,
 
 }
 
@@ -264,8 +263,7 @@ pub struct MacroDeclaration {
 pub struct Field{
     pub name: String,
     pub field_type: Type,
-    pub mutable: bool, //  si neccessaire
-    //pub default_value, // si neccessaire
+    pub visibility: Visibility
 }
 
 #[allow(dead_code)]
