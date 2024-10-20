@@ -48,7 +48,7 @@ impl Parser {
         self.syntax_mode
     }
 
-    fn parse_block(&mut self, syntax: SyntaxMode) -> Result<ASTNode, ParserError> {
+    fn parse_block(&mut self) -> Result<ASTNode, ParserError> {
         match self.syntax_mode{
             SyntaxMode::Indentation => self.parse_indented_block(),
             SyntaxMode::Braces => self.parse_braced_block(),
@@ -84,7 +84,7 @@ impl Parser {
 
             // Consommer les newlines après chaque instruction
             while self.match_token(&[TokenType::NEWLINE]) {
-                self.advance();
+                //self.advance();
             }
         }
 
@@ -111,12 +111,12 @@ impl Parser {
 
             // Consommer le point-virgule si présent
             if self.match_token(&[TokenType::DELIMITER(Delimiters::SEMICOLON)]) {
-                self.advance();
+                //self.advance();
             }
 
             // Consommer les newlines
             while self.match_token(&[TokenType::NEWLINE]) {
-                self.advance();
+                //self.advance();
             }
         }
 
@@ -554,7 +554,7 @@ impl Parser {
         //     return Err(ParserError::new(ExpectValue,self.current_position(),));
         // };
 
-        // self.consume_seperator();
+        self.consume_seperator();
         println!("Valeur de la variable parsée : {:?}", value);
 
         Ok(ASTNode::Declaration(Declaration::Variable(VariableDeclaration{
@@ -580,6 +580,8 @@ impl Parser {
         self.consume(TokenType::OPERATOR(Operators::EQUAL))?;
         let value = self.parse_expression()?;
         self.consume_seperator();
+
+        println!("la valeur de la constante parse : {:?}", value);
 
         Ok(ASTNode::Declaration(Declaration::Constante(ConstDeclaration{
             name,
@@ -839,8 +841,9 @@ impl Parser {
         } else { None }
     }
 
-    fn is_at_end(&self) -> bool{
-        self.current >= self.tokens.len()
+    pub fn is_at_end(&self) -> bool{
+        self.current >= self.tokens.len() || self.current_token().map_or(false, |t| t.token_type == EOF)
+
     }
 
     ///  Fonctions de Vérification et de Correspondance des Tokens
@@ -950,10 +953,10 @@ impl Parser {
     fn consume_seperator(&mut self)  {
         match self.syntax_mode{
             SyntaxMode::Indentation =>{
-                self.consume(TokenType::NEWLINE);
+                let _ = self.consume(TokenType::NEWLINE);
             }
             SyntaxMode::Braces =>{
-                self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON));
+                let _ = self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON));
             }
         }
     }
