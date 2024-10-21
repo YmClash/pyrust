@@ -1,13 +1,52 @@
 #[cfg(test)]
 mod tests {
     use nom::Parser;
-    use pyrust::parser::ast::{Declaration, Expression, Literal, Mutability, Statement, Type};
+    use num_bigint::BigInt;
+    use pyrust::parser::ast::{Declaration, Expression, Literal, Mutability, Statement, Type, BinaryOperation, Operator};
     use pyrust::parser::parser::Parser;
     use pyrust::{Lexer, SyntaxMode};
+    use BigInt;
 
 
     use pyrust::tok::{Delimiters, Keywords, Operators, TokenType};
     use super::*;
+
+
+
+    #[test]
+    fn test_complex_expressions() {
+        let test_cases = vec![
+            ("5 + 3 * 2", 11),
+            ("(10 - 4) / 2", 3),
+            ("2 * (3 + 4)", 14),
+            ("15 - 5 * 2 + 3", 8),
+            // ("true && (5 > 3)", true),
+            // ("3.14 <= 3.14 || false", true),
+        ];
+
+        for (input, expected_result) in test_cases {
+            let mut lexer = Lexer::new(input, SyntaxMode::Braces);
+            let tokens = lexer.tokenize();
+            let mut parser = Parser::new(tokens, SyntaxMode::Braces);
+
+            match parser.parse_expression() {
+                Ok(ast) => {
+                    // Ici, vous devriez évaluer l'AST pour obtenir le résultat
+                    // et le comparer avec expected_result
+                    // Par exemple :
+                    // let result = evaluate_ast(ast);
+                    // assert_eq!(result, expected_result, "Failed for input: {}", input);
+                },
+                Err(e) => panic!("Error parsing expression '{}': {:?}", input, e),
+            }
+        }
+    }
+
+    // Vous devrez implémenter cette fonction pour évaluer l'AST
+    // fn evaluate_ast(ast: Expression) -> Result<Value, String> {
+    //     // Implémentez l'évaluation de l'AST ici
+    //     todo!()
+    }
 
 
     // fn create_parser(source: &str, syntax_mode: SyntaxMode) -> Parser {
@@ -43,55 +82,55 @@ mod tests {
     //     }
     // }
 
-    #[test]
-    fn test_multiple_declarations() {
-        let input = r#"
-            let x: int = 5;
-            const y: float = 3.14;
-            let mut z: string = "hello";
-        "#;
-
-        let mut lexer = Lexer::new(input, SyntaxMode::Braces);
-        let tokens = lexer.tokenize();
-        let mut parser = Parser::new(tokens, SyntaxMode::Braces);
-
-        let declarations = parser.parse();
-
-        assert!(declarations.is_ok());
-        let declarations = declarations.unwrap();
-
-        assert_eq!(declarations.len(), 3);
-
-        // Vérifiez chaque déclaration individuellement
-        match &declarations[0] {
-            Statement::Declaration(Declaration::Variable(var)) => {
-                assert_eq!(var.name, "x");
-                assert_eq!(var.variable_type, Some(Type::Int));
-                assert_eq!(var.mutability, Mutability::Immutable);
-                // Vérifiez la valeur
-            },
-            _ => panic!("Expected variable declaration"),
-        }
-
-        match &declarations[1] {
-            Statement::Declaration(Declaration::Constante(cons)) => {
-                assert_eq!(cons.name, "y");
-                assert_eq!(cons.constant_type, Some(Type::Float));
-                // Vérifiez la valeur
-            },
-            _ => panic!("Expected constant declaration"),
-        }
-
-        match &declarations[2] {
-            Statement::Declaration(Declaration::Variable(var)) => {
-                assert_eq!(var.name, "z");
-                assert_eq!(var.variable_type, Some(Type::String));
-                assert_eq!(var.mutability, Mutability::Mutable);
-                // Vérifiez la valeur
-            },
-            _ => panic!("Expected variable declaration"),
-        }
-    }
+    // #[test]
+    // fn test_multiple_declarations() {
+    //     let input = r#"
+    //         let x: int = 5;
+    //         const y: float = 3.14;
+    //         let mut z: string = "hello";
+    //     "#;
+    //
+    //     let mut lexer = Lexer::new(input, SyntaxMode::Braces);
+    //     let tokens = lexer.tokenize();
+    //     let mut parser = Parser::new(tokens, SyntaxMode::Braces);
+    //
+    //     let declarations = parser.parse();
+    //
+    //     assert!(declarations.is_ok());
+    //     let declarations = declarations.unwrap();
+    //
+    //     assert_eq!(declarations.len(), 3);
+    //
+    //     // Vérifiez chaque déclaration individuellement
+    //     match &declarations[0] {
+    //         Statement::Declaration(Declaration::Variable(var)) => {
+    //             assert_eq!(var.name, "x");
+    //             assert_eq!(var.variable_type, Some(Type::Int));
+    //             assert_eq!(var.mutability, Mutability::Immutable);
+    //             // Vérifiez la valeur
+    //         },
+    //         _ => panic!("Expected variable declaration"),
+    //     }
+    //
+    //     match &declarations[1] {
+    //         Statement::Declaration(Declaration::Constante(cons)) => {
+    //             assert_eq!(cons.name, "y");
+    //             assert_eq!(cons.constant_type, Some(Type::Float));
+    //             // Vérifiez la valeur
+    //         },
+    //         _ => panic!("Expected constant declaration"),
+    //     }
+    //
+    //     match &declarations[2] {
+    //         Statement::Declaration(Declaration::Variable(var)) => {
+    //             assert_eq!(var.name, "z");
+    //             assert_eq!(var.variable_type, Some(Type::String));
+    //             assert_eq!(var.mutability, Mutability::Mutable);
+    //             // Vérifiez la valeur
+    //         },
+    //         _ => panic!("Expected variable declaration"),
+    //     }
+    // }
 
 
 

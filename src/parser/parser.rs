@@ -10,6 +10,13 @@ use crate::parser::ast::Declaration::Variable;
 use crate::tok::TokenType::EOF;
 //////////////////////Debut///////////////////////////
 
+
+#[allow(dead_code)]
+enum Associativity {
+    Left,
+    Right,
+}
+
 pub struct Parser {
     tokens: Vec<Token>, // liste des tokens genere par le lexer
     current: usize,     // index du token actuel
@@ -158,14 +165,55 @@ impl Parser {
 
     /// fonction pour parser les expressions
 
-    fn parse_expression(&mut self) -> Result<Expression, ParserError> {
+
+
+    pub fn parse_expression(&mut self,precedence:u8) -> Result<Expression, ParserError> {
         println!("Début du parsing de l'expression");
         //self.parse_binary_expression(0)
         //self.parse_assignment();
+        let mut left = self.parse_primary_expression()?;
+        //let mut left = self.parse_unary_expression()?;
 
-        let left = self.parse_primary_expression()?;
+        while let Some (operator) = self.peek_operator(){
+            let operator_precedence = self.get_operator_precedence(&operator);
+            if operator_precedence < precedence {
+                break;
+            }
+
+            let mut associativty = self.get_operator_associtivity(&operator);
+            let next_precedence = if let Associativity::Left = associativty {
+                operator_precedence + 1
+            } else {
+                operator_precedence
+            };
+
+
+            self.advance();
+            let right = self.parse_expression(next_precedence)?;
+            left = Expression::BinaryOperation(BinaryOperation{
+                left: Box::new(left),
+                operator,
+                right: Box::new(right),
+            });
+
+        }
+
+        println!("Fin du parsing de l'expression binaire");
+
         Ok(left)
 
+    }
+
+    fn get_operator_associtivity(&self,operator: &Operator) -> Associativity {
+        match operator {
+            Operator::Multiplication | Operator::Division | Operator::Modulo => Associativity::Left,
+            Operator::Addition | Operator::Substraction => Associativity::Left,
+            Operator::LessThan | Operator::GreaterThan | Operator::LesshanOrEqual | Operator::GreaterThanOrEqual => Associativity::Left,
+            Operator::Equal | Operator::NotEqual => Associativity::Right,
+            Operator::And | Operator::Or => Associativity::Left,
+
+            _ => Associativity::Left,
+        }
     }
 
     fn parse_expression_statement(&mut self) -> Result<ASTNode, ParserError> {
@@ -250,7 +298,7 @@ impl Parser {
                 // }
                 TokenType::DELIMITER(Delimiters::LPAR) => {
                     self.advance();
-                    let expr = self.parse_expression()?;
+                    let expr = self.parse_expression(0)?;
                     if let Some(token) = self.current_token() {
                         if matches!(token.token_type, TokenType::DELIMITER(Delimiters::RPAR)) {
                             expr
@@ -556,7 +604,7 @@ impl Parser {
         println!("Debut de la valeur de la variable");
         self.consume(TokenType::OPERATOR(Operators::EQUAL))?;
 
-        let value = self.parse_expression()?;
+        let value = self.parse_expression(0)?;
 
 
         self.consume_seperator();
@@ -586,7 +634,7 @@ impl Parser {
             Type::Infer
         };
         self.consume(TokenType::OPERATOR(Operators::EQUAL))?;
-        let value = self.parse_expression()?;
+        let value = self.parse_expression(0)?;
         self.consume_seperator();
 
         println!("la valeur de la constante parse : {:?}", value);
@@ -790,7 +838,7 @@ impl Parser {
     fn parse_borrow(&mut self) -> Result<Expression, ParserError> {
         if self.match_token(&[TokenType::OPERATOR(Operators::AMPER)]){
             let mutable = self.match_token(&[TokenType::KEYWORD(Keywords::MUT)]);
-            let expression = self.parse_expression()?;
+            let expression = self.parse_expression(0)?;
             Ok(Expression::UnaryOperation(UnaryOperation{
                 operator: if mutable { UnaryOperator::ReferenceMutable} else {UnaryOperator::Reference},
                 operand: Box::new(expression),
