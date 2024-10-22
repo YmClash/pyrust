@@ -14,9 +14,12 @@ fn main() {
 
     let code_source = r#"let x = 5;const v = 100;pub const pi = 3.14;"#;
 
-    let binary_code = "5*5/2 ;";
+    let binary_code = "-5 ;";
 
-    let mut lexer = Lexer::new(binary_code, SyntaxMode::Braces);
+    let code_struct = "struct Point {x: int,y: int};pub struct ball {x: int,y: int};
+    ";
+
+    let mut lexer = Lexer::new(code_source, SyntaxMode::Braces);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
@@ -27,30 +30,30 @@ fn main() {
 
     let mut parser = Parser::new(tokens, SyntaxMode::Braces);
 
-    // while !parser.is_at_end() {
-    //     match parser.parse_declaration() {
-    //         Ok(ast) => {
-    //             println!("AST généré pour la déclaration :");
-    //             println!("{:#?}", ast);
-    //         }
-    //         Err(e) => {
-    //             println!("Erreur lors du parsing : {}", e);
-    //             break;
-    //         }
-    //     }
-    // }
-
-
-
-    match parser.parse_expression_statement() {
-        Ok(ast) => {
-            println!("AST généré pour l'expression :");
-            println!("{:#?}", ast);
-        }
-        Err(e) => {
-            println!("Erreur lors du parsing : {}", e);
+    while !parser.is_at_end() {
+        match parser.parse_declaration() {
+            Ok(ast) => {
+                println!("AST généré pour la déclaration :");
+                println!("{:#?}", ast);
+            }
+            Err(e) => {
+                println!("Erreur lors du parsing : {}", e);
+                break;
+            }
         }
     }
+
+
+
+    // match parser.parse_expression_statement() {
+    //     Ok(ast) => {
+    //         println!("AST généré pour l'expression :");
+    //         println!("{:#?}", ast);
+    //     }
+    //     Err(e) => {
+    //         println!("Erreur lors du parsing : {}", e);
+    //     }
+    // }
 
     println!("\n");
     println!("===================\n");

@@ -559,15 +559,15 @@ impl Parser {
             self.parse_variable_declaration()
         } else if self.check(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::CONST)]) {
             self.parse_const_declaration()
-        } else if self.check(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::FN)]) {
+        } else if self.check_sequence(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::FN)]) {
             self.parse_function_declaration()
-        } else if self.check(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::STRUCT)]) {
+        } else if self.check_sequence(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::STRUCT)]) {
             self.parse_struct_declaration()
-        } else if self.check(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::ENUM)]) {
+        } else if self.check_sequence(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::ENUM)]) {
             self.parse_enum_declaration()
-        } else if self.check(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::TRAIT)]) {
+        } else if self.check_sequence(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::TRAIT)]) {
             self.parse_trait_declaration()
-        } else if self.check(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::CLASS)]) {
+        } else if self.check_sequence(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::CLASS)]) {
             self.parse_class_declaration()
         } else{
             Err(ParserError::new(ExpectedDeclaration,self.current_position()))
@@ -694,7 +694,7 @@ impl Parser {
 
     }
 
-    fn parse_struct_declaration(&mut self) -> Result<ASTNode, ParserError> {
+    pub fn parse_struct_declaration(&mut self) -> Result<ASTNode, ParserError> {
         println!("Début du parsing de la déclaration de structure");
         let visibility = self.parse_visibility()?;
         self.consume(TokenType::KEYWORD(Keywords::STRUCT))?;
@@ -703,6 +703,9 @@ impl Parser {
 
         let fields = self.parse_struct_fields()?;
         self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+        if self.syntax_mode == SyntaxMode::Indentation{
+            self.consume(TokenType::NEWLINE)?;
+        }
 
         Ok(ASTNode::Declaration(Declaration::Structure(StructDeclaration{
             name,
@@ -796,6 +799,7 @@ impl Parser {
     ///fonction pour parser les champs de structure STRUCT
 
     fn parse_struct_fields(&mut self) -> Result<Vec<Field>, ParserError> {
+        println!("Début du parsing des champs de structure");
         let mut fields = Vec::new();
         if self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]){
             return Ok(fields)
@@ -813,14 +817,18 @@ impl Parser {
                 return Err(ParserError::new(ExpectColon,self.current_position()))
             }
         }
+        println!("Champs de structure parsés : {:?}", fields);
         Ok(fields)
 
     }
     fn parse_struct_field(&mut self) -> Result<Field, ParserError> {
         let visibility = self.parse_visibility()?;
+        println!("Visibilité du champ parsée : {:?}", visibility);
         let name = self.consume_identifier()?;
+        println!("Nom du champ parsé : {}", name);
         self.consume(TokenType::DELIMITER(Delimiters::COLON))?;
         let field_type = self.parse_type()?;
+        println!("Type du champ parsé : {:?}", field_type);
         Ok(Field{
             name,
             field_type,

@@ -1087,7 +1087,7 @@
 //                 TokenType::OPERATOR(Operators::SLASH) => Operator::Division,
 //                 _ => unreachable!(),
 //             };
-//             let right = self.parse_unary()?;
+//             let right = self.parse_factor()?;
 //             expression = Expression::BinaryOperation(BinaryOperation {
 //                 left: Box::new(expression),
 //                 operator,
