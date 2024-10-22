@@ -14,7 +14,7 @@ fn main() {
 
     let code_source = r#"let x = 5;const v = 100;pub const pi = 3.14;"#;
 
-    let binary_code = "(10 - 4) / 2;";
+    let binary_code = "5*5/2 ;";
 
     let mut lexer = Lexer::new(binary_code, SyntaxMode::Braces);
     let tokens = lexer.tokenize();
@@ -42,7 +42,7 @@ fn main() {
 
 
 
-    match parser.parse_expression(0) {
+    match parser.parse_expression_statement() {
         Ok(ast) => {
             println!("AST généré pour l'expression :");
             println!("{:#?}", ast);

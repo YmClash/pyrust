@@ -180,16 +180,15 @@ impl Parser {
                 break;
             }
 
-            let mut associativty = self.get_operator_associtivity(&operator);
-            let next_precedence = if let Associativity::Left = associativty {
-                operator_precedence + 1
-            } else {
-                operator_precedence
-            };
-
+            // let mut associativty = self.get_operator_associtivity(&operator);
+            // let next_precedence = if let Associativity::Left = associativty {
+            //     operator_precedence + 1
+            // } else {
+            //     operator_precedence
+            // };
 
             self.advance();
-            let right = self.parse_expression(next_precedence)?;
+            let right = self.parse_expression(precedence)?;
             left = Expression::BinaryOperation(BinaryOperation{
                 left: Box::new(left),
                 operator,
@@ -198,9 +197,19 @@ impl Parser {
 
         }
 
-        println!("Fin du parsing de l'expression binaire");
+        println!("Fin du parsing de l'expression ");
 
         Ok(left)
+
+    }
+
+    pub fn parse_expression_statement(&mut self) -> Result<ASTNode, ParserError> {
+        println!("Début du parsing de l'expression statement");
+        let expr = self.parse_expression(0);
+        println!("Expression parsée : {:?}", expr);
+        self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON))?;
+        println!("Separateur consommé");
+        Ok(ASTNode::Expression(expr?))
 
     }
 
@@ -216,12 +225,11 @@ impl Parser {
         }
     }
 
-    fn parse_expression_statement(&mut self) -> Result<ASTNode, ParserError> {
-        todo!()
-    }
-
     fn parse_unary_expression(&mut self) -> Result<Expression, ParserError> {
         println!("Début du parsing de l'expression unaire");
+        println!("Début du parsing de l'expression unaire, current_token = {:?}", self.current_token());
+
+
         if self.match_token(&[
             TokenType::OPERATOR(Operators::MINUS),
             TokenType::OPERATOR(Operators::EXCLAMATION),
@@ -234,12 +242,15 @@ impl Parser {
                 _ => unreachable!(),
             };
 
+            println!("Opérateur unaire parsé : {:?}", operator);
+
             let right = self.parse_unary_expression()?;
             return Ok(Expression::UnaryOperation(UnaryOperation {
                 operator,
                 operand: Box::new(right),
             }));
         }
+        println!("Aucun opérateur unaire trouvé, passage à l'expression pos");
         self.parse_postfix()
 
     }
@@ -301,6 +312,7 @@ impl Parser {
                     let expr = self.parse_expression(0)?;
                     if let Some(token) = self.current_token() {
                         if matches!(token.token_type, TokenType::DELIMITER(Delimiters::RPAR)) {
+                            self.advance();
                             expr
                         } else {
                             return Err(ParserError::new(
@@ -861,6 +873,7 @@ impl Parser {
     // fonction utilitaire pour aide au parsing
 
     fn is_operator(&self,token_type: &TokenType) -> bool {
+
         todo!()
     }
 
@@ -943,7 +956,6 @@ impl Parser {
         } else {
             false
         }
-
     }
 
     fn check(&self,expected:&[TokenType]) -> bool {
@@ -954,21 +966,34 @@ impl Parser {
         }
     }
 
-    pub fn consume(&mut self, expected: TokenType) -> Result<Token, ParserError> {
-        // on clone le token actuel pour ne pas avoir de problem avec le borrow checker
-        let current_token = self.current_token().cloned().ok_or_else(|| {
-            self.print_surrounding_tokens(); // Affiche les tokens autour de l'erreur
-            ParserError::new(UnexpectedEOF, self.current_position())
-        })?;
-
-        if current_token.token_type == expected {
-            self.advance(); // Avance au prochain token
-            Ok(current_token.clone()) // Renvoie le token consommé
+    fn consume(&mut self, expected: TokenType) -> Result<(), ParserError> {
+        if let Some(token) = self.current_token() {
+            if token.token_type == expected {
+                self.advance();
+                Ok(())
+            } else {
+                Err(ParserError::new(UnexpectedToken, self.current_position()))
+            }
         } else {
-            self.print_surrounding_tokens(); // Affiche les tokens autour de l'erreur
-            Err(ParserError::new(UnexpectedToken, self.current_position()))
+            Err(ParserError::new(UnexpectedEndOfInput, self.current_position()))
         }
     }
+
+    // pub fn consume(&mut self, expected: TokenType) -> Result<Token, ParserError> {
+    //     // on clone le token actuel pour ne pas avoir de problem avec le borrow checker
+    //     let current_token = self.current_token().cloned().ok_or_else(|| {
+    //         self.print_surrounding_tokens(); // Affiche les tokens autour de l'erreur
+    //         ParserError::new(UnexpectedEOF, self.current_position())
+    //     })?;
+    //
+    //     if current_token.token_type == expected {
+    //         self.advance(); // Avance au prochain token
+    //         Ok(current_token.clone()) // Renvoie le token consommé
+    //     } else {
+    //         self.print_surrounding_tokens(); // Affiche les tokens autour de l'erreur
+    //         Err(ParserError::new(UnexpectedToken, self.current_position()))
+    //     }
+    // }
 
     /// fonctontion  pour aider a comsume les tokens
 

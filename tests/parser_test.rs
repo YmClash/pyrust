@@ -40,7 +40,7 @@ mod tests {
                 Err(e) => panic!("Error parsing expression '{}': {:?}", input, e),
             }
         }
-    }
+
 
     // Vous devrez implémenter cette fonction pour évaluer l'AST
     // fn evaluate_ast(ast: Expression) -> Result<Value, String> {
