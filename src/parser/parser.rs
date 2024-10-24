@@ -554,25 +554,26 @@ impl Parser {
     /// fonction pour parser les declarations
 
     pub fn parse_declaration(&mut self) -> Result<ASTNode, ParserError> {
+        let visibility = self.parse_visibility()?;
 
-        if self.check(&[TokenType::KEYWORD(Keywords::LET)]){
+        if self.check(&[TokenType::KEYWORD(Keywords::LET)]) {
             self.parse_variable_declaration()
-        } else if self.check(&[TokenType::KEYWORD(Keywords::CONST)]) || self.check(&[TokenType::KEYWORD(Keywords::PUB)]) {
-            self.parse_const_declaration()
-        } else if self.check(&[TokenType::KEYWORD(Keywords::FN)]) || self.check(&[TokenType::KEYWORD(Keywords::PUB)]) {
-            self.parse_function_declaration()
-        } else if self.check(&[TokenType::KEYWORD(Keywords::STRUCT)]) || self.check(&[TokenType::KEYWORD(Keywords::PUB)]) {
-            self.parse_struct_declaration()
-        } else if self.check(&[TokenType::KEYWORD(Keywords::ENUM)]) || self.check(&[TokenType::KEYWORD(Keywords::PUB)]) {
-            self.parse_enum_declaration()
-        } else if self.check(&[TokenType::KEYWORD(Keywords::TRAIT)]) || self.check(&[TokenType::KEYWORD(Keywords::PUB)]) {
-            self.parse_trait_declaration()
-        } else if self.check(&[TokenType::KEYWORD(Keywords::CLASS)]) || self.check(&[TokenType::KEYWORD(Keywords::PUB)]) {
-            self.parse_class_declaration()
-        } else if self.check(&[TokenType::KEYWORD(Keywords::IMPL)]) || self.check(&[TokenType::KEYWORD(Keywords::PUB)]) {
+        } else if self.check(&[TokenType::KEYWORD(Keywords::CONST)]) {
+            self.parse_const_declaration(visibility)
+        } else if self.check(&[TokenType::KEYWORD(Keywords::FN)]) {
+            self.parse_function_declaration(visibility)
+        } else if self.check(&[TokenType::KEYWORD(Keywords::STRUCT)]) {
+            self.parse_struct_declaration(visibility)
+        } else if self.check(&[TokenType::KEYWORD(Keywords::ENUM)]) {
+            self.parse_enum_declaration(visibility)
+        } else if self.check(&[TokenType::KEYWORD(Keywords::TRAIT)]) {
+            self.parse_trait_declaration(visibility)
+        } else if self.check(&[TokenType::KEYWORD(Keywords::CLASS)]) {
+            self.parse_class_declaration(visibility)
+        } else if self.check(&[TokenType::KEYWORD(Keywords::IMPL)]) {
             self.parse_impl_declaration()
         } else {
-            Err(ParserError::new(ExpectedDeclaration,self.current_position()))
+            Err(ParserError::new(ExpectedDeclaration, self.current_position()))
         }
     }
 
@@ -634,19 +635,10 @@ impl Parser {
     }
 
 
-    pub fn parse_const_declaration(&mut self) -> Result<ASTNode, ParserError> {
+    pub fn parse_const_declaration(&mut self, visibility: Visibility) -> Result<ASTNode, ParserError> {
         println!("Début du parsing de la déclaration de constante");
 
-        // let visu = self.previous_token() {
-        //     if previous.token_type == TokenType::KEYWORD(Keywords::PUB) {
-        //         Visibility::Public
-        //     } else {
-        //         Visibility::Private
-        //     }
-        // };
-
-
-        let visibility = self.parse_visibility()?;
+        //let visibility = self.parse_visibility()?;
 
         self.consume(TokenType::KEYWORD(Keywords::CONST))?;
 
@@ -671,7 +663,7 @@ impl Parser {
 
     }
 
-    pub fn parse_function_declaration(&mut self) -> Result<ASTNode, ParserError> {
+    pub fn parse_function_declaration(&mut self, visibility: Visibility) -> Result<ASTNode, ParserError> {
         // println!("Début du parsing de la déclaration de fonction");
         //
         // let visibility = self.parse_visibility()?;
@@ -705,16 +697,17 @@ impl Parser {
 
     }
 
-    pub fn parse_struct_declaration(&mut self) -> Result<ASTNode, ParserError> {
+    pub fn parse_struct_declaration(&mut self, visibility: Visibility) -> Result<ASTNode, ParserError> {
         println!("Début du parsing de la déclaration de structure");
-        let visibility = self.parse_visibility()?;
+        //let visibility = self.parse_visibility()?;
 
         self.consume(TokenType::KEYWORD(Keywords::STRUCT))?;
         let name = self.consume_identifier()?;
+        println!("Nom de la structure parsé : {}", name);
         self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
 
         let fields = self.parse_struct_fields()?;
-        self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+        //self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
         if self.syntax_mode == SyntaxMode::Indentation{
             self.consume(TokenType::NEWLINE)?;
         }
@@ -728,11 +721,11 @@ impl Parser {
 
     }
 
-    fn parse_enum_declaration(&mut self) -> Result<ASTNode, ParserError> {
+    fn parse_enum_declaration(&mut self, visibility: Visibility) -> Result<ASTNode, ParserError> {
         todo!()
     }
 
-    fn parse_trait_declaration(&mut self) -> Result<ASTNode, ParserError> {
+    fn parse_trait_declaration(&mut self, visibility: Visibility) -> Result<ASTNode, ParserError> {
         todo!()
     }
 
@@ -740,7 +733,7 @@ impl Parser {
         todo!()
     }
 
-    fn parse_class_declaration(&mut self) -> Result<ASTNode, ParserError> {
+    fn parse_class_declaration(&mut self, visibility: Visibility) -> Result<ASTNode, ParserError> {
         todo!()
     }
 
@@ -999,12 +992,15 @@ impl Parser {
     fn consume(&mut self, expected: TokenType) -> Result<(), ParserError> {
         if let Some(token) = self.current_token() {
             if token.token_type == expected {
+                println!("Consommation du token {:?}", token);
                 self.advance();
                 Ok(())
             } else {
+                println!("PyRust:!!!!!!!!!!!!!!!!!!!! Erreur: token attendu {:?}, token actuel {:?}", expected, token);
                 Err(ParserError::new(UnexpectedToken, self.current_position()))
             }
         } else {
+            println!("PyRust:!!!!!!!!!!!!!!!!: Erreur: fin de l'entrée inattendue");
             Err(ParserError::new(UnexpectedEndOfInput, self.current_position()))
         }
     }
@@ -1099,9 +1095,11 @@ impl Parser {
     fn consume_seperator(&mut self)  {
         match self.syntax_mode{
             SyntaxMode::Indentation =>{
+                println!("Indentation Mode");
                 let _ = self.consume(TokenType::NEWLINE);
             }
             SyntaxMode::Braces =>{
+                println!("Braces Mode");
                 let _ = self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON));
             }
         }
