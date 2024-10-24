@@ -557,23 +557,25 @@ impl Parser {
 
         if self.check(&[TokenType::KEYWORD(Keywords::LET)]){
             self.parse_variable_declaration()
-        } else if self.check(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::CONST)]) {
+        } else if self.check(&[TokenType::KEYWORD(Keywords::CONST)]) || self.check(&[TokenType::KEYWORD(Keywords::PUB)]) {
             self.parse_const_declaration()
-        } else if self.check_sequence(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::FN)]) {
+        } else if self.check(&[TokenType::KEYWORD(Keywords::FN)]) || self.check(&[TokenType::KEYWORD(Keywords::PUB)]) {
             self.parse_function_declaration()
-        } else if self.check_sequence(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::STRUCT)]) {
+        } else if self.check(&[TokenType::KEYWORD(Keywords::STRUCT)]) || self.check(&[TokenType::KEYWORD(Keywords::PUB)]) {
             self.parse_struct_declaration()
-        } else if self.check_sequence(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::ENUM)]) {
+        } else if self.check(&[TokenType::KEYWORD(Keywords::ENUM)]) || self.check(&[TokenType::KEYWORD(Keywords::PUB)]) {
             self.parse_enum_declaration()
-        } else if self.check_sequence(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::TRAIT)]) {
+        } else if self.check(&[TokenType::KEYWORD(Keywords::TRAIT)]) || self.check(&[TokenType::KEYWORD(Keywords::PUB)]) {
             self.parse_trait_declaration()
-        } else if self.check_sequence(&[TokenType::KEYWORD(Keywords::PUB) , TokenType::KEYWORD(Keywords::CLASS)]) {
+        } else if self.check(&[TokenType::KEYWORD(Keywords::CLASS)]) || self.check(&[TokenType::KEYWORD(Keywords::PUB)]) {
             self.parse_class_declaration()
-        } else{
+        } else if self.check(&[TokenType::KEYWORD(Keywords::IMPL)]) || self.check(&[TokenType::KEYWORD(Keywords::PUB)]) {
+            self.parse_impl_declaration()
+        } else {
             Err(ParserError::new(ExpectedDeclaration,self.current_position()))
         }
-
     }
+
 
     // fn oo(&mut self) -> Result<ASTNode, ParserError> {
     //     let a: bool;
@@ -634,6 +636,15 @@ impl Parser {
 
     pub fn parse_const_declaration(&mut self) -> Result<ASTNode, ParserError> {
         println!("Début du parsing de la déclaration de constante");
+
+        // let visu = self.previous_token() {
+        //     if previous.token_type == TokenType::KEYWORD(Keywords::PUB) {
+        //         Visibility::Public
+        //     } else {
+        //         Visibility::Private
+        //     }
+        // };
+
 
         let visibility = self.parse_visibility()?;
 
@@ -697,6 +708,7 @@ impl Parser {
     pub fn parse_struct_declaration(&mut self) -> Result<ASTNode, ParserError> {
         println!("Début du parsing de la déclaration de structure");
         let visibility = self.parse_visibility()?;
+
         self.consume(TokenType::KEYWORD(Keywords::STRUCT))?;
         let name = self.consume_identifier()?;
         self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
@@ -706,6 +718,7 @@ impl Parser {
         if self.syntax_mode == SyntaxMode::Indentation{
             self.consume(TokenType::NEWLINE)?;
         }
+        self.consume_seperator();
 
         Ok(ASTNode::Declaration(Declaration::Structure(StructDeclaration{
             name,
@@ -720,6 +733,10 @@ impl Parser {
     }
 
     fn parse_trait_declaration(&mut self) -> Result<ASTNode, ParserError> {
+        todo!()
+    }
+
+    fn parse_impl_declaration(&mut self) -> Result<ASTNode, ParserError> {
         todo!()
     }
 
@@ -804,6 +821,10 @@ impl Parser {
         if self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]){
             return Ok(fields)
         }
+        // ici  on  gere au cas ou on as  une structure vide
+        if self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]){
+            return Ok(fields)
+        }
         loop {
             let field = self.parse_struct_field()?;
             fields.push(field);
@@ -811,6 +832,7 @@ impl Parser {
                 if self.syntax_mode == SyntaxMode::Indentation{
                     self.consume(TokenType::NEWLINE)?;
                 }
+               //continue;
             } else if self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]){
                 break;
             } else {
@@ -1055,19 +1077,22 @@ impl Parser {
 
     fn synchronize(&mut self) {
         self.advance();
+
         while !self.is_at_end() {
-            if self.previous_token().map_or(false, |t| t.token_type == TokenType::DELIMITER(Delimiters::SEMICOLON)) {
-                return;
+            if let Some(previous) = self.previous_token() {
+                if previous.token_type == TokenType::DELIMITER(Delimiters::SEMICOLON) {
+                    return;
+                }
             }
 
-            match self.peek_token().map(|t| &t.token_type) {
-                Some(TokenType::KEYWORD(Keywords::CLASS)) | Some(TokenType::KEYWORD(Keywords::FN)) | Some(TokenType::KEYWORD(Keywords::LET)) |
-                Some(TokenType::KEYWORD(Keywords::FOR)) | Some(TokenType::KEYWORD(Keywords::IF)) | Some(TokenType::KEYWORD(Keywords::WHILE)) |
-                Some(TokenType::KEYWORD(Keywords::RETURN)) => return,
-                _ => {}
+            match self.current_token().map(|t| &t.token_type) {
+                Some(TokenType::KEYWORD(Keywords::STRUCT)) |
+                Some(TokenType::KEYWORD(Keywords::FN)) |
+                Some(TokenType::KEYWORD(Keywords::LET)) |
+                Some(TokenType::KEYWORD(Keywords::CONST)) |
+                Some(TokenType::KEYWORD(Keywords::PUB)) => return,
+                _ => { self.advance(); }
             }
-
-            self.advance();
         }
     }
 

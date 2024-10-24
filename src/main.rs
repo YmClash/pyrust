@@ -12,14 +12,16 @@ fn main() {
     println!("Pyrust Compiler Test");
     println!("===================\n");
 
-    let code_source = r#"let x = 5;const v = 100;pub const pi = 3.14;"#;
+    let code_source = r#"let x = 5;const v = 100;"#;
 
     let binary_code = "-5 ;";
 
-    let code_struct = "struct Point {x: int,y: int};pub struct ball {x: int,y: int};
+    let code_const = "pub const x = 5;";
+
+    let code_struct = "struct Point {x: int,y: int}; struct ball {x: int,y: int; pub struct Rectangle { width: float, height: float };
     ";
 
-    let mut lexer = Lexer::new(code_source, SyntaxMode::Braces);
+    let mut lexer = Lexer::new(code_const, SyntaxMode::Braces);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
