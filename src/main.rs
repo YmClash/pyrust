@@ -16,11 +16,11 @@ fn main() {
 
     let binary_code = "-5 ;";
 
-    let code_const = "const numb = 5;pub const x:int = 5;struct Point {x: int,y: int};";
+    let code_const = "let x = 10;let mut y:int = 3;const numb = 5;pub const x:int = 5;struct Point {x: int,y: int};pub struct Point {height: int,width: int};";
 
-    let code_struct = "pub struct Point {x: int,y: int};";
+    let code_struct = "struct Point {x: int,y: int};pub struct Point {height: int,width: int};";
 
-    let mut lexer = Lexer::new(code_struct, SyntaxMode::Braces);
+    let mut lexer = Lexer::new(code_const, SyntaxMode::Braces);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
