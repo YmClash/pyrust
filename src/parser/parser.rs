@@ -699,7 +699,7 @@ impl Parser {
 
     pub fn parse_struct_declaration(&mut self, visibility: Visibility) -> Result<ASTNode, ParserError> {
         println!("Début du parsing de la déclaration de structure");
-        //let visibility = self.parse_visibility()?;
+
 
         self.consume(TokenType::KEYWORD(Keywords::STRUCT))?;
         let name = self.consume_identifier()?;
@@ -707,7 +707,7 @@ impl Parser {
         self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
 
         let fields = self.parse_struct_fields()?;
-        //self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+        self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
         if self.syntax_mode == SyntaxMode::Indentation{
             self.consume(TokenType::NEWLINE)?;
         }

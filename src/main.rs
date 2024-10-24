@@ -8,6 +8,14 @@ use pyrust::lexer::lex::SyntaxMode;
 use pyrust::parser::parser::Parser;
 use pyrust::parser::ast::{ASTNode, Declaration, VariableDeclaration, FunctionDeclaration, ConstDeclaration,Expression,Literal};
 
+
+fn mode(syntax_mode: SyntaxMode){
+    match syntax_mode {
+        SyntaxMode::Braces => println!("Braces"),
+        SyntaxMode::Indentation => println!("Indentation"),
+    }
+}
+
 fn main() {
     println!("Pyrust Compiler Test");
     println!("===================\n");
@@ -16,11 +24,15 @@ fn main() {
 
     let binary_code = "-5 ;";
 
-    let code_const = "let x = 10;let mut y:int = 3;const numb = 5;pub const x:int = 5;struct Point {x: int,y: int};pub struct Point {height: int,width: int};";
+    let code_decl_braces = "let x = 10;let mut y:int = 3;const numb = 5;pub const x:int = 5;struct Point {x: int,y: int};pub struct Point {height: int,width: int};";
+    let code_decl_indentation = "let x = 10\nlet mut y:int = 3\nconst numb = 5\npub const x:int = 5\nstruct Point {x: int,y: int}\npub struct Point {height: int,width: int};";
+
+    let solo_decl = "let x = 10\nlet mut y:int = 3\nconst numb = 5\npub const x:int = 5\nstruct Point {x: int,y: int}}\n";
+
 
     let code_struct = "struct Point {x: int,y: int};pub struct Point {height: int,width: int};";
 
-    let mut lexer = Lexer::new(code_const, SyntaxMode::Braces);
+    let mut lexer = Lexer::new(code_decl_indentation, SyntaxMode::Indentation);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
@@ -29,7 +41,7 @@ fn main() {
     }
     println!("\n");
 
-    let mut parser = Parser::new(tokens, SyntaxMode::Braces);
+    let mut parser = Parser::new(tokens, SyntaxMode::Indentation);
 
     while !parser.is_at_end() {
         match parser.parse_declaration() {
