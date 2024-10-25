@@ -30,9 +30,9 @@ fn main() {
     let solo_decl = "let x = 10\nlet mut y:int = 3\nconst numb = 5\npub const x:int = 5\nstruct Point {x: int,y: int}}\n";
 
 
-    let code_struct = "struct Point {x: int,y: int};pub struct Point {height: int,width: int};";
+    let code_struct = "struct Point {pub x: int,pub y: int};pub struct Point {height: int,width: int};";
 
-    let code_enum = "enum Color {Red,Green,Blue};pub enum Color {Red,Green,Blue};";
+    let code_enum = "enum Color {x:int,y:float,z:str};";
 
     let mut lexer = Lexer::new(code_enum, SyntaxMode::Braces);
     let tokens = lexer.tokenize();
