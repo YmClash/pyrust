@@ -32,7 +32,9 @@ fn main() {
 
     let code_struct = "struct Point {x: int,y: int};pub struct Point {height: int,width: int};";
 
-    let mut lexer = Lexer::new(code_decl_indentation, SyntaxMode::Indentation);
+    let code_enum = "enum Color {Red,Green,Blue};pub enum Color {Red,Green,Blue};";
+
+    let mut lexer = Lexer::new(code_enum, SyntaxMode::Braces);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
@@ -41,7 +43,7 @@ fn main() {
     }
     println!("\n");
 
-    let mut parser = Parser::new(tokens, SyntaxMode::Indentation);
+    let mut parser = Parser::new(tokens, SyntaxMode::Braces);
 
     while !parser.is_at_end() {
         match parser.parse_declaration() {

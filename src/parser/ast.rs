@@ -224,7 +224,7 @@ pub struct Constructor { // Keyword  pour  le constructeur serai def  et le meth
 #[derive(Debug, Clone)]
 pub struct EnumDeclaration {
     pub name: String,
-    pub variants: Vec<EnumVariant>,
+    pub variantes: Vec<EnumVariant>,
     pub visibility: Visibility,
 }
 
@@ -270,7 +270,8 @@ pub struct Field{
 #[derive(Debug, Clone)]
 pub struct EnumVariant{
     pub name: String,
-    pub associated_type: Option<Vec<Type>>, // None si pas de type associé
+    pub variante_type: Type, // None si pas de type associé
+    pub visibility: Visibility,
 }
 
 #[allow(dead_code)]

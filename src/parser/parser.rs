@@ -1,6 +1,6 @@
 #[allow(dead_code)]
 use crate::lexer::lex::{SyntaxMode, Token};
-use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, ClassDeclaration, ConstDeclaration, Constructor, Declaration, EnumDeclaration, Expression, Field, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, Literal, MemberAccess, Mutability, Operator, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility};
+use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, ClassDeclaration, ConstDeclaration, Constructor, Declaration, EnumDeclaration, EnumVariant, Expression, Field, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, Literal, MemberAccess, Mutability, Operator, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility};
 use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget, ExpectedDeclaration};
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::tok::{Delimiters, Keywords, Operators, TokenType};
@@ -722,7 +722,24 @@ impl Parser {
     }
 
     fn parse_enum_declaration(&mut self, visibility: Visibility) -> Result<ASTNode, ParserError> {
-        todo!()
+        println!("Debut du parsing de la déclaration d'énumération");
+        self.consume(TokenType::KEYWORD(Keywords::ENUM))?;
+        let name = self.consume_identifier()?;
+        println!("Nom de l'énumération parsé : {}", name);
+        self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
+        let variantes = self.parse_enum_variantes()?;
+        self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+        if self.syntax_mode == SyntaxMode::Indentation{
+            self.consume(TokenType::NEWLINE)?;
+        }
+        self.consume_seperator();
+        println!("Variantes d'énumération parsées");
+        Ok(ASTNode::Declaration(Declaration::Enum(EnumDeclaration{
+            name,
+            variantes,
+            visibility,
+        })))
+
     }
 
     fn parse_trait_declaration(&mut self, visibility: Visibility) -> Result<ASTNode, ParserError> {
@@ -849,6 +866,48 @@ impl Parser {
             field_type,
             visibility
 
+        })
+
+    }
+
+    fn parse_enum_variantes(&mut self) -> Result<Vec<EnumVariant>,ParserError>{
+        println!("Début du parsing des variantes d'énumération");
+        let mut variantes = Vec::new();
+        if self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]){
+            return Ok(variantes)
+        }
+        if self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]){
+            return Ok(variantes)
+        }
+        loop{
+            let variante = self.parse_enum_variant_fields()?;
+            variantes.push(variante);
+            if self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]){
+                if self.syntax_mode == SyntaxMode::Indentation{
+                    self.consume(TokenType::NEWLINE)?;
+                }
+            } else if self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]){
+                break;
+            } else {
+                return Err(ParserError::new(ExpectColon,self.current_position()))
+            }
+        }
+        println!("Variantes d'énumération parsées : {:?}", variantes);
+        Ok(variantes)
+    }
+
+    fn parse_enum_variant_fields(&mut self) ->  Result<EnumVariant,ParserError>{
+        let visibility = self.parse_visibility()?;
+        println!("Visibilité de la variante parsée : {:?}", visibility);
+        let name = self.consume_identifier()?;
+        println!("Nom de la variante parsée : {}", name);
+        self.consume(TokenType::DELIMITER(Delimiters::COLON))?;
+        let variante_type = self.parse_type()?;
+        println!("Type de la variante parsée : {:?}", variante_type);
+        Ok(EnumVariant{
+            name,
+            variante_type,
+            visibility
         })
 
     }
