@@ -32,7 +32,7 @@ fn main() {
 
     let code_struct = "struct Point {pub x: int,pub y: int};pub struct Point {height: int,width: int};";
 
-    let code_enum = "enum Color {x:int,y:float,z:str};";
+    let code_enum = "enum Color {pub x:int,y:float, pub z:str};";
 
     let mut lexer = Lexer::new(code_enum, SyntaxMode::Braces);
     let tokens = lexer.tokenize();
