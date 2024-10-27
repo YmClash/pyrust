@@ -708,9 +708,9 @@ impl Parser {
 
         let fields = self.parse_struct_fields()?;
         self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
-        if self.syntax_mode == SyntaxMode::Indentation{
-            self.consume(TokenType::NEWLINE)?;
-        }
+        // if self.syntax_mode == SyntaxMode::Indentation{
+        //     self.consume(TokenType::NEWLINE)?;
+        // }
         self.consume_seperator();
 
         Ok(ASTNode::Declaration(Declaration::Structure(StructDeclaration{
@@ -729,9 +729,9 @@ impl Parser {
         self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
         let variantes = self.parse_enum_variantes()?;
         self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
-        if self.syntax_mode == SyntaxMode::Indentation{
-            self.consume(TokenType::NEWLINE)?;
-        }
+        // if self.syntax_mode == SyntaxMode::Indentation{
+        //     self.consume(TokenType::NEWLINE)?;
+        // }
         self.consume_seperator();
         println!("Variantes d'énumération parsées");
         Ok(ASTNode::Declaration(Declaration::Enum(EnumDeclaration{
@@ -840,11 +840,14 @@ impl Parser {
             let field = self.parse_struct_field()?;
             fields.push(field);
             if self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]){
-
-                if self.syntax_mode == SyntaxMode::Indentation{
-                    self.consume(TokenType::NEWLINE)?;
-                }
+                // ne pas exiger de NEWLINE après la virgule en mode indentation
+                let _ = self.match_token(&[TokenType::NEWLINE]);
+                // if self.syntax_mode == SyntaxMode::Indentation{
+                //     self.consume(TokenType::NEWLINE)?;
+                // }
                //continue;
+            } else if self.match_token(&[TokenType::NEWLINE])  && self.syntax_mode==SyntaxMode::Indentation{
+
             } else if self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]){
                 break;
             } else {
@@ -885,10 +888,12 @@ impl Parser {
             let variante = self.parse_enum_variant_fields()?;
             variantes.push(variante);
             if self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]){
-                if self.syntax_mode == SyntaxMode::Indentation{
-                    self.consume(TokenType::NEWLINE)?;
-                }
-            } else if self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]){
+
+                let _ = self.match_token(&[TokenType::NEWLINE]);
+
+            }else if self.match_token(&[TokenType::NEWLINE]) && self.syntax_mode == SyntaxMode::Indentation{
+
+            }else if self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]){
                 break;
             } else {
                 return Err(ParserError::new(ExpectColon,self.current_position()))
@@ -1027,7 +1032,7 @@ impl Parser {
     }
 
     pub fn is_at_end(&self) -> bool{
-        self.current >= self.tokens.len() || self.current_token().map_or(false, |t| t.token_type == EOF)
+        self.current >= self.tokens.len() //|| self.current_token().map_or(true, |t| t.token_type == EOF)
 
     }
 
@@ -1054,6 +1059,7 @@ impl Parser {
         if let Some(token) = self.current_token() {
             if token.token_type == expected {
                 println!("Consommation du token {:?}", token);
+                //self.print_surrounding_tokens();
                 self.advance();
                 Ok(())
             } else {
@@ -1061,6 +1067,7 @@ impl Parser {
                 Err(ParserError::new(UnexpectedToken, self.current_position()))
             }
         } else {
+            //self.print_surrounding_tokens();
             println!("PyRust:!!!!!!!!!!!!!!!!: Erreur: fin de l'entrée inattendue");
             Err(ParserError::new(UnexpectedEndOfInput, self.current_position()))
         }
@@ -1157,7 +1164,10 @@ impl Parser {
         match self.syntax_mode{
             SyntaxMode::Indentation =>{
                 println!("Indentation Mode");
-                let _ = self.consume(TokenType::NEWLINE);
+                let _ = self.consume(TokenType::NEWLINE) ;
+                if self.check(&[TokenType::EOF]){
+                    let _ = self.consume(TokenType::EOF);
+                }
             }
             SyntaxMode::Braces =>{
                 println!("Braces Mode");
