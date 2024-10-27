@@ -612,6 +612,9 @@ impl ASTNode{
 
 
 
+
+
+
 impl Block {
     pub fn is_indentation_mode(&self) -> bool{
         matches!(self.syntax_mode, BlockSyntax::Indentation)

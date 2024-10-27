@@ -16,25 +16,37 @@ fn mode(syntax_mode: SyntaxMode){
     }
 }
 
+
+
+
 fn main() {
+
     println!("Pyrust Compiler Test");
     println!("===================\n");
+    println!("Mode de syntaxe :Brace\n");
 
     let code_source = r#"let x = 5;const v = 100;"#;
 
     let binary_code = "-5 ;";
 
-    let code_decl_braces = "let x = 10;let mut y:int = 3;const numb = 5;pub const x:int = 5;struct Point {x: int,y: int};pub struct Point {height: int,width: int};";
+    let code_decl_braces = "let x = 10;let mut y:int = 3;const numb = 5;pub const x:int = 5;pub struct Point {x: int,y: int}};pub struct Point {height: int,width: int}};";
     let code_decl_indentation = "let x = 10\nlet mut y:int = 3\nconst numb = 5\npub const x:int = 5\nstruct Point {x: int,y: int}\npub struct Point {height: int,width: int};";
 
     let solo_decl = "let x = 10\nlet mut y:int = 3\nconst numb = 5\npub const x:int = 5\nstruct Point {x: int,y: int}}\n";
 
 
-    let code_struct = "struct Point {pub x: int,pub y: int};pub struct Point {height: int,width: int};";
+    let code_struct = "struct Point {pub x: int,pub y: int};";
 
-    let code_enum = "enum Color {pub x:int,y:float, pub z:str};";
+    let code_struct_inden = "struct Point {x: int,\n y: int}\n";
 
-    let mut lexer = Lexer::new(code_enum, SyntaxMode::Braces);
+    //\npub struct Point {height: int,width: int}
+
+
+    let code_enum = "pub enum Color {pub x:int,y:float, z:str};";
+
+
+
+    let mut lexer = Lexer::new(code_struct_inden, SyntaxMode::Indentation);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
@@ -43,7 +55,7 @@ fn main() {
     }
     println!("\n");
 
-    let mut parser = Parser::new(tokens, SyntaxMode::Braces);
+    let mut parser = Parser::new(tokens, SyntaxMode::Indentation);
 
     while !parser.is_at_end() {
         match parser.parse_declaration() {
@@ -75,6 +87,7 @@ fn main() {
     println!("Pyrust Compiler By YmC");
     println!("===================\n");
     println!("\n");
+
 
 }
 

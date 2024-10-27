@@ -828,6 +828,7 @@ impl Parser {
     fn parse_struct_fields(&mut self) -> Result<Vec<Field>, ParserError> {
         println!("Début du parsing des champs de structure");
         let mut fields = Vec::new();
+
         if self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]){
             return Ok(fields)
         }
@@ -839,11 +840,12 @@ impl Parser {
             let field = self.parse_struct_field()?;
             fields.push(field);
             if self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]){
+
                 if self.syntax_mode == SyntaxMode::Indentation{
                     self.consume(TokenType::NEWLINE)?;
                 }
                //continue;
-            } else if self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]){
+            } else if self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]){
                 break;
             } else {
                 return Err(ParserError::new(ExpectColon,self.current_position()))
@@ -886,7 +888,7 @@ impl Parser {
                 if self.syntax_mode == SyntaxMode::Indentation{
                     self.consume(TokenType::NEWLINE)?;
                 }
-            } else if self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]){
+            } else if self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]){
                 break;
             } else {
                 return Err(ParserError::new(ExpectColon,self.current_position()))
@@ -1173,6 +1175,26 @@ impl Parser {
         }
         true
     }
+
+    // pub fn parse_declarations(&mut self) -> Result<Vec<ASTNode>, ParserError> {
+    //     let mut declarations = Vec::new();
+    //
+    //     while !self.is_at_end() {
+    //         match self.parse_declaration() {
+    //             Ok(decl) => {
+    //                 declarations.push(decl);
+    //             },
+    //             Err(e) => {
+    //                 println!("Erreur lors du parsing : {:?}", e);
+    //                 self.synchronize();
+    //                 continue;
+    //             }
+    //         }
+    //     }
+    //
+    //     Ok(declarations)
+    // }
+
 
 
 
