@@ -13,8 +13,8 @@
 - [x] Déclarations de variables
 - [x] Déclarations de constantes
 - [ ] Déclarations de fonctions
-- [ ] Déclarations de structures
-- [ ] Déclarations d'énumérations
+- [x] Déclarations de structures
+- [x] Déclarations d'énumérations
 - [ ] Déclarations de traits
 - [ ] Déclarations de classes
 

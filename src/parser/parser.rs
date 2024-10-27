@@ -665,12 +665,9 @@ impl Parser {
 
     pub fn parse_function_declaration(&mut self, visibility: Visibility) -> Result<ASTNode, ParserError> {
         // println!("Début du parsing de la déclaration de fonction");
-        //
-        // let visibility = self.parse_visibility()?;
-        //
         // self.consume(TokenType::KEYWORD(Keywords::FN))?;
-        //
         // let name = self.consume_identifier()?;
+        // println!("Nom de la fonction parsé : {}", name);
         //
         // self.consume(TokenType::DELIMITER(Delimiters::LPAR))?;
         //
@@ -684,7 +681,7 @@ impl Parser {
         //     Type::Infer // Ou un type par défaut
         // };
         //
-        // let body = self.parse_block(self.get_syntax_mode())?;
+        // let body = self.parse_block()?;
         //
         // Ok(ASTNode::Declaration(Declaration::Function(FunctionDeclaration {
         //     name,
@@ -693,6 +690,7 @@ impl Parser {
         //     body,
         //     visibility,
         // })))
+
         todo!()
 
     }
@@ -708,9 +706,7 @@ impl Parser {
 
         let fields = self.parse_struct_fields()?;
         self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
-        // if self.syntax_mode == SyntaxMode::Indentation{
-        //     self.consume(TokenType::NEWLINE)?;
-        // }
+
         self.consume_seperator();
 
         Ok(ASTNode::Declaration(Declaration::Structure(StructDeclaration{
@@ -729,10 +725,9 @@ impl Parser {
         self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
         let variantes = self.parse_enum_variantes()?;
         self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
-        // if self.syntax_mode == SyntaxMode::Indentation{
-        //     self.consume(TokenType::NEWLINE)?;
-        // }
+
         self.consume_seperator();
+
         println!("Variantes d'énumération parsées");
         Ok(ASTNode::Declaration(Declaration::Enum(EnumDeclaration{
             name,
@@ -743,6 +738,11 @@ impl Parser {
     }
 
     fn parse_trait_declaration(&mut self, visibility: Visibility) -> Result<ASTNode, ParserError> {
+        println!("Début du parsing de la déclaration de trait");
+        self.consume(TokenType::KEYWORD(Keywords::TRAIT))?;
+        let name = self.consume_identifier()?;
+        println!("Nom du trait parsé : {}", name);
+
         todo!()
     }
 
@@ -1032,7 +1032,7 @@ impl Parser {
     }
 
     pub fn is_at_end(&self) -> bool{
-        self.current >= self.tokens.len() //|| self.current_token().map_or(true, |t| t.token_type == EOF)
+        self.current >= self.tokens.len() || self.current_token().map_or(true, |t| t.token_type == EOF)
 
     }
 
