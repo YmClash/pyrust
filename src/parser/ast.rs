@@ -168,9 +168,9 @@ pub struct VariableDeclaration {
 #[derive(Debug, Clone)]
 pub struct FunctionDeclaration {
     pub name: String,
-    pub parameters: Vec<(String, Type)>, // (nom, type)
+    pub parameters: Vec<Parameter>, // (nom, type)
     pub return_type: Option<Type>,
-    pub body: Block,
+    pub body: Vec<ASTNode>,
     pub visibility: Visibility
     //pub annotations: Vec<Annotation>,
 }
@@ -201,6 +201,15 @@ pub struct ClassDeclaration {
     pub constructor: Option<Constructor>,
     pub methods: Vec<FunctionDeclaration>,
     pub visibility: Visibility,
+}
+
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct Parameter{
+    pub name: String,
+    pub parameter_type: Type,
+
 }
 
 #[allow(dead_code)]

@@ -1,6 +1,6 @@
 #[allow(dead_code)]
 use crate::lexer::lex::{SyntaxMode, Token};
-use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, ClassDeclaration, ConstDeclaration, Constructor, Declaration, EnumDeclaration, EnumVariant, Expression, Field, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, Literal, MemberAccess, Mutability, Operator, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility};
+use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, ClassDeclaration, ConstDeclaration, Constructor, Declaration, EnumDeclaration, EnumVariant, Expression, Field, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, Literal, MemberAccess, Mutability, Operator, Parameter, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility};
 use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget, ExpectedDeclaration};
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::tok::{Delimiters, Keywords, Operators, TokenType};
@@ -515,37 +515,64 @@ impl Parser {
         todo!()
     }
 
-    fn parse_function_parameters(&mut self) -> Result<Vec<(String, Type)>, ParserError> {
+    fn parse_function_parameters(&mut self) -> Result<Vec<Parameter>, ParserError> {
         println!("Début du parsing des paramètres de fonction");
-        let mut parameters = Vec::new();
+        let parameters = Vec::new();
+
+        if self.check(&[TokenType::DELIMITER(Delimiters::RPAR)]){
+            // pas de paramètres
+            return Ok(parameters);
+        }
 
         if !self.match_token(&[TokenType::DELIMITER(Delimiters::RPAR)]) {
             loop {
                 //let name = self.consume_parameter_name()?;
                 let name = self.consume_identifier()?;
                 println!("Nom du paramètre parsé : {}", name);
+                self.consume(TokenType::DELIMITER(Delimiters::COLON))?;
+                let param_type = self.parse_type()?;
+                println!("Type du paramètre parsé : {:?}", param_type);
 
-                if name == "self" {
-                    // Si le paramètre est 'self', on n'attend pas de type
-                    parameters.push((name, Type::Custom("Self".to_string())));
-                } else {
-                    self.consume(TokenType::DELIMITER(Delimiters::COLON))?;
-
-                    let param_type = self.parse_type()?;
-                    println!("Type du paramètre parsé : {:?}", param_type);
-                    parameters.push((name, param_type));
-                }
                 if self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]) {
-                    self.consume(TokenType::DELIMITER(Delimiters::COMMA))?;
-                } else {
+                    continue;
+                } else if self.check(&[TokenType::DELIMITER(Delimiters::RPAR)]) {
                     break;
+                }else {
+                    println!("Erreur lors du parsing des paramètres, token actuel : {:?}", self.current_token());
+                    return Err(ParserError::new(ExpectedParameterName, self.current_position()));
                 }
             }
-        } else {
-
         }
-        //println!("Paramètres parsés : {:?}", parameters);
+        println!("Paramètres parsés : {:?}", parameters);
         Ok(parameters)
+    }
+
+    fn parse_function_body(&mut self) -> Result<Vec<ASTNode>, ParserError> {
+        let mut body = Vec::new();
+
+        match self.syntax_mode {
+            SyntaxMode::Braces => {
+                self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
+                while !self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) {
+                    let statement = self.parse_statement()?;
+                    body.push(statement);
+                }
+                self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+            }
+            SyntaxMode::Indentation => {
+                // Consommer le NEWLINE initial
+                self.consume(TokenType::NEWLINE)?;
+                while !self.check(&[TokenType::EOF]) {
+                    if self.check(&[TokenType::DEDENT]) {
+                        break;
+                    }
+                    let statement = self.parse_statement()?;
+                    body.push(statement);
+                }
+            }
+        }
+
+        Ok(body)
     }
 
 
@@ -664,35 +691,34 @@ impl Parser {
     }
 
     pub fn parse_function_declaration(&mut self, visibility: Visibility) -> Result<ASTNode, ParserError> {
-        // println!("Début du parsing de la déclaration de fonction");
-        // self.consume(TokenType::KEYWORD(Keywords::FN))?;
-        // let name = self.consume_identifier()?;
-        // println!("Nom de la fonction parsé : {}", name);
-        //
-        // self.consume(TokenType::DELIMITER(Delimiters::LPAR))?;
-        //
-        // let parameters = self.parse_function_parameters()?;
-        //
-        // self.consume(TokenType::DELIMITER(Delimiters::RPAR))?;
-        //
-        // let return_type = if self.match_token(&[TokenType::OPERATOR(Operators::RARROW)]) {
-        //     self.parse_type()?
-        // } else {
-        //     Type::Infer // Ou un type par défaut
-        // };
-        //
-        // let body = self.parse_block()?;
-        //
-        // Ok(ASTNode::Declaration(Declaration::Function(FunctionDeclaration {
-        //     name,
-        //     parameters,
-        //     return_type: Some(return_type),
-        //     body,
-        //     visibility,
-        // })))
+        println!("Début du parsing de la déclaration de fonction");
+        self.consume(TokenType::KEYWORD(Keywords::FN))?;
+        let name = self.consume_identifier()?;
+        println!("Nom de la fonction parsé : {}", name);
 
-        todo!()
+        self.consume(TokenType::DELIMITER(Delimiters::LPAR))?;
 
+        let parameters = self.parse_function_parameters()?;
+
+        self.consume(TokenType::DELIMITER(Delimiters::RPAR))?;
+
+        let return_type = if self.match_token(&[TokenType::OPERATOR(Operators::RARROW)]) {
+            self.parse_type()?
+        } else {
+            Type::Infer // Ou un type par défaut
+        };
+
+        let body = self.parse_function_body()?;
+
+        self.consume_seperator();
+
+        Ok(ASTNode::Declaration(Declaration::Function(FunctionDeclaration {
+            name,
+            parameters,
+            return_type: Some(return_type),
+            body,
+            visibility,
+        })))
     }
 
     pub fn parse_struct_declaration(&mut self, visibility: Visibility) -> Result<ASTNode, ParserError> {
@@ -930,8 +956,24 @@ impl Parser {
     fn parse_for_statement(&mut self) -> Result<ASTNode, ParserError> {
         todo!()
     }
+
+
+
+
     fn parse_return_statement(&mut self) -> Result<ASTNode, ParserError> {
-        todo!()
+        println!("Début du parsing de l'instruction de retour");
+        //self.consume(TokenType::KEYWORD(Keywords::RETURN))?;
+        let value = if !self.match_token(&[TokenType::NEWLINE, TokenType::DEDENT, TokenType::EOF]) {
+            Some(self.parse_expression(0)?)
+        } else {
+            None
+        };
+        println!("Valeur de retour parsée : {:?}", value);
+
+        Ok(ASTNode::Statement(Statement::Return(ReturnStatement{
+            value,
+        })))
+
     }
 
 

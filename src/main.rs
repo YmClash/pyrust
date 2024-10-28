@@ -46,15 +46,21 @@ fn main() {
     let code_enum_indent = "enum Color {x:int,y:float,z:str}\n";
 
 
-    let code_func_brace = "fn add(x: int, y: int) -> int {return x + y};";
+    let code_func_brace = "pub fn add(x: int, y: int) -> int {return x + y};";
+
     let code_func_indent = "fn add(x: int, y: int) -> int {return x + y}\n";
-    let code_func_brace2 = r#"fn calculate(x:int,y:int) -> int{
-    let result:int = x * y;
-    return result + 10 "#;
+    let code_func_brace2 = r#"fn add(x: int, y: int) -> int {
+    return x + y;
+}"#;
+
+    let code_func_brace3 = "fn add() ->int{return 5};";
 
 
 
-    let mut lexer = Lexer::new(code_decl_braces, SyntaxMode::Braces);
+
+
+
+    let mut lexer = Lexer::new(code_func_brace, SyntaxMode::Braces);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
@@ -100,18 +106,23 @@ fn main() {
 }
 
 
+/*
+Braces mode
+fn add(x: int, y: int) -> int {
+    return x + y;
+}
+
+pub fn hello(name: str) {
+    print(name);
+}
+*/
+
 
 /*
-  // while !parser.is_at_end() {
-    //     match parser.parse_declaration() {
-    //         Ok(ast) => {
-    //             println!("AST généré pour la déclaration :");
-    //             println!("{:#?}", ast);
-    //         }
-    //         Err(e) => {
-    //             println!("Erreur lors du parsing : {}", e);
-    //             break;
-    //         }
-    //     }
-    // }
+Indentation mode
+fn add(x: int, y: int) -> int
+    return x + y
+
+pub fn hello(name: str)
+    print(name)
 */
