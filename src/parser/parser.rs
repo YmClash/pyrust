@@ -517,7 +517,7 @@ impl Parser {
 
     fn parse_function_parameters(&mut self) -> Result<Vec<Parameter>, ParserError> {
         println!("Début du parsing des paramètres de fonction");
-        let parameters = Vec::new();
+        let mut parameters = Vec::new();
 
         if self.check(&[TokenType::DELIMITER(Delimiters::RPAR)]){
             // pas de paramètres
@@ -532,6 +532,8 @@ impl Parser {
                 self.consume(TokenType::DELIMITER(Delimiters::COLON))?;
                 let param_type = self.parse_type()?;
                 println!("Type du paramètre parsé : {:?}", param_type);
+
+                parameters.push(Parameter { name, parameter_type: param_type });
 
                 if self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]) {
                     continue;
