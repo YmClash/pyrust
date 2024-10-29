@@ -23,13 +23,13 @@ fn main() {
 
     println!("Pyrust Compiler Test");
     println!("===================\n");
-    println!("Mode de syntaxe :Braces\n");
+    println!("Mode de syntaxe :Indentation\n");
 
     let code_source = r#"let x = 5;const v = 100;"#;
 
     let binary_code = "-5 ;";
 
-    let code_decl_braces = "let x = 10;let mut y:int = 3;const numb = 5;pub const x:int = 5;pub struct Point {x: int,y: int};pub struct Point {height: int,width: int};enum Color {x:int,y:float,z:str};pub enum Color {pub x:int,y:float,z:str};";
+    let code_decl_braces = "let x = 10;let mut y:int = 3;const numb = 5;pub const x:int = 5;pub struct Point {x: int,y: int};pub struct Point {height: int,width: int};enum Color {x:int,y:float,z:str};pub enum Color {pub x:int,y:float,z:str};pub fn add(x: int, y: int) -> int {return x + y};";
     let code_decl_indentation = "let x = 10\nlet mut y:int = 3\nconst numb = 5\npub const x:int = 5\nstruct Point {x: int,y: int}\npub struct Point {height: int,width: int}\nenum Color {x:int,y:float,z:str}\npub enum Color {pub x:int,y:float,z:str}\n";
 
     let solo_decl = "let x = 10\nlet mut y:int = 3\nconst numb = 5\npub const x:int = 5\nstruct Point {x: int,y: int}}\n";
@@ -46,9 +46,9 @@ fn main() {
     let code_enum_indent = "enum Color {x:int,y:float,z:str}\n";
 
 
-    let code_func_brace = "pub fn add(x: int, y: int) -> int {return x + y};";
+    let code_func_braces = "pub fn add(x: int, y: int) -> int {return x + y};";
 
-    let code_func_indent = "fn add(x: int, y: int) -> int {return x + y}\n";
+    let code_func_indent = "fn add(x: int, y: int) -> int\nreturn x + y}\n";
     let code_func_brace2 = r#"fn add(x: int, y: int) -> int {
     return x + y;
 }"#;
@@ -60,7 +60,7 @@ fn main() {
 
 
 
-    let mut lexer = Lexer::new(code_func_brace, SyntaxMode::Braces);
+    let mut lexer = Lexer::new(code_func_indent, SyntaxMode::Indentation);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
@@ -69,7 +69,7 @@ fn main() {
     }
     println!("\n");
 
-    let mut parser = Parser::new(tokens, SyntaxMode::Braces);
+    let mut parser = Parser::new(tokens, SyntaxMode::Indentation);
 
     while !parser.is_at_end() {
         match parser.parse_declaration() {
@@ -97,7 +97,7 @@ fn main() {
     // }
 
     println!("\n");
-    println!("===================\n");
+    println!("=========OK==========\n");
     println!("Pyrust Compiler By YmC");
     println!("===================\n");
     println!("\n");
