@@ -48,7 +48,10 @@ fn main() {
 
     let code_func_braces = "pub fn add(x: int, y: int) -> int {return x + y};";
 
-    let code_func_indent = "fn add(x: int, y: int) -> int\nreturn x + y}\n";
+    let code_func_indent =
+        r#"pub fn add(x: int, y: int) -> int:
+        return x + y"#;
+
     let code_func_brace2 = r#"fn add(x: int, y: int) -> int {
     return x + y;
 }"#;

@@ -7,7 +7,7 @@ use crate::tok::{Delimiters, Keywords, Operators, TokenType};
 
 use num_bigint::BigInt;
 use crate::parser::ast::Declaration::Variable;
-use crate::tok::TokenType::EOF;
+//use crate::tok::TokenType::EOF;
 //////////////////////Debut///////////////////////////
 
 
@@ -564,6 +564,7 @@ impl Parser {
             SyntaxMode::Indentation => {
                 // Consommer le NEWLINE initial
                 self.consume(TokenType::NEWLINE)?;
+                self.consume(TokenType::INDENT)?;
                 while !self.check(&[TokenType::EOF]) {
                     if self.check(&[TokenType::DEDENT]) {
                         break;
@@ -709,6 +710,10 @@ impl Parser {
         } else {
             Type::Infer // Ou un type par défaut
         };
+
+        if self.syntax_mode == SyntaxMode::Indentation{
+            self.consume(TokenType::DELIMITER(Delimiters::COLON))?;
+        }
 
         let body = self.parse_function_body()?;
 
@@ -1076,7 +1081,7 @@ impl Parser {
     }
 
     pub fn is_at_end(&self) -> bool{
-        self.current >= self.tokens.len() || self.current_token().map_or(true, |t| t.token_type == EOF)
+        self.current >= self.tokens.len() || self.current_token().map_or(true, |t| t.token_type == TokenType::EOF)
 
     }
 
@@ -1211,6 +1216,9 @@ impl Parser {
                 let _ = self.consume(TokenType::NEWLINE) ;
                 if self.check(&[TokenType::EOF]){
                     let _ = self.consume(TokenType::EOF);
+                }
+                if self.check(&[TokenType::DEDENT]){
+                    let _ = self.consume(TokenType::DEDENT);
                 }
             }
             SyntaxMode::Braces =>{
