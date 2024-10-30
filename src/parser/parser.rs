@@ -565,12 +565,19 @@ impl Parser {
                 // Consommer le NEWLINE initial
                 self.consume(TokenType::NEWLINE)?;
                 self.consume(TokenType::INDENT)?;
-                while !self.check(&[TokenType::EOF]) {
-                    if self.check(&[TokenType::DEDENT]) {
-                        break;
-                    }
+
+                while !self.check(&[TokenType::EOF, TokenType::DEDENT]) {
+                    // if self.check(&[TokenType::DEDENT]) {
+                    //     break;
+                    // }
                     let statement = self.parse_statement()?;
                     body.push(statement);
+
+                    // ne pas s'attendre à un NEWLINE si on est sur un DEDENT ou EOF
+                    if !self.check(&[TokenType::DEDENT, TokenType::EOF]) {
+                        self.consume(TokenType::NEWLINE)?;
+
+                    }
                 }
             }
         }
@@ -1213,12 +1220,14 @@ impl Parser {
         match self.syntax_mode{
             SyntaxMode::Indentation =>{
                 println!("Indentation Mode");
-                let _ = self.consume(TokenType::NEWLINE) ;
-                if self.check(&[TokenType::EOF]){
-                    let _ = self.consume(TokenType::EOF);
-                }
                 if self.check(&[TokenType::DEDENT]){
                     let _ = self.consume(TokenType::DEDENT);
+                }else {
+                    let _ = self.consume(TokenType::NEWLINE) ;
+                }
+
+                if self.check(&[TokenType::EOF]){
+                    let _ = self.consume(TokenType::EOF);
                 }
             }
             SyntaxMode::Braces =>{
