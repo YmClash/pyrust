@@ -574,7 +574,9 @@ impl Parser {
                     body.push(statement);
 
                     // ne pas s'attendre à un NEWLINE si on est sur un DEDENT ou EOF
+                    //je dois encore teste cett implementation en profondeur ,
                     if !self.check(&[TokenType::DEDENT, TokenType::EOF]) {
+                        // on consomme le NEWLINE uniquement si on n'est pas sur un DEDENT ou EOF
                         self.consume(TokenType::NEWLINE)?;
 
                     }
