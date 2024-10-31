@@ -151,7 +151,9 @@ impl Parser {
     fn parse_statement(&mut self) -> Result<ASTNode, ParserError> {
         if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]) {
             self.parse_return_statement()
-        } else if self.match_token(&[TokenType::KEYWORD(Keywords::IF)]){
+        }else if self.check(&[TokenType::KEYWORD(Keywords::LET)]){
+            self.parse_variable_declaration()
+        }else if self.match_token(&[TokenType::KEYWORD(Keywords::IF)]){
             self.parse_if_statement()
         } else if self.match_token(&[TokenType::KEYWORD(Keywords::WHILE)]) {
             self.parse_while_statement()

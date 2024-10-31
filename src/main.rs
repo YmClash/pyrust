@@ -69,7 +69,7 @@ fn main() {
 
 
 
-    let mut lexer = Lexer::new(code_func_indent, SyntaxMode::Indentation);
+    let mut lexer = Lexer::new(code_func_indent2, SyntaxMode::Indentation);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
