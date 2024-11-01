@@ -182,13 +182,6 @@ impl Parser {
                 break;
             }
 
-            // let mut associativty = self.get_operator_associtivity(&operator);
-            // let next_precedence = if let Associativity::Left = associativty {
-            //     operator_precedence + 1
-            // } else {
-            //     operator_precedence
-            // };
-
             self.advance();
             let right = self.parse_expression(precedence)?;
             left = Expression::BinaryOperation(BinaryOperation{
@@ -569,25 +562,52 @@ impl Parser {
                 self.consume(TokenType::INDENT)?;
 
                 while !self.check(&[TokenType::EOF, TokenType::DEDENT]) {
-                    // if self.check(&[TokenType::DEDENT]) {
-                    //     break;
-                    // }
                     let statement = self.parse_statement()?;
                     body.push(statement);
-
-                    // ne pas s'attendre à un NEWLINE si on est sur un DEDENT ou EOF
-                    //je dois encore teste cett implementation en profondeur ,
-                    if !self.check(&[TokenType::DEDENT, TokenType::EOF]) {
-                        // on consomme le NEWLINE uniquement si on n'est pas sur un DEDENT ou EOF
-                        self.consume(TokenType::NEWLINE)?;
-
-                    }
+                }
+                //consommer le DEDENT final s'il existe
+                if !self.check(&[TokenType::DEDENT]) {
+                    self.consume(TokenType::DEDENT)?;
                 }
             }
         }
 
         Ok(body)
     }
+
+    // fn parse_function_body(&mut self) -> Result<Vec<ASTNode>, ParserError> {
+    //     let mut body = Vec::new();
+    //
+    //     match self.syntax_mode {
+    //         SyntaxMode::Braces => {
+    //             self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
+    //             while !self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) {
+    //                 let statement = self.parse_statement()?;
+    //                 body.push(statement);
+    //             }
+    //             self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+    //         }
+    //         SyntaxMode::Indentation => {
+    //             // Consommer le NEWLINE initial et l'INDENT
+    //             self.consume(TokenType::NEWLINE)?;
+    //             self.consume(TokenType::INDENT)?;
+    //
+    //             // Parser les statements jusqu'au DEDENT
+    //             while !self.check(&[TokenType::DEDENT, TokenType::EOF]) {
+    //                 let statement = self.parse_statement()?;
+    //                 body.push(statement);
+    //             }
+    //
+    //             // Consommer le DEDENT final s'il existe
+    //             if self.check(&[TokenType::DEDENT]) {
+    //                 self.consume(TokenType::DEDENT)?;
+    //             }
+    //         }
+    //     }
+    //
+    //     Ok(body)
+    // }
+
 
 
 
