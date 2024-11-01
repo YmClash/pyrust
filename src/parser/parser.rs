@@ -10,13 +10,6 @@ use crate::parser::ast::Declaration::Variable;
 //use crate::tok::TokenType::EOF;
 //////////////////////Debut///////////////////////////
 
-
-#[allow(dead_code)]
-enum Associativity {
-    Left,
-    Right,
-}
-
 pub struct Parser {
     tokens: Vec<Token>, // liste des tokens genere par le lexer
     current: usize,     // index du token actuel
@@ -171,10 +164,8 @@ impl Parser {
 
     pub fn parse_expression(&mut self,precedence:u8) -> Result<Expression, ParserError> {
         println!("Début du parsing de l'expression");
-        //self.parse_binary_expression(0)
-        //self.parse_assignment();
         let mut left = self.parse_primary_expression()?;
-        //let mut left = self.parse_unary_expression()?;
+
 
         while let Some (operator) = self.peek_operator(){
             let operator_precedence = self.get_operator_precedence(&operator);
@@ -208,17 +199,6 @@ impl Parser {
 
     }
 
-    fn get_operator_associtivity(&self,operator: &Operator) -> Associativity {
-        match operator {
-            Operator::Multiplication | Operator::Division | Operator::Modulo => Associativity::Left,
-            Operator::Addition | Operator::Substraction => Associativity::Left,
-            Operator::LessThan | Operator::GreaterThan | Operator::LesshanOrEqual | Operator::GreaterThanOrEqual => Associativity::Left,
-            Operator::Equal | Operator::NotEqual => Associativity::Right,
-            Operator::And | Operator::Or => Associativity::Left,
-
-            _ => Associativity::Left,
-        }
-    }
 
     fn parse_unary_expression(&mut self) -> Result<Expression, ParserError> {
         println!("Début du parsing de l'expression unaire");
@@ -250,6 +230,8 @@ impl Parser {
 
     }
 
+    // parse_prefix()
+
     fn parse_primary_expression(&mut self) -> Result<Expression, ParserError> {
         println!("Début du parsing de l'expression primaire, current_token = {:?}", self.current_token());
         if let Some(token) = self.current_token() {
@@ -280,8 +262,7 @@ impl Parser {
                     self.advance(); // Consomme le token
                     Expression::Literal(Literal::Boolean(false))
                 }
-                // TokenType::KEYWORD(Keywords::TRUE) => Expression::Literal(Literal::Boolean(true)),
-                // TokenType::KEYWORD(Keywords::FALSE) => Expression::Literal(Literal::Boolean(false)),
+
 
                 TokenType::KEYWORD(Keywords::SELF) =>{
                     self.advance();
@@ -296,6 +277,37 @@ impl Parser {
                     self.advance();
                     Expression::Identifier(name)
                 }
+
+
+                TokenType::OPERATOR(Operators::MINUS) => {
+                    self.advance();
+                    let right = self.parse_primary_expression()?;
+                    Expression::UnaryOperation(UnaryOperation {
+                        operator: UnaryOperator::Negative,
+                        operand: Box::new(right),
+                    })
+                }
+
+                TokenType::OPERATOR(Operators::EXCLAMATION) => {
+                    self.advance();
+                    let right = self.parse_primary_expression()?;
+                    Expression::UnaryOperation(UnaryOperation {
+                        operator: UnaryOperator::Not,
+                        operand: Box::new(right),
+                    })
+                }
+
+                TokenType::OPERATOR(Operators::AMPER) => {
+                    self.advance();
+                    let right = self.parse_primary_expression()?;
+                    Expression::UnaryOperation(UnaryOperation {
+                        operator: UnaryOperator::Reference,
+                        operand: Box::new(right),
+                    })
+                }
+
+
+
                 // TokenType::DELIMITER(Delimiters::LPAR) => {
                 //     self.advance(); // Consomme '('
                 //     let expr = self.parse_expression()?;
@@ -489,15 +501,15 @@ impl Parser {
                     object: Box::new(expression),
                     member: member_name,
                 });
-            // } else if self.match_token(&[TokenType::DELIMITER(Delimiters::LPAR)]) {
-            //     // Consomme '('
-            //     let arguments = self.parse_arguments_list()?;
-            //     expression = Expression::FunctionCall(FunctionCall {
-            //         name: Box::new(expression),
-            //         arguments: arguments,
-            //     });
-            //     self.consume(TokenType::DELIMITER(Delimiters::RPAR))?; // Consomme ')'
-            // } else {
+                // } else if self.match_token(&[TokenType::DELIMITER(Delimiters::LPAR)]) {
+                //     // Consomme '('
+                //     let arguments = self.parse_arguments_list()?;
+                //     expression = Expression::FunctionCall(FunctionCall {
+                //         name: Box::new(expression),
+                //         arguments: arguments,
+                //     });
+                //     self.consume(TokenType::DELIMITER(Delimiters::RPAR))?; // Consomme ')'
+                // } else {
                 break;
             }
         }
@@ -909,7 +921,7 @@ impl Parser {
                 // if self.syntax_mode == SyntaxMode::Indentation{
                 //     self.consume(TokenType::NEWLINE)?;
                 // }
-               //continue;
+                //continue;
             } else if self.match_token(&[TokenType::NEWLINE])  && self.syntax_mode==SyntaxMode::Indentation{
 
             } else if self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]){
