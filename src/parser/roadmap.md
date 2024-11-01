@@ -12,7 +12,7 @@
 ## 2. Déclarations
 - [x] Déclarations de variables
 - [x] Déclarations de constantes
-- [ ] Déclarations de fonctions
+- [x] Déclarations de fonctions
 - [x] Déclarations de structures
 - [x] Déclarations d'énumérations
 - [ ] Déclarations de traits
@@ -21,7 +21,7 @@
 ## 3. Statements
 - [ ] Blocs de code
 - [ ] Statements d'expression
-- [ ] Statements de retour
+- [x] Statements de retour
 - [ ] Statements if-else
 - [ ] Boucles while
 - [ ] Boucles for
