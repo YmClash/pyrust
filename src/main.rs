@@ -29,7 +29,9 @@ fn main() {
 
     let binary_code = "-5 ;";
 
-    let code_decl_braces = "let x = 10;let mut y:int = 3;const numb = 5;pub const x:int = 5;pub struct Point {x: int,y: int};pub struct Point {height: int,width: int};enum Color {x:int,y:float,z:str};pub enum Color {pub x:int,y:float,z:str};pub fn add(x: int, y: int) -> int {return x + y};";
+    let code_decl_braces = "let x = 10;let mut y:int = 3;const numb = 5;pub const x:int = 5;pub struct Point {x: int,y: int};pub struct Point {height: int,width: int};enum Color {x:int,y:float,z:str};pub enum Color {pub x:int,y:float,z:str};pub fn add(x: int, y: int) -> int {return x + y};pub fn add(x: int, y: int) -> int {\
+    let mut result = x + y;\
+    return result};";
     let code_decl_indentation = "let x = 10\nlet mut y:int = 3\nconst numb = 5\npub const x:int = 5\nstruct Point {x: int,y: int}\npub struct Point {height: int,width: int}\nenum Color {x:int,y:float,z:str}\npub enum Color {pub x:int,y:float,z:str}\n";
 
     let solo_decl = "let x = 10\nlet mut y:int = 3\nconst numb = 5\npub const x:int = 5\nstruct Point {x: int,y: int}}\n";
@@ -46,7 +48,9 @@ fn main() {
     let code_enum_indent = "enum Color {x:int,y:float,z:str}\n";
 
 
-    let code_func_braces = "pub fn add(x: int, y: int) -> int {return x + y};";
+    let code_func_braces = "pub fn add(x: int, y: int) -> int {\
+    let mut result = x + y;\
+    return result};";
 
     let code_func_indent =
         r#"pub fn add(x: int, y: int) -> int:
@@ -55,10 +59,11 @@ fn main() {
 
     let code_func_indent2 =
         r#"pub fn add(x: int, y: int) -> int:
-        let result = x + y
-        return result"#;
+        let mut result = x + y
+        let z = result + 5
+        return z"#;
 
-    let code_func_brace2 = r#"fn add(x: int, y: int) -> int {
+    let code_func_braces2 = r#"fn add(x: int, y: int) -> int {
     return x + y;
 }"#;
 
@@ -69,7 +74,7 @@ fn main() {
 
 
 
-    let mut lexer = Lexer::new(code_func_indent2, SyntaxMode::Indentation);
+    let mut lexer = Lexer::new(code_decl_braces, SyntaxMode::Braces);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
@@ -78,7 +83,7 @@ fn main() {
     }
     println!("\n");
 
-    let mut parser = Parser::new(tokens, SyntaxMode::Indentation);
+    let mut parser = Parser::new(tokens, SyntaxMode::Braces);
 
     while !parser.is_at_end() {
         match parser.parse_declaration() {
@@ -93,9 +98,9 @@ fn main() {
         }
     }
 
-
-
-    // match parser.parse_expression_statement() {
+    //
+    //
+    // match parser.parse_expression() {
     //     Ok(ast) => {
     //         println!("AST généré pour l'expression :");
     //         println!("{:#?}", ast);
