@@ -13,14 +13,14 @@ pub enum ASTNode {
     Declaration(Declaration),
     Expression(Expression),
     Statement(Statement),
-    Function(Function),
+
     Error(ParserError),
 }
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Block {
-    pub statements: Vec<Statement>,
+    pub statements: Vec<ASTNode>,
     pub syntax_mode: BlockSyntax,
     // pub indent_level: Option<usize>, // Pour le mode Indentation
     // pub braces: Option<(Token, Token)>, // Pour le mode Braces (ouverture, fermeture)
@@ -29,16 +29,37 @@ pub struct Block {
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum BlockSyntax {
-    Indentation{indent_level: usize},
-    Braces {opening_brace: Token, closing_brace: Token},
+    Indentation,
+    Braces ,
 }
 
 #[allow(dead_code)]
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
+pub struct Indentation{
+    pub indent_level: usize,
+}
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct Braces{
+    pub opening_brace: Token,
+    pub closing_brace: Token,
+}
+
+
+#[allow(dead_code)]
+#[derive(Debug,Clone,PartialEq)]
 pub enum Visibility {
     Private,     // default mode
     Public   // keyword PUB
 }
+
+#[allow(dead_code)]
+#[derive(Debug, Clone,PartialEq)]
+pub enum Mutability {
+    Immutable, // default mode
+    Mutable,   // keyword MUT
+}
+
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -46,13 +67,6 @@ pub enum Access {
     Read,       //
     Write,
     ReadWrite,
-}
-
-#[allow(dead_code)]
-#[derive(Debug, Clone)]
-pub enum Mutability {
-    Immutable, // default mode
-    Mutable,   // keyword MUT
 }
 
 
@@ -72,33 +86,34 @@ pub struct Position {
 #[allow(dead_code)]
 #[derive(Debug, PartialEq, Clone)]
 pub enum Operator {
-    Addition,
-    Substraction,
-    Multiplication,
-    Division,
-    Modulo,
-    Equal,
-    NotEqual,
-    LessThan,
-    GreaterThan,
-    And,
-    Or,
-    LesshanOrEqual,
-    GreaterThanOrEqual,
+    Addition,       // +
+    Substraction,   // -
+    Multiplication, // *
+    Division,       // /
+    Modulo,     // %
+    Equal,  // ==
+    NotEqual,   // !=
+    LessThan,   // <
+    GreaterThan,   // >
+    And, // &&
+    Or, // ||
+    LesshanOrEqual, // <=
+    GreaterThanOrEqual, // >=
 }
 
 #[derive(Debug, Clone)]
 pub enum UnaryOperator {
-    Negate,
-    Not,
-    Increment,
-    Decrement,
-    Reference,
-    Dereference,
-    BitwiseNot,
-    LogicalNot,
-    Positive,
-    Negative,
+    Negate,     // -
+    Not,      // !
+    Increment,      // ++
+    Decrement,      // --
+    Reference,      // &
+    ReferenceMutable,       // &mut
+    Dereference,        // *
+    BitwiseNot,     // ~
+    LogicalNot,     // !
+    Positive,       // +
+    Negative,       // -
 }
 
 
@@ -147,17 +162,16 @@ pub struct VariableDeclaration {
     pub name: String,
     pub variable_type: Option<Type>,
     pub value: Option<Expression>,
-    pub mutable: bool,
-    //pub mutability: Mutability
+    pub mutability: Mutability,
 }
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct FunctionDeclaration {
     pub name: String,
-    pub parameters: Vec<(String, Type)>, // (nom, type)
+    pub parameters: Vec<Parameter>, // (nom, type)
     pub return_type: Option<Type>,
-    pub body: Block,
-    pub public_access: bool, // pub
+    pub body: Vec<ASTNode>,
+    pub visibility: Visibility
     //pub annotations: Vec<Annotation>,
 }
 #[allow(dead_code)]
@@ -166,7 +180,7 @@ pub struct ConstDeclaration {
     pub name: String,
     pub constant_type: Option<Type>,
     pub value: Expression,
-    pub public_access: bool, // pub
+    pub visibility: Visibility
 }
 
 #[allow(dead_code)]
@@ -174,7 +188,7 @@ pub struct ConstDeclaration {
 pub struct StructDeclaration {
     pub name: String,
     pub fields: Vec<Field>,
-    pub public_access: bool, // pub
+    pub visibility: Visibility,
 
 }
 
@@ -186,7 +200,16 @@ pub struct ClassDeclaration {
     pub attributes: Vec<Attribute>,
     pub constructor: Option<Constructor>,
     pub methods: Vec<FunctionDeclaration>,
-    pub public_access: bool,
+    pub visibility: Visibility,
+}
+
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct Parameter{
+    pub name: String,
+    pub parameter_type: Type,
+
 }
 
 #[allow(dead_code)]
@@ -210,8 +233,8 @@ pub struct Constructor { // Keyword  pour  le constructeur serai def  et le meth
 #[derive(Debug, Clone)]
 pub struct EnumDeclaration {
     pub name: String,
-    pub variants: Vec<EnumVariant>,
-    //pub public_access: bool, // pub
+    pub variantes: Vec<EnumVariant>,
+    pub visibility: Visibility,
 }
 
 #[allow(dead_code)]
@@ -249,15 +272,15 @@ pub struct MacroDeclaration {
 pub struct Field{
     pub name: String,
     pub field_type: Type,
-    pub mutable: bool, //  si neccessaire
-    //pub default_value, // si neccessaire
+    pub visibility: Visibility
 }
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct EnumVariant{
     pub name: String,
-    pub associated_type: Option<Vec<Type>>, // None si pas de type associé
+    pub variante_type: Type, // None si pas de type associé
+    pub visibility: Visibility,
 }
 
 #[allow(dead_code)]
@@ -293,7 +316,24 @@ pub enum Expression {
     TypeCast(TypeCast),
     Conditional(Conditional),
     Assignment(Assignment),
+    Borrow(Box<Expression>),
+    Statement(Box<Statement>),
+
 }
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub enum BorrowType {
+    Mutable,
+    Immutable,
+}
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct Borrow {
+    pub borrowed_value: Box<Expression>,
+    pub borrowed_type: BorrowType,
+    pub access: Access,
+}
+
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -323,17 +363,19 @@ pub struct Parameters {
 
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
-pub struct BinaryOperation {
-    pub left: Box<Expression>,
-    pub operator: Operator, ///////////////////// a changer
-    pub right: Box<Expression>,
-}
-#[allow(dead_code)]
-#[derive(Clone, Debug)]
 pub struct UnaryOperation {
     pub operator: UnaryOperator,
     pub operand: Box<Expression>,
 }
+
+#[allow(dead_code)]
+#[derive(Clone, Debug)]
+pub struct BinaryOperation {
+    pub left: Box<Expression>,
+    pub operator: Operator,             ///////////////////// a changer
+    pub right: Box<Expression>,
+}
+
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -471,7 +513,7 @@ pub struct YieldStatement {
 }
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
-pub struct AssignementStatement {
+pub struct AssignmentStatement {
     pub target: Expression,
     pub value: Expression,
 }
@@ -531,7 +573,7 @@ impl fmt::Display for ASTNode {
             ASTNode::Declaration(decl) => write!(f, "{:?}", decl),
             ASTNode::Expression(expr) => write!(f, "{:?}", expr),
             ASTNode::Statement(stmt) => write!(f, "{:?}", stmt),
-            ASTNode::Function(func) => write!(f, "{:?}", func),
+            //ASTNode::Function(func) => write!(f, "{:?}", func),
             ASTNode::Block(block) => write!(f, "{:?}", block),
             // ASTNode::IfStatement(ifstmt) => write!(f, "{}", ifstmt),
             // ASTNode::ForStatement(forstmt) => write!(f, "{}", forstmt),
@@ -547,23 +589,7 @@ impl fmt::Display for ASTNode {
     }
 }
 
-impl Block {
-    pub fn is_indentation_mode(&self) -> bool{
-        matches!(self.syntax_mode, BlockSyntax::Indentation)
-    }
-    pub fn validate(&self) -> Result<(),String>{
-        match self.syntax_mode {
-            BlockSyntax::Indentation if self.indent_level.is_none() => {
-                Err("Indentation level is missing".to_string())
-            }
-            BlockSyntax::Braces if self.braces.is_none() => {
-                Err("Braces are missing".to_string())
-            }
-            _ => Ok(()),
-        }
-    }
 
-}
 
 impl ASTNode{
     pub fn program(statements: Vec<ASTNode>) -> Self{
@@ -581,14 +607,39 @@ impl ASTNode{
     pub fn statement(statement: Statement) -> Self{
         ASTNode::Statement(statement)
     }
-    pub fn function(function: Function) -> Self{
-        ASTNode::Function(function)
-    }
+    // pub fn function(function: Function) -> Self{ ASTNode::Function(function)
+    // }
     pub fn error(error: ParserError) -> Self{
         ASTNode::Error(error)
     }
 }
 
 // by YmC
+
+
+
+
+
+
+
+
+
+impl Block {
+    pub fn is_indentation_mode(&self) -> bool{
+        matches!(self.syntax_mode, BlockSyntax::Indentation)
+    }
+    // pub fn validate(&self) -> Result<(),String>{
+    //     match self.syntax_mode {
+    //         BlockSyntax::Indentation if self.indent_level.is_none() => {
+    //             Err("Indentation level is missing".to_string())
+    //         }
+    //         BlockSyntax::Braces if self.braces.is_none() => {
+    //             Err("Braces are missing".to_string())
+    //         }
+    //         _ => Ok(()),
+    //     }
+    // }
+
+}
 
 ////////////////////////////////////////////////////////////////

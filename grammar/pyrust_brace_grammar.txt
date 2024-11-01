@@ -1,0 +1,118 @@
+(* Programme *)
+program = { module_definition } ;
+
+(* Définition de module *)
+module_definition = "module", identifier, "{", { module_item }, "}" ;
+
+module_item = import_statement | export_statement | declaration ;
+
+(* Importations et exportations *)
+import_statement = "import", (identifier, ["as", identifier] | "{", identifier_list, "}"), "from", string_literal, ";" ;
+export_statement = "export", declaration ;
+
+(* Déclarations *)
+declaration = function_definition | variable_definition | constant_definition | struct_definition | trait_definition | type_definition | enum_definition ;
+
+(* Définition de fonction *)
+function_definition = ["async"], "fn", ["<", type_parameters, ">"], identifier, "(", [parameter_list], ")", ["->", type], block ;
+
+(* Définitions de variables et constantes *)
+variable_definition = "let", ["mut"], identifier, [":", type], ["=", expression], ";" ;
+constant_definition = "const", identifier, ":", type, "=", expression, ";" ;
+
+(* Définition de structure *)
+struct_definition = "struct", identifier, ["<", type_parameters, ">"], "{", field_list, "}" ;
+
+(* Définition de trait *)
+trait_definition = "trait", identifier, ["<", type_parameters, ">"], "{", { trait_item }, "}" ;
+trait_item = function_signature, ";" ;
+
+(* Définition de type *)
+type_definition = "type", identifier, ["<", type_parameters, ">"], "=", type, ";" ;
+
+(* Définition d'énumération *)
+enum_definition = "enum", identifier, "{", enum_variant_list, "}" ;
+enum_variant_list = enum_variant, { ",", enum_variant }, [ "," ] ;
+enum_variant = identifier, ["(", type_list, ")"] ;
+
+(* Paramètres de type et contraintes *)
+type_parameters = type_parameter, { ",", type_parameter } ;
+type_parameter = identifier, [":", trait_bound] ;
+trait_bound = identifier, { "+", identifier } ;
+
+(* Bloc de code *)
+block = "{", { statement }, "}" ;
+
+/////Special///
+block = BRACE_BLOCK | INDENT_BLOCK ;
+BRACE_BLOCK = "{", { statement }, "}" ;
+INDENT_BLOCK = ":", INDENT, { statement }, DEDENT ;
+/////Special///
+
+(* Instructions *)
+statement = declaration | expression, ";" | if_statement | match_statement | for_statement
+           | while_statement | loop_statement | return_statement | break_statement
+           | continue_statement | try_statement ;
+
+if_statement = "if", expression, block, ["else", (block | if_statement)] ;
+match_statement = "match", expression, "{", { match_arm }, "}" ;
+match_arm = pattern, ["if", expression], "=>", (expression, ";" | block) ;
+for_statement = "for", identifier, "in", expression, block ;
+while_statement = "while", expression, block ;
+loop_statement = "loop", block ;
+return_statement = "return", [expression], ";" ;
+break_statement = "break", ";" ;
+continue_statement = "continue", ";" ;
+try_statement = "try", block, { except_clause }, ["finally", block] ;
+except_clause = "except", identifier, ["as", identifier], block ;
+
+(* Expressions *)
+expression = literal | identifier | binary_operation | unary_operation
+            | function_call | method_call | field_access | array_access
+            | closure | async_block | "(", expression, ")" ;
+
+closure = "|", [parameter_list], "|", ["->", type], (expression | block) ;
+async_block = "async", block ;
+
+binary_operation = expression, binary_operator, expression ;
+unary_operation = unary_operator, expression ;
+function_call = expression, "(", [argument_list], ")" ;
+method_call = expression, ".", identifier, "(", [argument_list], ")" ;
+field_access = expression, ".", identifier ;
+array_access = expression, "[", expression, "]" ;
+
+(* Patterns *)
+pattern = literal | identifier | "_" | constructor_pattern ;
+constructor_pattern = identifier, "(", [pattern_list], ")" ;
+pattern_list = pattern, { ",", pattern } ;
+
+(* Littéraux *)
+literal = integer_literal | float_literal | string_literal | boolean_literal | character_literal | array_literal | tuple_literal ;
+array_literal = "[", [expression_list], "]" ;
+tuple_literal = "(", [expression_list], ")" ;
+expression_list = expression, { ",", expression }, [ "," ] ;
+
+(* Types *)
+type = identifier | generic_type | function_type | tuple_type | array_type ;
+generic_type = identifier, "<", type_list, ">" ;
+function_type = "fn", "(", [type_list], ")", "->", type ;
+tuple_type = "(", [type_list], ")" ;
+array_type = "[", type, ";", expression, "]" ;
+type_list = type, { ",", type } ;
+
+(* Identifiants et littéraux de base *)
+identifier = letter, { letter | digit | "_" } ;
+integer_literal = digit, { digit } ;
+float_literal = digit, { digit }, ".", { digit }, ["e", ["+"|"-"], digit, { digit }] ;
+string_literal = '"', { character - '"' }, '"' ;
+boolean_literal = "true" | "false" ;
+character_literal = "'", character, "'" ;
+
+(* Opérateurs *)
+binary_operator = "+" | "-" | "*" | "/" | "%" | "==" | "!=" | "<" | "<=" | ">" | ">=" | "&&" | "||" | "&" | "|" | "^" | "<<" | ">>" ;
+unary_operator = "-" | "!" | "&" | "*" ;
+
+(* Caractères de base *)
+letter = "a" | ... | "z" | "A" | ... | "Z" ;
+digit = "0" | ... | "9" ;
+character = ? any Unicode character ? ;
