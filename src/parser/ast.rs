@@ -390,7 +390,6 @@ pub struct BinaryOperation {
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct FunctionCall {
-    //pub name: String,
     pub name: Box<Expression>,
     pub arguments: Vec<Expression>,
 }
