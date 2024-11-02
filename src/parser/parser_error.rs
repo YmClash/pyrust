@@ -47,6 +47,8 @@ pub enum ParserErrorType {
     ExpectedCommaOrCloseBrace,
     ExpectedStructField,
 
+    ExpectedOperator,
+
     UnexpectedIndentation,
     UnexpectedEndOfInput,
 
@@ -141,6 +143,8 @@ impl Display for ParserErrorType {
             ParserErrorType::ExpectedCommaOrCloseBrace => write!(f, "ExpectedCommaOrCloseBrace"),
             ParserErrorType::ExpectedStructField => write!(f, "ExpectedStructField"),
 
+            ParserErrorType::ExpectedOperator => write!(f, "ExpectedOperator"),
+
             ParserErrorType::MultipleConstructors => write!(f, "MultipleConstructors"),
             ParserErrorType::MismatchedParametersAndAttributes => write!(f, "MismatchedParametersAndAttributes"),
 
@@ -185,6 +189,8 @@ impl ParserError {
             ParserErrorType::ExpectIdentifier => "Expect identifier".to_string(),
             ParserErrorType::ExpectedCommaOrCloseBrace => "Expected comma or close brace".to_string(),
             ParserErrorType::ExpectedStructField => "Expected struct field".to_string(),
+
+            ParserErrorType::ExpectedOperator => "Expected operator".to_string(),
 
             ParserErrorType::ExpectedDeclaration => "Expected declaration".to_string(),
             ParserErrorType::ExpectedParameterName => "Expected parameter name".to_string(),

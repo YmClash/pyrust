@@ -103,7 +103,8 @@ fn main() {
 
 
 
-    match parser.parse_expression_statement() {
+
+    match parser.parse_expression(0) {
         Ok(ast) => {
             println!("AST généré pour l'expression :");
             println!("{:#?}", ast);
