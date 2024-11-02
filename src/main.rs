@@ -23,14 +23,14 @@ fn main() {
 
     println!("Pyrust Compiler Test");
     println!("===================\n");
-    println!("Mode de syntaxe :Braces\n");
+    println!("Mode de syntaxe :Indentation\n");
 
 
     let code_source = r#"let x = 5;const v = 100;"#;
 
     let binary_code = "-5 ;";
 
-    let number_code = "5>4;";
+    let number_code = "a && b || c";
 
     let code_decl_braces = "let x = 10;let mut y:int = 3;const numb = 5;pub const x:int = 5;pub struct Point {x: int,y: int};pub struct Point {height: int,width: int};enum Color {x:int,y:float,z:str};pub enum Color {pub x:int,y:float,z:str};pub fn add(x: int, y: int) -> int {return x + y};pub fn add(x: int, y: int) -> int {\
     let mut result = x + y;\
@@ -66,18 +66,16 @@ fn main() {
         let z = result + 5
         return z"#;
 
-    let code_func_braces2 = r#"fn add(x: int, y: int) -> int {
-    return x + y;
-}"#;
+    let code_func_braces2 = r#"fn add(x: int, y: int) -> int {return x + y};"#;
 
-    let code_func_brace3 = "fn add() ->int{return 5};";
+    let code_func_braces3 = "fn add() ->int{return 5};";
 
 
 
 
 
 
-    let mut lexer = Lexer::new(number_code, SyntaxMode::Braces);
+    let mut lexer = Lexer::new(code_func_braces2, SyntaxMode::Braces);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
@@ -88,30 +86,30 @@ fn main() {
 
     let mut parser = Parser::new(tokens, SyntaxMode::Braces);
 
-    // while !parser.is_at_end() {
-    //     match parser.parse_declaration() {
-    //         Ok(ast) => {
-    //             println!("AST généré pour la déclaration :");
-    //             println!("{:#?}", ast);
-    //         }
-    //         Err(e) => {
-    //             println!("Erreur lors du parsing : {}", e);
-    //             break;
-    //         }
-    //     }
-    // }
-
-
-
-    match parser.parse_expression_statement() {
-        Ok(ast) => {
-            println!("AST généré pour l'expression :");
-            println!("{:#?}", ast);
-        }
-        Err(e) => {
-            println!("Erreur lors du parsing : {}", e);
+    while !parser.is_at_end() {
+        match parser.parse_declaration() {
+            Ok(ast) => {
+                println!("AST généré pour la déclaration :");
+                println!("{:#?}", ast);
+            }
+            Err(e) => {
+                println!("Erreur lors du parsing : {}", e);
+                break;
+            }
         }
     }
+
+
+
+    // match parser.parse_expression_statement() {
+    //     Ok(ast) => {
+    //         println!("AST généré pour l'expression :");
+    //         println!("{:#?}", ast);
+    //     }
+    //     Err(e) => {
+    //         println!("Erreur lors du parsing : {}", e);
+    //     }
+    // }
 
     println!("\n");
     println!("=========OK==========\n");

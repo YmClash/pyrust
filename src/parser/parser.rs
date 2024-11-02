@@ -193,7 +193,8 @@ impl Parser {
         println!("Début du parsing de l'expression statement");
         let expr = self.parse_expression(0);
         println!("Expression parsée : {:?}", expr);
-        self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON))?;
+        //self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON))?;
+        self.consume_seperator();
         println!("Separateur consommé");
         Ok(ASTNode::Expression(expr?))
 
@@ -346,34 +347,34 @@ impl Parser {
 
     }
 
-    fn parse_binary_expression(&mut self, min_precedence: u8) -> Result<Expression, ParserError> {
-        println!("Début du parsing de l'expression binaire");
-        let mut left = self.parse_unary_expression()?;
-        loop {
-            println!("Current position: {}", self.current);
-            let op = match self.peek_operator() {
-                Some(op) => op,
-                None => {
-                    println!("No operator found, breaking loop");
-                    break;
-                }
-            };
-            let precedence = self.get_operator_precedence(&op);
-            println!("Operator found: {:?} with precedence {}", op, precedence);
-            if precedence < min_precedence {
-                break;
-            }
-            self.advance(); // Consomme l'opérateur
-            let right = self.parse_binary_expression(precedence )?;
-            left = Expression::BinaryOperation(BinaryOperation {
-                left: Box::new(left),
-                operator: op,
-                right: Box::new(right),
-            });
-        }
-        println!("Fin du parsing de l'expression binaire");
-        Ok(left)
-    }
+    // fn parse_binary_expression(&mut self, min_precedence: u8) -> Result<Expression, ParserError> {
+    //     println!("Début du parsing de l'expression binaire");
+    //     let mut left = self.parse_unary_expression()?;
+    //     loop {
+    //         println!("Current position: {}", self.current);
+    //         let op = match self.peek_operator() {
+    //             Some(op) => op,
+    //             None => {
+    //                 println!("No operator found, breaking loop");
+    //                 break;
+    //             }
+    //         };
+    //         let precedence = self.get_operator_precedence(&op);
+    //         println!("Operator found: {:?} with precedence {}", op, precedence);
+    //         if precedence < min_precedence {
+    //             break;
+    //         }
+    //         self.advance(); // Consomme l'opérateur
+    //         let right = self.parse_binary_expression(precedence )?;
+    //         left = Expression::BinaryOperation(BinaryOperation {
+    //             left: Box::new(left),
+    //             operator: op,
+    //             right: Box::new(right),
+    //         });
+    //     }
+    //     println!("Fin du parsing de l'expression binaire");
+    //     Ok(left)
+    // }
     fn parse_lambda_expression(&mut self) -> Result<Expression, ParserError> {
         todo!()
     }
@@ -1253,18 +1254,20 @@ impl Parser {
     }
 
     fn consume_seperator(&mut self)  {
+        println!("Mode de syntaxe : {:?}", self.syntax_mode);
         match self.syntax_mode{
             SyntaxMode::Indentation =>{
                 println!("Indentation Mode");
+                if self.check(&[TokenType::EOF]){
+                    let _ = self.consume(TokenType::EOF);
+                }
+
                 if self.check(&[TokenType::DEDENT]){
                     let _ = self.consume(TokenType::DEDENT);
                 }else {
                     let _ = self.consume(TokenType::NEWLINE) ;
                 }
 
-                if self.check(&[TokenType::EOF]){
-                    let _ = self.consume(TokenType::EOF);
-                }
             }
             SyntaxMode::Braces =>{
                 println!("Braces Mode");
