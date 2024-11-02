@@ -227,7 +227,8 @@ impl Parser {
             }));
         }
         println!("Aucun opérateur unaire trouvé, passage à l'expression pos");
-        self.parse_postfix()
+        self.parse_primary_expression()
+        //self.parse_postfix()
 
     }
 
@@ -331,31 +332,31 @@ impl Parser {
 
                 // TokenType::DELIMITER(Delimiters::LPAR) => {
                 //     self.advance(); // Consomme '('
-                //     let expr = self.parse_expression()?;
+                //     let expr = self.parse_expression(0)?;
                 //     self.consume(TokenType::DELIMITER(Delimiters::RPAR))?; // Consomme ')'
                 //     expr
                 // }
 
-                // TokenType::DELIMITER(Delimiters::LPAR) => {
-                //     self.advance();
-                //     let expr = self.parse_expression(0)?;
-                //     if let Some(token) = self.current_token() {
-                //         if matches!(token.token_type, TokenType::DELIMITER(Delimiters::RPAR)) {
-                //             self.advance();
-                //             expr
-                //         } else {
-                //             return Err(ParserError::new(
-                //                 ExpectedCloseParenthesis,
-                //                 self.current_position(),
-                //             ));
-                //         }
-                //     } else {
-                //         return Err(ParserError::new(
-                //             UnexpectedEndOfInput,
-                //             self.current_position(),
-                //         ));
-                //     }
-                // }
+                TokenType::DELIMITER(Delimiters::LPAR) => {
+                    self.advance();
+                    let expr = self.parse_expression(0)?;
+                    if let Some(token) = self.current_token() {
+                        if matches!(token.token_type, TokenType::DELIMITER(Delimiters::RPAR)) {
+                            self.advance();
+                            expr
+                        } else {
+                            return Err(ParserError::new(
+                                ExpectedCloseParenthesis,
+                                self.current_position(),
+                            ));
+                        }
+                    } else {
+                        return Err(ParserError::new(
+                            UnexpectedEndOfInput,
+                            self.current_position(),
+                        ));
+                    }
+                }
                 _ => return Err(ParserError::new(UnexpectedToken, self.current_position())),
             };
             Ok(expr)
@@ -400,30 +401,30 @@ impl Parser {
         todo!()
     }
 
-    fn parse_assignment(&mut self) -> Result<Expression, ParserError> {
-        println!("Début du parsing de l'assignation");
-        let expression = self.parse_equality()?;
-
-        if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
-            let value = self.parse_assignment()?;
-            match expression {
-                Expression::Identifier(name) => Ok(Expression::Assignment(Assignment {
-                    left: Box::new(Expression::Identifier(name)),
-                    right: Box::new(value),
-                })),
-                Expression::MemberAccess(member_access) => Ok(Expression::Assignment(Assignment {
-                    left: Box::new(Expression::MemberAccess(member_access)),
-                    right: Box::new(value),
-                })),
-                _ => Err(ParserError::new(
-                    InvalidAssignmentTarget,
-                    self.current_position(),
-                )),
-            }
-        } else {
-            Ok(expression)
-        }
-    }
+    // fn parse_assignment(&mut self) -> Result<Expression, ParserError> {
+    //     println!("Début du parsing de l'assignation");
+    //     let expression = self.parse_equality()?;
+    //
+    //     if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
+    //         let value = self.parse_assignment()?;
+    //         match expression {
+    //             Expression::Identifier(name) => Ok(Expression::Assignment(Assignment {
+    //                 left: Box::new(Expression::Identifier(name)),
+    //                 right: Box::new(value),
+    //             })),
+    //             Expression::MemberAccess(member_access) => Ok(Expression::Assignment(Assignment {
+    //                 left: Box::new(Expression::MemberAccess(member_access)),
+    //                 right: Box::new(value),
+    //             })),
+    //             _ => Err(ParserError::new(
+    //                 InvalidAssignmentTarget,
+    //                 self.current_position(),
+    //             )),
+    //         }
+    //     } else {
+    //         Ok(expression)
+    //     }
+    // }
 
     fn parse_equality(&mut self) -> Result<Expression,ParserError>{
         println!("Début du parsing de l'égalité");
@@ -514,29 +515,29 @@ impl Parser {
         Ok(expression)
     }
 
-    fn parse_postfix(&mut self) -> Result<Expression,ParserError>{
-        let mut expression = self.parse_primary_expression()?;
-        loop {
-            if self.match_token(&[TokenType::DELIMITER(Delimiters::DOT)]){
-                let member_name = self.consume_identifier()?;
-                expression = Expression::MemberAccess(MemberAccess{
-                    object: Box::new(expression),
-                    member: member_name,
-                });
-                } else if self.match_token(&[TokenType::DELIMITER(Delimiters::LPAR)]) {
-                    // Consomme '('
-                    let arguments = self.parse_arguments_list()?;
-                    expression = Expression::FunctionCall(FunctionCall {
-                        name: Box::new(expression),
-                        arguments: arguments,
-                    });
-                    self.consume(TokenType::DELIMITER(Delimiters::RPAR))?; // Consomme ')'
-                } else {
-                break;
-            }
-        }
-        Ok(expression)
-    }
+    // fn parse_postfix(&mut self) -> Result<Expression,ParserError>{
+    //     let mut expression = self.parse_primary_expression()?;
+    //     loop {
+    //         if self.match_token(&[TokenType::DELIMITER(Delimiters::DOT)]){
+    //             let member_name = self.consume_identifier()?;
+    //             expression = Expression::MemberAccess(MemberAccess{
+    //                 object: Box::new(expression),
+    //                 member: member_name,
+    //             });
+    //             } else if self.match_token(&[TokenType::DELIMITER(Delimiters::LPAR)]) {
+    //                 // Consomme '('
+    //                 let arguments = self.parse_arguments_list()?;
+    //                 expression = Expression::FunctionCall(FunctionCall {
+    //                     name: Box::new(expression),
+    //                     arguments: arguments,
+    //                 });
+    //                 self.consume(TokenType::DELIMITER(Delimiters::RPAR))?; // Consomme ')'
+    //             } else {
+    //             break;
+    //         }
+    //     }
+    //     Ok(expression)
+    // }
 
     /// fonction pour parser les parametres
 

@@ -73,7 +73,7 @@ fn main() {
 
     let code_func_call_braces = "let sum:int = add(5, 10);";
 
-    let code_func_call_braces2 = "add(5, 10);";
+    let code_func_call_braces2 = "print(numb);";
 
     let code_func_call_methode_braces = "let x = chat.danse(x,y);";
     let code_func_call_methode_braces2 = "chat.danse(x,y);";

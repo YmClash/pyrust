@@ -318,8 +318,18 @@ pub enum Expression {
     Assignment(Assignment),
     Borrow(Box<Expression>),
     Statement(Box<Statement>),
+    MethodCall(MethodCall),
 
 }
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct MethodCall{
+    pub object: Box<Expression>,
+    pub method: String,
+    pub arguments: Vec<Expression>,
+}
+
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum BorrowType {
