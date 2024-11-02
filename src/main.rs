@@ -23,7 +23,7 @@ fn main() {
 
     println!("Pyrust Compiler Test");
     println!("===================\n");
-    println!("Mode de syntaxe :Indentation\n");
+    println!("Mode de syntaxe :Braces\n");
 
 
     let code_source = r#"let x = 5;const v = 100;"#;
@@ -71,11 +71,19 @@ fn main() {
     let code_func_braces3 = "fn add() ->int{return 5};";
 
 
+    let code_func_call_braces = "let sum:int = add(5, 10);";
+
+    let code_func_call_braces2 = "add(5, 10);";
+
+    let code_func_call_methode_braces = "let x = chat.danse(x,y);";
+    let code_func_call_methode_braces2 = "chat.danse(x,y);";
 
 
 
 
-    let mut lexer = Lexer::new(code_func_braces2, SyntaxMode::Braces);
+
+
+    let mut lexer = Lexer::new(code_func_call_methode_braces, SyntaxMode::Braces);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification

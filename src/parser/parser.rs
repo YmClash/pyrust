@@ -276,6 +276,26 @@ impl Parser {
                 TokenType::IDENTIFIER { name } => {
                     let name = name.clone();
                     self.advance();
+                    if self.check(&[TokenType::DELIMITER(Delimiters::LPAR)]) {
+                        self.consume(TokenType::DELIMITER(Delimiters::LPAR))?;
+                        let arguments = self.parse_arguments_list()?;
+                        self.consume(TokenType::DELIMITER(Delimiters::RPAR))?;
+
+                        return Ok(Expression::FunctionCall(FunctionCall {
+                            name: Box::new(Expression::Identifier(name)),
+                            arguments,
+                        }));
+                    }
+                    if self.check(&[TokenType::DELIMITER(Delimiters::DOT)]) {
+                        self.consume(TokenType::DELIMITER(Delimiters::DOT))?;
+                        let member_name = self.consume_identifier()?;
+                        //self.consume(TokenType::DELIMITER(Delimiters::LPAR))?;
+
+                        return Ok(Expression::MemberAccess(MemberAccess {
+                            object: Box::new(Expression::Identifier(name)),
+                            member: member_name,
+                        }));
+                    }
                     Expression::Identifier(name)
                 }
 
@@ -315,26 +335,27 @@ impl Parser {
                 //     self.consume(TokenType::DELIMITER(Delimiters::RPAR))?; // Consomme ')'
                 //     expr
                 // }
-                TokenType::DELIMITER(Delimiters::LPAR) => {
-                    self.advance();
-                    let expr = self.parse_expression(0)?;
-                    if let Some(token) = self.current_token() {
-                        if matches!(token.token_type, TokenType::DELIMITER(Delimiters::RPAR)) {
-                            self.advance();
-                            expr
-                        } else {
-                            return Err(ParserError::new(
-                                ExpectedCloseParenthesis,
-                                self.current_position(),
-                            ));
-                        }
-                    } else {
-                        return Err(ParserError::new(
-                            UnexpectedEndOfInput,
-                            self.current_position(),
-                        ));
-                    }
-                }
+
+                // TokenType::DELIMITER(Delimiters::LPAR) => {
+                //     self.advance();
+                //     let expr = self.parse_expression(0)?;
+                //     if let Some(token) = self.current_token() {
+                //         if matches!(token.token_type, TokenType::DELIMITER(Delimiters::RPAR)) {
+                //             self.advance();
+                //             expr
+                //         } else {
+                //             return Err(ParserError::new(
+                //                 ExpectedCloseParenthesis,
+                //                 self.current_position(),
+                //             ));
+                //         }
+                //     } else {
+                //         return Err(ParserError::new(
+                //             UnexpectedEndOfInput,
+                //             self.current_position(),
+                //         ));
+                //     }
+                // }
                 _ => return Err(ParserError::new(UnexpectedToken, self.current_position())),
             };
             Ok(expr)
@@ -502,15 +523,15 @@ impl Parser {
                     object: Box::new(expression),
                     member: member_name,
                 });
-                // } else if self.match_token(&[TokenType::DELIMITER(Delimiters::LPAR)]) {
-                //     // Consomme '('
-                //     let arguments = self.parse_arguments_list()?;
-                //     expression = Expression::FunctionCall(FunctionCall {
-                //         name: Box::new(expression),
-                //         arguments: arguments,
-                //     });
-                //     self.consume(TokenType::DELIMITER(Delimiters::RPAR))?; // Consomme ')'
-                // } else {
+                } else if self.match_token(&[TokenType::DELIMITER(Delimiters::LPAR)]) {
+                    // Consomme '('
+                    let arguments = self.parse_arguments_list()?;
+                    expression = Expression::FunctionCall(FunctionCall {
+                        name: Box::new(expression),
+                        arguments: arguments,
+                    });
+                    self.consume(TokenType::DELIMITER(Delimiters::RPAR))?; // Consomme ')'
+                } else {
                 break;
             }
         }
@@ -520,7 +541,22 @@ impl Parser {
     /// fonction pour parser les parametres
 
     fn parse_arguments_list(&mut self) -> Result<Vec<Expression>, ParserError> {
-        todo!()
+        println!("Début du parsing de la liste d'arguments");
+        let mut arguments = Vec::new();
+        if self.check(&[TokenType::DELIMITER(Delimiters::RPAR)]){
+            return Ok(arguments);
+        }
+        loop {
+            let argument = self.parse_expression(0);
+            arguments.push(argument?);
+
+            if !self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]) {
+                break;
+            }
+        }
+        println!("Arguments liste parsés : {:?}", arguments);
+        Ok(arguments)
+
     }
 
     fn parse_function_parameters(&mut self) -> Result<Vec<Parameter>, ParserError> {
@@ -1257,17 +1293,16 @@ impl Parser {
         println!("Mode de syntaxe : {:?}", self.syntax_mode);
         match self.syntax_mode{
             SyntaxMode::Indentation =>{
+                // ordre logique de verification EOF -> DEDENT -> NEWLINE
                 println!("Indentation Mode");
                 if self.check(&[TokenType::EOF]){
                     let _ = self.consume(TokenType::EOF);
                 }
-
                 if self.check(&[TokenType::DEDENT]){
                     let _ = self.consume(TokenType::DEDENT);
                 }else {
                     let _ = self.consume(TokenType::NEWLINE) ;
                 }
-
             }
             SyntaxMode::Braces =>{
                 println!("Braces Mode");
