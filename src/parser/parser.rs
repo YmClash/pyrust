@@ -1,6 +1,6 @@
 #[allow(dead_code)]
 use crate::lexer::lex::{SyntaxMode, Token};
-use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, ClassDeclaration, ConstDeclaration, Constructor, Declaration, EnumDeclaration, EnumVariant, Expression, Field, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, IndexAccess, Literal, MemberAccess, MethodCall, Mutability, Operator, Parameter, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility};
+use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, ClassDeclaration, CompoundAssignment, CompoundOperator, ConstDeclaration, Constructor, Declaration, DestructuringAssignment, EnumDeclaration, EnumVariant, Expression, Field, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, IndexAccess, Literal, MemberAccess, MethodCall, Mutability, Operator, Parameter, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility};
 use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget, ExpectedDeclaration};
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::tok::{Delimiters, Keywords, Operators, TokenType};
@@ -164,15 +164,46 @@ impl Parser {
 
     pub fn parse_expression(&mut self,precedence:u8) -> Result<Expression, ParserError> {
         println!("Début du parsing de l'expression");
+        //verifier si c'est destructuration
+        if self.check(&[TokenType::DELIMITER(Delimiters::LSBRACKET)]){
+            return self.parse_destructuring_assignment();
+        }
+
         let mut left = self.parse_postfix_expression()?;
 
-        if self.check(&[TokenType::OPERATOR(Operators::EQUAL)]){
-            self.advance();
-            let value = self.parse_expression(precedence)?;
-            return Ok(Expression::Assignment(Assignment{
-                target: Box::new(left),
-                value: Box::new(value),
-            }));
+        // si c'est une assignation
+        // if self.check(&[TokenType::OPERATOR(Operators::EQUAL)]){
+        //     self.advance();
+        //     let value = self.parse_expression(precedence)?;
+        //     return Ok(Expression::Assignment(Assignment{
+        //         target: Box::new(left),
+        //         value: Box::new(value),
+        //     }));
+        // }
+
+        if let Some(token) = self.current_token(){
+            match &token.token_type {
+                TokenType::OPERATOR(Operators::EQUAL) => {
+                    self.advance();
+                    let value = self.parse_expression(precedence)?;
+                    return Ok(Expression::Assignment(Assignment{
+                        target: Box::new(left),
+                        value: Box::new(value),
+                    }));
+                }
+                TokenType::OPERATOR(op) => {
+                    if let Some(compound_op) = self.get_compound_operator(op){
+                        self.advance();
+                        let value = self.parse_expression(precedence)?;
+                        return Ok(Expression::CompoundAssignment(CompoundAssignment{
+                            target: Box::new(left),
+                            operator: compound_op,
+                            value: Box::new(value),
+                        }));
+                    }
+                }
+                _ => {}
+            }
         }
 
 
@@ -260,6 +291,27 @@ impl Parser {
             } else { break; }
         }
         Ok(expr)
+    }
+
+    fn parse_destructuring_assignment(&mut self) -> Result<Expression,ParserError>{
+        println!("Début du parsing de l'assignation destructuree[");
+        self.consume(TokenType::DELIMITER(Delimiters::LSBRACKET))?;
+        let mut targets = Vec::new();
+        loop {
+            let target = self.parse_expression(0)?;
+            targets.push(target);
+            if !self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]){
+                break;
+            }
+        }
+        self.consume(TokenType::DELIMITER(Delimiters::RSBRACKET))?;
+        self.consume(TokenType::OPERATOR(Operators::EQUAL))?;
+        let value = self.parse_expression(0)?;
+        println!("Fin du parsing de l'assignation destructuree");
+        Ok(Expression::DestructuringAssignment(DestructuringAssignment{
+            targets,
+            value: Box::new(value),
+        }))
     }
 
 
@@ -1156,6 +1208,20 @@ impl Parser {
             _ => 0,
         }
     }
+
+
+
+    fn get_compound_operator(&self,op:&Operators) -> Option<CompoundOperator>{
+        match op {
+            Operators::PLUSEQUAL => Some(CompoundOperator::AddAssign),
+            Operators::MINEQUAL => Some(CompoundOperator::SubAssign),
+            Operators::STAREQUAL => Some(CompoundOperator::MulAssign),
+            Operators::SLASHEQUAL => Some(CompoundOperator::DivAssign),
+            Operators::PERCENTEQUAL => Some(CompoundOperator::ModAssign),
+            _ => None,
+        }
+    }
+
 
     fn peek_operator(&self) -> Option<Operator> {
         let token = self.current_token()?;

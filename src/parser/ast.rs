@@ -116,6 +116,21 @@ pub enum UnaryOperator {
     Negative,       // -
 }
 
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub enum CompoundOperator{
+    AddAssign,      // +=
+    SubAssign,      // -=
+    MulAssign,      // *=
+    DivAssign,      // /=
+    ModAssign,      // %=
+    BitwiseAndAssign,   // &=
+    BitwiseOrAssign,    // |=
+    BitwiseXorAssign,   // ^=
+    LeftShiftAssign,    // <<=
+    RightShiftAssign,   // >>=
+}
+
 
 #[allow(dead_code)]
 #[derive(Debug, Clone,PartialEq,Eq)]
@@ -308,7 +323,7 @@ pub enum Expression {
     BinaryOperation(BinaryOperation),
     UnaryOperation(UnaryOperation),
     FunctionCall(FunctionCall),
-    ArrayAccess(ArrayAccess),
+    //ArrayAccess(ArrayAccess), // transfere dans IndexAccess
     MemberAccess(MemberAccess),
     LambdaExpression(LambdaExpression),
     MatchExpression(MatchExpression),
@@ -319,7 +334,9 @@ pub enum Expression {
     Borrow(Box<Expression>),
     Statement(Box<Statement>),
     MethodCall(MethodCall),
-    IndexAccess(IndexAccess),
+    IndexAccess(IndexAccess), // Aka ArrayAccess
+    CompoundAssignment(CompoundAssignment),
+    DestructuringAssignment(DestructuringAssignment),
 
 }
 
@@ -336,6 +353,21 @@ pub struct MethodCall{
 pub struct IndexAccess{
     pub array: Box<Expression>,
     pub index: Box<Expression>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct CompoundAssignment{
+    pub target: Box<Expression>,
+    pub operator: CompoundOperator,
+    pub value: Box<Expression>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct DestructuringAssignment{
+    pub targets: Vec<Expression>,
+    pub value: Box<Expression>,
 }
 
 #[allow(dead_code)]

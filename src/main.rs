@@ -117,6 +117,17 @@ fn main() {
     let code_indice_acces_braces10 = "obj.data[start + offset].process()[index];";
     let code_indice_acces_indent10 = "obj.data[start + offset].process()[index]";
 
+    let code_assign_multi_braces = "a = b = c = 0;";
+    let code_assign_multi_indent = "a = b = c = 0";
+
+    let code_assign_compound_braces = "a += 5;";
+    let code_assign_compound_indent = "counter += offset * 5";
+
+    let code_assign_desctructuring_braces = "(a, b) = (1, 2);";
+    let code_assign_desctructuring_indent = "(a, b) = (1, 2)";
+
+    let code_assign_desctructuring_braces2 = "[x,y] = point;";
+    let code_assign_desctructuring_indent2 = "[a, b] = array";
 
 
 
@@ -127,7 +138,8 @@ fn main() {
 
 
 
-    let mut lexer = Lexer::new(code_indice_acces_indent9, SyntaxMode::Indentation);
+
+    let mut lexer = Lexer::new(code_assign_desctructuring_indent2, SyntaxMode::Indentation);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
