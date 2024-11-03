@@ -89,7 +89,7 @@ fn main() {
 
 
 
-    let mut lexer = Lexer::new(code_func_call_methode_indent2, SyntaxMode::Indentation);
+    let mut lexer = Lexer::new(code_func_call_methode_indent, SyntaxMode::Indentation);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
@@ -117,16 +117,16 @@ fn main() {
     println!("Sinon, Parsing des Expressions\n");
 
 
-
-    match parser.parse_expression_statement() {
-        Ok(ast) => {
-            println!("AST généré pour l'expression :");
-            println!("{:#?}", ast);
-        }
-        Err(e) => {
-            println!("Erreur lors du parsing : {}", e);
-        }
-    }
+    //
+    // match parser.parse_expression_statement() {
+    //     Ok(ast) => {
+    //         println!("AST généré pour l'expression :");
+    //         println!("{:#?}", ast);
+    //     }
+    //     Err(e) => {
+    //         println!("Erreur lors du parsing : {}", e);
+    //     }
+    // }
 
     println!("\n");
     println!("=========OK==========\n");
