@@ -308,6 +308,7 @@ pub enum Expression {
     BinaryOperation(BinaryOperation),
     UnaryOperation(UnaryOperation),
     FunctionCall(FunctionCall),
+    MethodCall(MethodCall),
     ArrayAccess(ArrayAccess),
     MemberAccess(MemberAccess),
     LambdaExpression(LambdaExpression),
@@ -380,9 +381,19 @@ pub struct BinaryOperation {
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct FunctionCall {
-    pub name: String,
+    pub name: Box<Expression>,
     pub arguments: Vec<Expression>,
 }
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct MethodCall {
+    pub object: Box<Expression>,
+    pub method: String,
+    pub arguments: Vec<Expression>,
+}
+
+
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct ArrayAccess {
