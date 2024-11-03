@@ -23,7 +23,7 @@ fn main() {
 
     println!("Pyrust Compiler Test");
     println!("===================\n");
-    println!("Mode de syntaxe :Braces\n");
+    println!("Mode de syntaxe :\n");
 
 
     let code_source = r#"let x = 5;const v = 100;"#;
@@ -111,6 +111,11 @@ fn main() {
     let code_indice_acces_braces8 = "vector[obj.get_index()]";
     let code_indice_acces_indent8 = "vector[obj.get_index()]";
 
+    let code_indice_acces_braces9 = "matrix[i][j] = array[get_index()] + offset;";
+    let code_indice_acces_indent9 = "matrix[i][j] = array[get_index()] + offset";
+
+    let code_indice_acces_braces10 = "obj.data[start + offset].process()[index];";
+    let code_indice_acces_indent10 = "obj.data[start + offset].process()[index]";
 
 
 
@@ -121,7 +126,8 @@ fn main() {
 
 
 
-    let mut lexer = Lexer::new(code_indice_acces_indent8, SyntaxMode::Indentation);
+
+    let mut lexer = Lexer::new(code_indice_acces_indent9, SyntaxMode::Indentation);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
@@ -132,18 +138,18 @@ fn main() {
 
     let mut parser = Parser::new(tokens, SyntaxMode::Indentation);
 
-    while !parser.is_at_end() {
-        match parser.parse_declaration() {
-            Ok(ast) => {
-                println!("AST généré pour la déclaration :");
-                println!("{:#?}", ast);
-            }
-            Err(e) => {
-                println!("Erreur lors du parsing : {}", e);
-                break;
-            }
-        }
-    }
+    // while !parser.is_at_end() {
+    //     match parser.parse_declaration() {
+    //         Ok(ast) => {
+    //             println!("AST généré pour la déclaration :");
+    //             println!("{:#?}", ast);
+    //         }
+    //         Err(e) => {
+    //             println!("Erreur lors du parsing : {}", e);
+    //             break;
+    //         }
+    //     }
+    // }
 
     println!("Parsing terminé\n");
     println!("Sinon, Parsing des Expressions\n");

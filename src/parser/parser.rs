@@ -166,6 +166,15 @@ impl Parser {
         println!("Début du parsing de l'expression");
         let mut left = self.parse_postfix_expression()?;
 
+        if self.check(&[TokenType::OPERATOR(Operators::EQUAL)]){
+            self.advance();
+            let value = self.parse_expression(precedence)?;
+            return Ok(Expression::Assignment(Assignment{
+                target: Box::new(left),
+                value: Box::new(value),
+            }));
+        }
+
 
         while let Some (operator) = self.peek_operator(){
             let operator_precedence = self.get_operator_precedence(&operator);

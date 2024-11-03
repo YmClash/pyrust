@@ -356,8 +356,10 @@ pub struct Borrow {
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Assignment{
-    pub left: Box<Expression>,
-    pub right: Box<Expression>,
+    // pub left: Box<Expression>,
+    // pub right: Box<Expression>,
+    pub target: Box<Expression>,
+    pub value: Box<Expression>,
 }
 
 
