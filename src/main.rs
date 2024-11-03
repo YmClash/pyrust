@@ -82,14 +82,46 @@ fn main() {
     let code_func_call_methode_indent = "let x = chat.danse(x,y)";
 
     let code_func_call_methode_braces2 = "chat.danse(x,y);";
-    let code_func_call_methode_indent = "chat.danse(x,y)";
+    let code_func_call_methode_indent2 = "chat.danse(x,y)";
+
+    let code_func_call_methode_braces3 = "obj.method1().field.method2(1+2);";
+    let code_func_call_methode_indent3 = "obj.method1().field.method2(1+2)";
+
+    let code_indice_acces_braces = "let x = tab[5];";
+    let code_indice_acces_indent = "let x = tab[5]";
+
+    let code_indice_acces_braces2 = "array[0];";
+    let code_indice_acces_indent2 = "array[0]";
+
+    let code_indice_acces_braces3 = "tab[i+3];";
+    let code_indice_acces_indent3 = "tab[i+3]";
+
+    let code_indice_acces_braces4 = "vector[calculate_index()];";
+    let code_indice_acces_indent4 = "vector[calculate_index()]";
+
+    let code_indice_acces_braces5 = "obj.array[i].method()";
+    let code_indice_acces_indent5 = "obj.array[i].method()";
+
+    let code_indice_acces_braces6 = "obj.array[i].method().field";
+    let code_indice_acces_indent6 = "obj.array[i].method().field";
+
+    let code_indice_acces_braces7 = "array[i][j]";
+    let code_indice_acces_indent7 = "array[i][j]";
+
+    let code_indice_acces_braces8 = "vector[obj.get_index()]";
+    let code_indice_acces_indent8 = "vector[obj.get_index()]";
 
 
 
 
 
 
-    let mut lexer = Lexer::new(code_func_indent2, SyntaxMode::Indentation);
+
+
+
+
+
+    let mut lexer = Lexer::new(code_indice_acces_indent8, SyntaxMode::Indentation);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification

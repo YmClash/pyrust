@@ -1,6 +1,6 @@
 #[allow(dead_code)]
 use crate::lexer::lex::{SyntaxMode, Token};
-use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, ClassDeclaration, ConstDeclaration, Constructor, Declaration, EnumDeclaration, EnumVariant, Expression, Field, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, Literal, MemberAccess, MethodCall, Mutability, Operator, Parameter, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility};
+use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, ClassDeclaration, ConstDeclaration, Constructor, Declaration, EnumDeclaration, EnumVariant, Expression, Field, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, IndexAccess, Literal, MemberAccess, MethodCall, Mutability, Operator, Parameter, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility};
 use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget, ExpectedDeclaration};
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::tok::{Delimiters, Keywords, Operators, TokenType};
@@ -213,6 +213,7 @@ impl Parser {
                     self.advance();
                     let arguments = self.parse_arguments_list()?;
                     self.consume(TokenType::DELIMITER(Delimiters::RPAR))?;
+                    println!("Arguments parsés : {:?}", arguments);
                     expr = Expression::MethodCall(MethodCall{
                         object: Box::new(expr),
                         method: member_name,
@@ -220,6 +221,7 @@ impl Parser {
                     });
                 }else{
                     // Acces à un membre
+                    println!("Nom du membre parsé : {}", member_name);
                     expr = Expression::MemberAccess(MemberAccess{
                         object: Box::new(expr),
                         member: member_name,
@@ -230,11 +232,23 @@ impl Parser {
                 self.advance();
                 let arguments = self.parse_arguments_list()?;
                 self.consume(TokenType::DELIMITER(Delimiters::RPAR))?;
+                println!("Arguments parsés : {:?}", arguments);
                 expr = Expression::FunctionCall(FunctionCall{
                     name: Box::new(expr),
                     arguments,
                 });
-            }else { break; }
+            } else if self.check(&[TokenType::DELIMITER(Delimiters::LSBRACKET)]) {
+                //Acces à un élément d'un tableau par indice
+                self.advance();
+                let index = self.parse_expression(0)?;
+                self.consume(TokenType::DELIMITER(Delimiters::RSBRACKET))?;
+                println!("Index parsé : {:?}", index);
+                expr = Expression::IndexAccess(IndexAccess{
+                    array: Box::new(expr),
+                    index: Box::new(index),
+                });
+
+            } else { break; }
         }
         Ok(expr)
     }

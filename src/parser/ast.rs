@@ -319,6 +319,7 @@ pub enum Expression {
     Borrow(Box<Expression>),
     Statement(Box<Statement>),
     MethodCall(MethodCall),
+    IndexAccess(IndexAccess),
 
 }
 
@@ -328,6 +329,13 @@ pub struct MethodCall{
     pub object: Box<Expression>,
     pub method: String,
     pub arguments: Vec<Expression>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct IndexAccess{
+    pub array: Box<Expression>,
+    pub index: Box<Expression>,
 }
 
 #[allow(dead_code)]
