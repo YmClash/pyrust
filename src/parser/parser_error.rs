@@ -46,6 +46,9 @@ pub enum ParserErrorType {
     ExpectedCloseParenthesis,
     ExpectedCommaOrCloseBrace,
     ExpectedStructField,
+    ExpectedArrowOrBlock,
+    ExpectedCommaOrClosingParenthesis,
+
 
     UnexpectedIndentation,
     UnexpectedEndOfInput,
@@ -127,6 +130,7 @@ impl Display for ParserErrorType {
 
             ParserErrorType::UnexpectedIndentation => write!(f, "UnexpectedIndentation"),
             ParserErrorType::ExpectedParameterName => write!(f, "ExpectedParameterName"),
+            ParserErrorType::ExpectedArrowOrBlock => write!(f, "ExpectedArrowOrBlock"),
 
 
             ParserErrorType::ExpectedSelfParameter => write!(f, "ExpectedSelfParameter"),
@@ -140,6 +144,9 @@ impl Display for ParserErrorType {
             ParserErrorType::ExpectFunctionName => write!(f, "ExpectFunctionName"),
             ParserErrorType::ExpectedCommaOrCloseBrace => write!(f, "ExpectedCommaOrCloseBrace"),
             ParserErrorType::ExpectedStructField => write!(f, "ExpectedStructField"),
+
+            ParserErrorType::ExpectedCommaOrClosingParenthesis => write!(f, "ExpectedCommaOrClosingParenthesis"),
+
 
             ParserErrorType::MultipleConstructors => write!(f, "MultipleConstructors"),
             ParserErrorType::MismatchedParametersAndAttributes => write!(f, "MismatchedParametersAndAttributes"),
@@ -186,10 +193,15 @@ impl ParserError {
             ParserErrorType::ExpectedCommaOrCloseBrace => "Expected comma or close brace".to_string(),
             ParserErrorType::ExpectedStructField => "Expected struct field".to_string(),
 
+            ParserErrorType::ExpectedCommaOrClosingParenthesis => "Expected comma or closing parenthesis".to_string(),
+
+
             ParserErrorType::ExpectedDeclaration => "Expected declaration".to_string(),
             ParserErrorType::ExpectedParameterName => "Expected parameter name".to_string(),
 
             ParserErrorType::ExpectedSelfParameter => "Expected self parameter".to_string(),
+
+            ParserErrorType::ExpectedArrowOrBlock => "Expected arrow or block".to_string(),
 
             ParserErrorType::MultipleConstructors => "Multiple constructors".to_string(),
             ParserErrorType::MismatchedParametersAndAttributes => "Mismatched parameters and attributes".to_string(),

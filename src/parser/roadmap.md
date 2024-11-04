@@ -4,9 +4,9 @@
 - [x] Expressions primaires (littéraux, identifiants)
 - [x] Expressions unaires
 - [x] Expressions binaires avec précédence
-- [ ] Appels de fonction
-- [ ] Accès aux membres (dot notation)
-- [ ] Expressions lambda
+- [x] Appels de fonction
+- [x] Accès aux membres (dot notation)
+- [ ] Expressions lambda // a moitie Implementer
 - [ ] Expressions de cast de type
 
 ## 2. Déclarations

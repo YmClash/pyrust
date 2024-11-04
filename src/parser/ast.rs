@@ -327,11 +327,11 @@ pub enum Expression {
     MemberAccess(MemberAccess),
     LambdaExpression(LambdaExpression),
     MatchExpression(MatchExpression),
-    MatchArms(Box<MatchArms>),
+    MatchArms(MatchArms),
     TypeCast(TypeCast),
     Conditional(Conditional),
     Assignment(Assignment),
-    Borrow(Box<Expression>),
+    Borrow(Borrow),
     Statement(Box<Statement>),
     MethodCall(MethodCall),
     IndexAccess(IndexAccess), // Aka ArrayAccess
@@ -485,6 +485,14 @@ pub enum Statement {
 
     Declaration(Declaration),
     Assignment(Expression, Expression),
+    Match(MatchStatement),
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Debug)]
+pub struct MatchStatement{
+    pub expression: Expression,
+    pub arms: Vec<MatchArms>,
 }
 
 #[allow(dead_code)]
@@ -497,9 +505,10 @@ pub struct ReturnStatement {
 #[derive(Clone, Debug)]
 pub struct IfStatement {
     pub condition: Expression,
-    pub block: Block,
-    pub elif_blocks: Vec<(Expression, Block)>,
-    pub else_block: Option<Block>,
+    //pub block: Block,
+    pub then_block: Vec<ASTNode>,
+    //pub elif_blocks: Vec<(Expression, Block)>,
+    pub else_block: Option<Vec<ASTNode>>,
 }
 
 #[allow(dead_code)]
@@ -586,8 +595,10 @@ pub struct Identifier {
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct LambdaExpression {
-    pub parameters: Vec<Parameters>,
-    pub block: Block,
+    pub parameters: Vec<Parameter>,
+    pub return_type: Option<Type>,
+    //pub body: Box<Expression>,
+    pub body: Vec<ASTNode>,
 }
 
 #[allow(dead_code)]

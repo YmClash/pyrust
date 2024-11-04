@@ -28,7 +28,7 @@ fn main() {
 
     let code_source = r#"let x = 5;const v = 100;"#;
 
-    let code_binary = "&mut 5 ";
+    let code_binary = "array[0][1]";
 
 
     let code_number = "a && b || c";
@@ -96,19 +96,19 @@ fn main() {
     let code_indice_acces_braces3 = "tab[i+3];";
     let code_indice_acces_indent3 = "tab[i+3]";
 
-    let code_indice_acces_braces4 = "vector[calculate_index()];";
-    let code_indice_acces_indent4 = "vector[calculate_index()]";
+    let code_indice_acces_braces4 = "vector[calculate_index().index];";
+    let code_indice_acces_indent4 = "vector[calculate_index().index]";
 
-    let code_indice_acces_braces5 = "obj.array[i].method()";
+    let code_indice_acces_braces5 = "obj.array[i].method();";
     let code_indice_acces_indent5 = "obj.array[i].method()";
 
-    let code_indice_acces_braces6 = "obj.array[i].method().field";
+    let code_indice_acces_braces6 = "obj.array[i].method().field;";
     let code_indice_acces_indent6 = "obj.array[i].method().field";
 
-    let code_indice_acces_braces7 = "array[i][j]";
+    let code_indice_acces_braces7 = "array[i][j];";
     let code_indice_acces_indent7 = "array[i][j]";
 
-    let code_indice_acces_braces8 = "vector[obj.get_index()]";
+    let code_indice_acces_braces8 = "vector[obj.get_index()];";
     let code_indice_acces_indent8 = "vector[obj.get_index()]";
 
     let code_indice_acces_braces9 = "matrix[i][j] = array[get_index()] + offset;";
@@ -117,29 +117,30 @@ fn main() {
     let code_indice_acces_braces10 = "obj.data[start + offset].process()[index];";
     let code_indice_acces_indent10 = "obj.data[start + offset].process()[index]";
 
+    let code_indice_acces_braces11 = "obj.method1().method2()[index];";
+    let code_indice_acces_indent11 = "obj.method1().method2()[index]";
+
     let code_assign_multi_braces = "a = b = c = 0;";
     let code_assign_multi_indent = "a = b = c = 0";
 
     let code_assign_compound_braces = "a += 5;";
     let code_assign_compound_indent = "counter += offset * 5";
 
-    let code_assign_desctructuring_braces = "(a, b) = (1, 2);";
-    let code_assign_desctructuring_indent = "(a, b) = (1, 2)";
 
-    let code_assign_desctructuring_braces2 = "[x,y] = point;";
-    let code_assign_desctructuring_indent2 = "[a, b] = array";
+    let code_assign_desctructuring_braces = "[x,y,z] = point3d;";
+    let code_assign_desctructuring_indent = "[x, y, z] = point3d";
 
+    let code_lambda_braces = "let add = lambda (x: int, y: int) -> int {x + y};";
+    let code_lambda_indent = "add = lambda (x: int, y: int) -> int: x + y";
 
-
-
-
+    let code_lambda_braces2 = "";
 
 
 
 
 
 
-    let mut lexer = Lexer::new(code_assign_desctructuring_indent2, SyntaxMode::Indentation);
+    let mut lexer = Lexer::new(code_func_braces, SyntaxMode::Braces);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
@@ -148,35 +149,35 @@ fn main() {
     }
     println!("\n");
 
-    let mut parser = Parser::new(tokens, SyntaxMode::Indentation);
+    let mut parser = Parser::new(tokens, SyntaxMode::Braces);
 
-    // while !parser.is_at_end() {
-    //     match parser.parse_declaration() {
-    //         Ok(ast) => {
-    //             println!("AST généré pour la déclaration :");
-    //             println!("{:#?}", ast);
-    //         }
-    //         Err(e) => {
-    //             println!("Erreur lors du parsing : {}", e);
-    //             break;
-    //         }
-    //     }
-    // }
+    while !parser.is_at_end() {
+        match parser.parse_declaration() {
+            Ok(ast) => {
+                println!("AST généré pour la déclaration :");
+                println!("{:#?}", ast);
+            }
+            Err(e) => {
+                println!("Erreur lors du parsing : {}", e);
+                break;
+            }
+        }
+    }
 
     println!("Parsing terminé\n");
     println!("Sinon, Parsing des Expressions\n");
 
 
 
-    match parser.parse_expression_statement() {
-        Ok(ast) => {
-            println!("AST généré pour l'expression :");
-            println!("{:#?}", ast);
-        }
-        Err(e) => {
-            println!("Erreur lors du parsing : {}", e);
-        }
-    }
+    // match parser.parse_expression_statement() {
+    //     Ok(ast) => {
+    //         println!("AST généré pour l'expression :");
+    //         println!("{:#?}", ast);
+    //     }
+    //     Err(e) => {
+    //         println!("Erreur lors du parsing : {}", e);
+    //     }
+    // }
 
     println!("\n");
     println!("=========OK==========\n");
