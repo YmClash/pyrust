@@ -15,6 +15,14 @@ pub enum ASTNode {
     Statement(Statement),
 
     Error(ParserError),
+    Body(Body),
+}
+
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct Body {
+    pub statements: Vec<ASTNode>,
 }
 
 #[allow(dead_code)]
@@ -473,15 +481,15 @@ pub enum Statement {
     Import(ImportStatement),
     Raise(RaiseStatement),
     Del(DelStatement),
-    If(IfStatement),
-    Elif(ElifStatement),
-    While(WhileStatement),
-    For(ForStatement),
+    IfStatement(IfStatement),
+    ElifStatement(ElifStatement),
+    WhileStatement(WhileStatement),
+    ForStatement(ForStatement),
     Break,
     Continue,
-    Try(TryStatement),
-    With(WithStatement),
-    Yield(YieldStatement),
+    TryStatement(TryStatement),
+    WithStatement(WithStatement),
+    YieldStatement(YieldStatement),
 
     Declaration(Declaration),
     Assignment(Expression, Expression),
@@ -505,9 +513,7 @@ pub struct ReturnStatement {
 #[derive(Clone, Debug)]
 pub struct IfStatement {
     pub condition: Expression,
-    //pub block: Block,
     pub then_block: Vec<ASTNode>,
-    //pub elif_blocks: Vec<(Expression, Block)>,
     pub else_block: Option<Vec<ASTNode>>,
 }
 
@@ -515,20 +521,22 @@ pub struct IfStatement {
 #[derive(Clone, Debug)]
 pub struct ElifStatement {
     pub condition: Expression,
-    pub block: Block,
+    pub body: Body,
 }
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct WhileStatement {
     pub condition: Expression,
-    pub block: Block,
+    pub body: Vec<ASTNode>,
+    //pub body: Body,
 }
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct ForStatement {
-    pub variable_iter: String,
+    pub iterator: String,
     pub iterable: Expression,
-    pub block: Block,
+    pub body: Vec<ASTNode>,
+    //pub body: Body,
 }
 
 #[allow(dead_code)]
@@ -556,7 +564,7 @@ pub struct DelStatement {
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct TryStatement {
-    pub block: Block,
+    pub body: Body,
     pub except: Vec<(Option<String>, Block)>,
     pub else_block: Option<Block>,
     pub finally_block: Option<Block>,
@@ -565,7 +573,7 @@ pub struct TryStatement {
 #[derive(Debug, Clone)]
 pub struct WithStatement {
     pub target: Expression,
-    pub block: Block,
+    pub body: Body,
 }
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -583,7 +591,7 @@ pub struct AssignmentStatement {
 #[derive(Debug, Clone)]
 pub struct Function {
     pub declaration: FunctionDeclaration,
-    pub block: Block,
+    pub body: Body,
 }
 
 #[allow(dead_code)]
@@ -599,6 +607,7 @@ pub struct LambdaExpression {
     pub return_type: Option<Type>,
     //pub body: Box<Expression>,
     pub body: Vec<ASTNode>,
+    //pub body: Body,
 }
 
 #[allow(dead_code)]
@@ -648,6 +657,9 @@ impl fmt::Display for ASTNode {
             // ASTNode::Literal(lit) => write!(f, "{}", lit),
             // ASTNode::Operator(op) => write!(f, "{}", op),
             ASTNode::Error(err) => write!(f, "{}", err),
+
+            ASTNode::Body(body) => write!(f, "{:?}", body),
+
         }
     }
 }
@@ -675,6 +687,8 @@ impl ASTNode{
     pub fn error(error: ParserError) -> Self{
         ASTNode::Error(error)
     }
+
+    pub fn body(body: Body) -> Self{ ASTNode::Body(body) }
 }
 
 // by YmC
@@ -687,22 +701,22 @@ impl ASTNode{
 
 
 
-impl Block {
-    pub fn is_indentation_mode(&self) -> bool{
-        matches!(self.syntax_mode, BlockSyntax::Indentation)
-    }
-    // pub fn validate(&self) -> Result<(),String>{
-    //     match self.syntax_mode {
-    //         BlockSyntax::Indentation if self.indent_level.is_none() => {
-    //             Err("Indentation level is missing".to_string())
-    //         }
-    //         BlockSyntax::Braces if self.braces.is_none() => {
-    //             Err("Braces are missing".to_string())
-    //         }
-    //         _ => Ok(()),
-    //     }
-    // }
-
-}
+// impl Block {
+//     pub fn is_indentation_mode(&self) -> bool{
+//         matches!(self.syntax_mode, BlockSyntax::Indentation)
+//     }
+//     // pub fn validate(&self) -> Result<(),String>{
+//     //     match self.syntax_mode {
+//     //         BlockSyntax::Indentation if self.indent_level.is_none() => {
+//     //             Err("Indentation level is missing".to_string())
+//     //         }
+//     //         BlockSyntax::Braces if self.braces.is_none() => {
+//     //             Err("Braces are missing".to_string())
+//     //         }
+//     //         _ => Ok(()),
+//     //     }
+//     // }
+//
+// }
 
 ////////////////////////////////////////////////////////////////

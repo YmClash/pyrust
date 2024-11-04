@@ -1,6 +1,6 @@
 #[allow(dead_code)]
 use crate::lexer::lex::{SyntaxMode, Token};
-use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, ClassDeclaration, CompoundAssignment, CompoundOperator, ConstDeclaration, Constructor, Declaration, DestructuringAssignment, EnumDeclaration, EnumVariant, Expression, Field, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, IfStatement, IndexAccess, LambdaExpression, Literal, MemberAccess, MethodCall, Mutability, Operator, Parameter, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility};
+use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, Body, ClassDeclaration, CompoundAssignment, CompoundOperator, ConstDeclaration, Constructor, Declaration, DestructuringAssignment, EnumDeclaration, EnumVariant, Expression, Field, ForStatement, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, IfStatement, IndexAccess, LambdaExpression, Literal, MemberAccess, MethodCall, Mutability, Operator, Parameter, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility, WhileStatement};
 use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget, ExpectedDeclaration, ExpectedArrowOrBlock, ExpectedCommaOrClosingParenthesis};
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::tok::{Delimiters, Keywords, Operators, TokenType};
@@ -141,18 +141,24 @@ impl Parser {
 
 
 
-    fn parse_statement(&mut self) -> Result<ASTNode, ParserError> {
+    pub fn parse_statement(&mut self) -> Result<ASTNode, ParserError> {
         if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]) {
             self.parse_return_statement()
         }else if self.check(&[TokenType::KEYWORD(Keywords::LET)]){
             self.parse_variable_declaration()
         }else if self.match_token(&[TokenType::KEYWORD(Keywords::IF)]){
             self.parse_if_statement()
-        } else if self.match_token(&[TokenType::KEYWORD(Keywords::WHILE)]) {
+        }else if self.match_token(&[TokenType::KEYWORD(Keywords::WHILE)]) {
             self.parse_while_statement()
-        } else if self.match_token(&[TokenType::KEYWORD(Keywords::FOR)]) {
+        }else if self.match_token(&[TokenType::KEYWORD(Keywords::FOR)]) {
             self.parse_for_statement()
-        } else {
+        }else if self.match_token(&[TokenType::KEYWORD(Keywords::BREAK)]){
+            self.consume_seperator();
+            Ok(ASTNode::Statement(Statement::Break))
+        }else if self.match_token(&[TokenType::KEYWORD(Keywords::CONTINUE)]){
+            self.consume_seperator();
+            Ok(ASTNode::Statement(Statement::Continue))
+        }else {
             self.parse_expression_statement()
         }
 
@@ -458,10 +464,13 @@ impl Parser {
             vec![ASTNode::Expression(expr)]
         } else if self.check(&[TokenType::DELIMITER(Delimiters::LCURBRACE)]) {
             // Bloc de code
-            self.parse_block_expression()?
+            //self.parse_block_expression()?
+            self.parse_body_block()?
         } else {
             return Err(ParserError::new(ExpectedArrowOrBlock, self.current_position()));
         };
+
+
 
         Ok(Expression::LambdaExpression(LambdaExpression{
             parameters,
@@ -595,6 +604,19 @@ impl Parser {
         }
 
         Ok(body)
+    }
+
+    fn parse_body_block(&mut self) -> Result<Vec<ASTNode>,ParserError>{
+        println!("Début du parsing du corps");
+        self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
+        let mut statements = Vec::new();
+        while !self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) && !self.is_at_end() {
+            let stmt = self.parse_statement()?;
+            statements.push(stmt);
+        }
+        self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+        println!("Fin du parsing du corps OK!!!!!!!!!!!!");
+        Ok(statements)
     }
 
     fn parse_block_expression(&mut self) -> Result<Vec<ASTNode>,ParserError>{
@@ -1025,19 +1047,20 @@ impl Parser {
     fn parse_if_statement(&mut self) -> Result<ASTNode, ParserError> {
         println!("Début du parsing de l'instruction if");
         let condition = self.parse_expression(0)?;
-        let then_block = self.parse_block()?; // block_expression
+        let then_block = self.parse_body_block()?;; // block_expression
 
-        let else_block = if self.match_token(&[TokenType::KEYWORD(Keywords::ELIF),TokenType::KEYWORD(Keywords::ELSE)]){
-            if self.match_token(&[TokenType::KEYWORD(Keywords::IF)]){
-                Some(vec![self.parse_if_statement()?])
-            }else {
-                Some(self.parse_block()?)
-            }
-        }else{
+        let else_block = if self.check(&[TokenType::KEYWORD(Keywords::ELIF)]){
+            self.advance();
+            let elif_statement = self.parse_if_statement()?;
+            Some(vec![elif_statement])
+        }else if self.match_token(&[TokenType::KEYWORD(Keywords::ELSE)]){
+            Some(self.parse_body_block()?)
+        }else {
             None
         };
-        println!("Fin du parsing de l'instruction if");
-        Ok(ASTNode::Statement(Statement::If(IfStatement{
+
+        println!("Fin du parsing de l'instruction if OK!!!!!!!!!!!!!!!!!!!!");
+        Ok(ASTNode::Statement(Statement::IfStatement(IfStatement{
             condition,
             then_block,
             else_block,
@@ -1045,10 +1068,29 @@ impl Parser {
 
     }
     fn parse_while_statement(&mut self) -> Result<ASTNode, ParserError> {
-        todo!()
+        println!("Début du parsing de l'instruction while");
+        let condition = self.parse_expression(0)?;
+        let body = self.parse_body_block()?;
+        println!("Fin du parsing de l'instruction while OK!!!!!!!!!!!!!!");
+        Ok(ASTNode::Statement(Statement::WhileStatement(WhileStatement{
+            condition,
+            body,
+        })))
+
     }
     fn parse_for_statement(&mut self) -> Result<ASTNode, ParserError> {
-        todo!()
+        println!("Début du parsing de l'instruction for");
+        let iterator = self.consume_identifier()?;
+        self.consume(TokenType::KEYWORD(Keywords::IN))?;
+        let iterable = self.parse_expression(0)?;
+        let body = self.parse_body_block()?;
+        println!("Fin du parsing de l'instruction for OK!!!!!!!!!!!!!!!");
+        Ok(ASTNode::Statement(Statement::ForStatement(ForStatement{
+            iterator,
+            iterable,
+            body
+        })))
+
     }
 
     fn pase_match_statement(&mut self) -> Result<ASTNode, ParserError> {
@@ -1067,7 +1109,7 @@ impl Parser {
             None
         };
         println!("Valeur de retour parsée : {:?}", value);
-
+        println!("Fin du parsing de l'instruction de retour OK!!!!!!!!!!!!!!");
         Ok(ASTNode::Statement(Statement::Return(ReturnStatement{
             value,
         })))
