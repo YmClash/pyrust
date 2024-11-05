@@ -1055,11 +1055,9 @@ impl Parser {
             Some(vec![elif_statement])
         }else if self.match_token(&[TokenType::KEYWORD(Keywords::ELSE)]){
             Some(self.parse_body_block()?)
-        }else {
-            None
-        };
+        }else { None };
 
-        println!("Fin du parsing de l'instruction if OK!!!!!!!!!!!!!!!!!!!!");
+        println!("Fin du parsing de l'instruction if");
         Ok(ASTNode::Statement(Statement::IfStatement(IfStatement{
             condition,
             then_block,
@@ -1096,6 +1094,8 @@ impl Parser {
     fn pase_match_statement(&mut self) -> Result<ASTNode, ParserError> {
         todo!()
     }
+
+
 
 
 

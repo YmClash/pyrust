@@ -335,7 +335,7 @@ pub enum Expression {
     MemberAccess(MemberAccess),
     LambdaExpression(LambdaExpression),
     MatchExpression(MatchExpression),
-    MatchArms(MatchArms),
+    MatchArm(MatchArm),
     TypeCast(TypeCast),
     Conditional(Conditional),
     Assignment(Assignment),
@@ -476,11 +476,11 @@ pub struct Conditional {
 #[derive(Clone, Debug)]
 pub enum Statement {
     Expression(Expression),
-    Return(ReturnStatement),
-    Use(UseStatement),
-    Import(ImportStatement),
-    Raise(RaiseStatement),
-    Del(DelStatement),
+    ReturnStatement(ReturnStatement),
+    UseStatement(UseStatement),
+    ImportStatement(ImportStatement),
+    RaiseStatement(RaiseStatement),
+    DelStatement(DelStatement),
     IfStatement(IfStatement),
     ElifStatement(ElifStatement),
     WhileStatement(WhileStatement),
@@ -491,16 +491,16 @@ pub enum Statement {
     WithStatement(WithStatement),
     YieldStatement(YieldStatement),
 
-    Declaration(Declaration),
+    DeclarationStatement(Declaration),
     Assignment(Expression, Expression),
-    Match(MatchStatement),
+    MatchStatement(MatchStatement),
 }
 
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct MatchStatement{
     pub expression: Expression,
-    pub arms: Vec<MatchArms>,
+    pub arms: Vec<MatchArm>,
 }
 
 #[allow(dead_code)]
@@ -614,14 +614,16 @@ pub struct LambdaExpression {
 #[derive(Debug, Clone)]
 pub struct MatchExpression {
     pub expression: Box<Expression>,
-    pub arms: Vec<MatchArms>,
+    pub arms: Vec<MatchArm>,
 }
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
-pub struct MatchArms {
+pub struct MatchArm {
     pub pattern: Pattern,
-    pub expression: Box<Expression>,
+    pub guard: Option<Expression>,
+    //pub expression: Box<Expression>
+    pub body: Vec<ASTNode>,
 }
 
 #[allow(dead_code)]
@@ -631,6 +633,9 @@ pub enum Pattern {
     Identifier(String),
     Wildcard,
     EnumVariant(EnumVariant),
+    Range(Box<Pattern>,Box<Pattern>),
+    Tuple(Vec<Pattern>),
+    Constructor(String, Vec<Pattern>),
 }
 
 impl fmt::Display for ASTNode {

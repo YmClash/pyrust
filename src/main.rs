@@ -133,16 +133,17 @@ fn main() {
     let code_lambda_braces = "let add = lambda (x: int, y: int) -> int {x + y};";
     let code_lambda_indent = "add = lambda (x: int, y: int) -> int: x + y";
 
-    let code_test = r#"if x > 0 { print(x);let mut y = 5;}"#;
-    let code_test2 = r#"if x > 0 { print(x); } elif { print(-x);} else{ print(\"zero\"); }"#;
+    let code_test = r#"if x > 0 { print(x);} elif x > 0 {hallo.chante;}elif x==0 {momo.position(x,y);}else{print(hallo.danse);}"#;
+    let code_test2 = r#"if x > 0 { print(IF); } elif { print(ELIF ou ELSE IF };} else{print(ELSE) ;}"#;
     let code_test3 = r#"while x > 0 { print(x);}"#;
+    let code_test4 = r#"for i in range(10) { print(i);}"#;
 
 
 
 
 
 
-    let mut lexer = Lexer::new(code_test2, SyntaxMode::Braces);
+    let mut lexer = Lexer::new(code_test, SyntaxMode::Braces);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
