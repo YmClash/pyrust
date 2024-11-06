@@ -35,6 +35,17 @@ a venir
 Voici un exemple de programme simple en PyRust :
 les keywords peuvent changer à l'avenir 
 
+# Comprendre les Différences entre les Modes
+
+## Mode Braces :
+Utilise des accolades {} pour délimiter les blocs.
+Les séparateurs (comme ;) sont utilisés pour terminer les instructions.
+## Mode Indentation :
+L'indentation (espaces ou tabulations) définit la structure des blocs.
+Pas besoin d'accolades.
+Les nouvelles lignes et l'indentation remplacent les séparateurs.
+
+
 ```pyrust
 #Syntaxe_mode = Indentation
 
