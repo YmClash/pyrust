@@ -621,7 +621,7 @@ pub struct MatchExpression {
 #[derive(Debug, Clone)]
 pub struct MatchArm {
     pub pattern: Pattern,
-    pub guard: Option<Expression>,
+    pub guard: Option<Box<Expression>>,
     //pub expression: Box<Expression>
     pub body: Vec<ASTNode>,
 }
