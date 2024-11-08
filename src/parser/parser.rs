@@ -1,6 +1,6 @@
 #[allow(dead_code)]
 use crate::lexer::lex::{SyntaxMode, Token};
-use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, Body, ClassDeclaration, CompoundAssignment, CompoundOperator, ConstDeclaration, Constructor, Declaration, DestructuringAssignment, EnumDeclaration, EnumVariant, Expression, Field, ForStatement, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, IfStatement, IndexAccess, LambdaExpression, Literal, MemberAccess, MethodCall, Mutability, Operator, Parameter, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility, WhileStatement};
+use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, Body, ClassDeclaration, CompoundAssignment, CompoundOperator, ConstDeclaration, Constructor, Declaration, DestructuringAssignment, EnumDeclaration, EnumVariant, Expression, Field, ForStatement, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, IfStatement, IndexAccess, LambdaExpression, Literal, MatchArm, MatchStatement, MemberAccess, MethodCall, Mutability, Operator, Parameter, Parameters, Pattern, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility, WhileStatement};
 use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget, ExpectedDeclaration, ExpectedArrowOrBlock, ExpectedCommaOrClosingParenthesis};
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::tok::{Delimiters, Keywords, Operators, TokenType};
@@ -1091,10 +1091,76 @@ impl Parser {
 
     }
 
-    fn pase_match_statement(&mut self) -> Result<ASTNode, ParserError> {
-        todo!()
+    pub fn parse_match_statement(&mut self) -> Result<ASTNode, ParserError> {
+        println!("Début du parsing de l'instruction match");
+        self.consume(TokenType::KEYWORD(Keywords::MATCH))?;
+        let match_expr = self.parse_expression(0)?;
+        self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
+
+        let mut arms = Vec::new();
+
+        while !self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) && !self.is_at_end(){
+            let arm = self.parse_match_arm()?;
+            arms.push(arm);
+
+        }
+        self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+        println!("Fin du parsing de l'instruction match OK!!!!!!!!!!!!!!");
+
+        Ok(ASTNode::Statement(Statement::MatchStatement(MatchStatement{
+            expression: match_expr,
+            arms,
+        })))
+
     }
 
+    fn parse_match_arm(&mut self) -> Result<MatchArm, ParserError> {
+        println!("Début du parsing du bras de match");
+        let pattern = self.parse_pattern()?;
+
+        let guard = if self.match_token(&[TokenType::KEYWORD(Keywords::IF)]){
+            Some(Box::new(self.parse_expression(0)?))  // Wrapper dans Box
+        }else { None };
+
+        self.consume(TokenType::OPERATOR(Operators::FATARROW))?;
+
+        let body = if self.check(&[TokenType::DELIMITER(Delimiters::LCURBRACE)]){
+            self.parse_body_block()?
+        }else {
+            let expr = self.parse_expression(0)?;
+            self.consume_seperator();
+            vec![ASTNode::Expression(expr)]
+        };
+        Ok(MatchArm{
+            pattern,
+            guard,
+            body,
+        })
+
+    }
+
+    fn parse_pattern(&mut self) -> Result<Pattern, ParserError> {
+        println!("Début du parsing du pattern");
+
+        if self.match_token(&[TokenType::OPERATOR(Operators::UNDERSCORE)]) {
+            // Pattern par défaut '_'
+            Ok(Pattern::Wildcard)
+        }else if let Some(token) = self.current_token(){
+            match &token.token_type {
+                TokenType::IDENTIFIER { name} =>{
+                    if name == "_"{
+                        self.advance();
+                        Ok(Pattern::Wildcard)
+                    }else {
+                        let identifier = name.clone();
+                        self.advance();
+                        Ok(Pattern::Identifier(identifier))
+                    }
+                }
+                _ => Err(ParserError::new(UnexpectedToken, self.current_position()))
+            }
+        }else { Err(ParserError::new(UnexpectedEndOfInput, self.current_position())) }
+    }
 
 
 
@@ -1110,7 +1176,7 @@ impl Parser {
         };
         println!("Valeur de retour parsée : {:?}", value);
         println!("Fin du parsing de l'instruction de retour OK!!!!!!!!!!!!!!");
-        Ok(ASTNode::Statement(Statement::Return(ReturnStatement{
+        Ok(ASTNode::Statement(Statement::ReturnStatement(ReturnStatement{
             value,
         })))
 
