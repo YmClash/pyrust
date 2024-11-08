@@ -138,12 +138,15 @@ fn main() {
     let code_test3 = r#"while x > 0 { print(x);}"#;
     let code_test4 = r#"for i in range(10) { print(i);}"#;
 
+    let code_test0 = r#"match x {1 => print("one"),2 => print("two"),_ => print("other")"#;
 
 
 
 
 
-    let mut lexer = Lexer::new(code_test, SyntaxMode::Braces);
+
+
+    let mut lexer = Lexer::new(code_test0, SyntaxMode::Braces);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
@@ -167,12 +170,12 @@ fn main() {
     //     }
     // }
 
-    println!("Parsing terminé\n");
-    println!("Sinon, Parsing des Statement \n");
+    // println!("Parsing terminé\n");
+    // println!("Sinon, Parsing des Statement \n");
 
 
 
-    match parser.parse_statement() {
+    match parser.parse_match_statement() {
         Ok(ast) => {
             println!("AST généré pour l'expression :");
             println!("{:#?}", ast);

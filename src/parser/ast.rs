@@ -335,7 +335,7 @@ pub enum Expression {
     MemberAccess(MemberAccess),
     LambdaExpression(LambdaExpression),
     MatchExpression(MatchExpression),
-    MatchArm(MatchArm),
+    MatchArm(Box<MatchArm>),
     TypeCast(TypeCast),
     Conditional(Conditional),
     Assignment(Assignment),
