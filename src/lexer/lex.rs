@@ -201,6 +201,8 @@ impl<'a> Lexer<'a> {
         operators.insert("/*".to_string(), Operators::SLASHSTAR);
         operators.insert("#".to_string(), Operators::DIESE);
         operators.insert("?".to_string(), Operators::INTERROGATION);
+
+        operators.insert("_".to_string(), Operators::UNDERSCORE);
         return operators;
     }
 
