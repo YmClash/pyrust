@@ -4,9 +4,9 @@
 - [x] Expressions primaires (littéraux, identifiants)
 - [x] Expressions unaires
 - [x] Expressions binaires avec précédence
-- [ ] Appels de fonction
-- [ ] Accès aux membres (dot notation)
-- [ ] Expressions lambda
+- [x] Appels de fonction
+- [x] Accès aux membres (dot notation)
+- [ ] Expressions lambda // a moitie Implementer
 - [ ] Expressions de cast de type
 
 ## 2. Déclarations
@@ -19,12 +19,18 @@
 - [ ] Déclarations de classes
 
 ## 3. Statements
-- [ ] Blocs de code
-- [ ] Statements d'expression
+- [x] Blocs de code
+- [x] Statements d'expression
 - [x] Statements de retour
-- [ ] Statements if-else
-- [ ] Boucles while
-- [ ] Boucles for
+- [x] Statements if-else
+- [x] Boucles while
+- [x] Boucles for
+- [ ] Statement (try, catch)
+- [ ] Gestion des emprunts (borrow, mut)
+- [ ] Gestion des clôtures (closures)
+- [ ] Gestion des modules et imports
+- [x] Statements match pattern
+- 
 
 ## 4. Types
 - [x] Types primitifs (int, float, bool, str, char)

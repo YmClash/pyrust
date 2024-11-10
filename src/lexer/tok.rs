@@ -71,6 +71,7 @@ pub enum Operators {
     DIESE,         // '#' DIESE / HASH
     EXCLAMATION,   // '!' POINT D'EXCLAMATION / EXCLAMATION POINT
     INTERROGATION, // '?'
+    UNDERSCORE,    // '_'
 }
 
 #[allow(dead_code)]

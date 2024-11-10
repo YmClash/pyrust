@@ -23,10 +23,13 @@ fn main() {
 
     println!("Pyrust Compiler Test");
     println!("===================\n");
-    println!("Mode de syntaxe :Braces\n");
+    println!("Mode de syntaxe :\n");
 
 
     let code_source = r#"let x = 5;const v = 100;"#;
+
+
+    let code_binary = "array[0][1]";
 
     let code_binary = "&mut 5 ";
 
@@ -75,6 +78,71 @@ fn main() {
     let code_func_call_braces = "let sum:int = add(5, 10);";
     let code_func_call_indent = "let sum:int = add(5, 10)";
 
+
+    let code_func_call_braces2 = "print(numb);";
+    let code_func_call_indent2 = "print(numb)";
+
+    let code_func_call_methode_braces = "let x = chat.danse(x,y);";
+    let code_func_call_methode_indent = "let x = chat.danse(x,y)";
+
+    let code_func_call_methode_braces2 = "chat.danse(x,y);";
+    let code_func_call_methode_indent2 = "chat.danse(x,y)";
+
+    let code_func_call_methode_braces3 = "obj.method1().field.method2(1+2);";
+    let code_func_call_methode_indent3 = "obj.method1().field.method2(1+2)";
+
+    let code_indice_acces_braces = "let x = tab[5];";
+    let code_indice_acces_indent = "let x = tab[5]";
+
+    let code_indice_acces_braces2 = "array[0];";
+    let code_indice_acces_indent2 = "array[0]";
+
+    let code_indice_acces_braces3 = "tab[i+3];";
+    let code_indice_acces_indent3 = "tab[i+3]";
+
+    let code_indice_acces_braces4 = "vector[calculate_index().index];";
+    let code_indice_acces_indent4 = "vector[calculate_index().index]";
+
+    let code_indice_acces_braces5 = "obj.array[i].method();";
+    let code_indice_acces_indent5 = "obj.array[i].method()";
+
+    let code_indice_acces_braces6 = "obj.array[i].method().field;";
+    let code_indice_acces_indent6 = "obj.array[i].method().field";
+
+    let code_indice_acces_braces7 = "array[i][j];";
+    let code_indice_acces_indent7 = "array[i][j]";
+
+    let code_indice_acces_braces8 = "vector[obj.get_index()];";
+    let code_indice_acces_indent8 = "vector[obj.get_index()]";
+
+    let code_indice_acces_braces9 = "matrix[i][j] = array[get_index()] + offset;";
+    let code_indice_acces_indent9 = "matrix[i][j] = array[get_index()] + offset";
+
+    let code_indice_acces_braces10 = "obj.data[start + offset].process()[index];";
+    let code_indice_acces_indent10 = "obj.data[start + offset].process()[index]";
+
+    let code_indice_acces_braces11 = "obj.method1().method2()[index];";
+    let code_indice_acces_indent11 = "obj.method1().method2()[index]";
+
+    let code_assign_multi_braces = "a = b = c = 0;";
+    let code_assign_multi_indent = "a = b = c = 0";
+
+    let code_assign_compound_braces = "a += 5;";
+    let code_assign_compound_indent = "counter += offset * 5";
+
+
+    let code_assign_desctructuring_braces = "[x,y,z] = point3d;";
+    let code_assign_desctructuring_indent = "[x, y, z] = point3d";
+
+    let code_lambda_braces = "let add = lambda (x: int, y: int) -> int {x + y};";
+    let code_lambda_indent = "add = lambda (x: int, y: int) -> int: x + y";
+
+    let code_test = r#"if x > 0 { print(x);} elif x > 0 {hallo.chante;}elif x==0 {momo.position(x,y);}else{print(hallo.danse);}"#;
+    let code_test2 = r#"if x > 0 { print(IF); } elif { print(ELIF ou ELSE IF };} else{print(ELSE) ;}"#;
+    let code_test3 = r#"while x > 0 { print(x);}"#;
+    let code_test4 = r#"for i in range(10) { print(i);}"#;
+
+
     let code_func_call_braces2 = "print(numb);";
     let code_func_call_indent2 = "print(numb)";
 
@@ -85,11 +153,77 @@ fn main() {
     let code_func_call_methode_indent2 = "chat.danse(x,y)";
 
 
+    let code_test0 = r#"match x {1 => print("one"),2 => print("two"),_ => print("other")}"#;
+    let code_test1 = r#"match x {1 => print(1),2 => print(2),_ => print("other")}"#;
+    let code_test5 = r#"match x {n if n > 0 => print("positive"),n if n<0 =>{print("negative");print(n);},_ => print("zero")}"#;
 
+
+    let code_test6 = r#"match x:
+    1 => print("One")
+    2 => print("Two")
+    _ => print("Other")
+"#;
+
+
+    let code_test7 = r#"match x :
+    n if n > 0:
+        print("positive")
+    n if n < 0:
+        print("negative")
+        print(n)
+    _:
+        print("zero")
+"#;
+
+    let code_test8 = r#"match x :
+    n if n > 0 =>print("positive")
+    n if n < 0 =>print("negative")
+    _ =>print("zero")
+"#;
+
+    let code_test9 = r#"match x :
+    n if n > 0 =>print("positive")
+    n if n < 0:
+        print("negative")
+        print(n)
+    _:
+        print("zero")
+"#;
+
+    let code_test10 = r#"match x :
+    (0, 0) => print("Origin")
+    (x, 0):
+        print("X-axis")
+        print(x)
+    (0, y) if y > 0 => print("Positive Y-axis")
+    (x, y) => print("MOMO")
+    _ => print("Other")
+"#;
+    let code_test11 = r#"match x :
+    [0, 0] => print("Origin")
+    [x, 0]:
+        print("X-axis")
+        print(x)
+    [0, y] if y > 0 => print("Positive Y-axis")
+    _ => print("Other")
+"#;
+
+
+
+
+
+
+
+
+
+
+
+    let mut lexer = Lexer::new(code_test10, SyntaxMode::Indentation);
 
 
 
     let mut lexer = Lexer::new(code_func_call_methode_indent, SyntaxMode::Indentation);
+
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
@@ -99,6 +233,34 @@ fn main() {
     println!("\n");
 
     let mut parser = Parser::new(tokens, SyntaxMode::Indentation);
+
+    // while !parser.is_at_end() {
+    //     match parser.parse_declaration() {
+    //         Ok(ast) => {
+    //             println!("AST généré pour la déclaration :");
+    //             println!("{:#?}", ast);
+    //         }
+    //         Err(e) => {
+    //             println!("Erreur lors du parsing : {}", e);
+    //             break;
+    //         }
+    //     }
+    // }
+
+    // println!("Parsing terminé\n");
+    // println!("Sinon, Parsing des Statement \n");
+
+
+
+    match parser.parse_match_statement() {
+        Ok(ast) => {
+            println!("AST généré pour l'expression :");
+            println!("{:#?}", ast);
+        }
+        Err(e) => {
+            println!("Erreur lors du parsing : {}", e);
+        }
+    }
 
     while !parser.is_at_end() {
         match parser.parse_declaration() {
@@ -128,6 +290,7 @@ fn main() {
     //     }
     // }
 
+
     println!("\n");
     println!("=========OK==========\n");
     println!("Pyrust Compiler By YmC");
@@ -137,24 +300,3 @@ fn main() {
 
 }
 
-
-/*
-Braces mode
-fn add(x: int, y: int) -> int {
-    return x + y;
-}
-
-pub fn hello(name: str) {
-    print(name);
-}
-*/
-
-
-/*
-Indentation mode
-fn add(x: int, y: int) -> int
-    return x + y
-
-pub fn hello(name: str)
-    print(name)
-*/

@@ -1,7 +1,12 @@
 #[allow(dead_code)]
 use crate::lexer::lex::{SyntaxMode, Token};
+lucie_local
+use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, Body, ClassDeclaration, CompoundAssignment, CompoundOperator, ConstDeclaration, Constructor, Declaration, DestructuringAssignment, EnumDeclaration, EnumVariant, Expression, Field, ForStatement, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, IfStatement, IndexAccess, LambdaExpression, Literal, MatchArm, MatchStatement, MemberAccess, MethodCall, Mutability, Operator, Parameter, Parameters, Pattern, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility, WhileStatement};
+use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget, ExpectedDeclaration, ExpectedArrowOrBlock, ExpectedCommaOrClosingParenthesis};
+
 use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, ClassDeclaration, ConstDeclaration, Constructor, Declaration, EnumDeclaration, EnumVariant, Expression, Field, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, Literal, MemberAccess, MethodCall, Mutability, Operator, Parameter, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility};
 use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget, ExpectedDeclaration};
+main
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::tok::{Delimiters, Keywords, Operators, TokenType};
 
@@ -141,18 +146,24 @@ impl Parser {
 
 
 
-    fn parse_statement(&mut self) -> Result<ASTNode, ParserError> {
+    pub fn parse_statement(&mut self) -> Result<ASTNode, ParserError> {
         if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]) {
             self.parse_return_statement()
         }else if self.check(&[TokenType::KEYWORD(Keywords::LET)]){
             self.parse_variable_declaration()
         }else if self.match_token(&[TokenType::KEYWORD(Keywords::IF)]){
             self.parse_if_statement()
-        } else if self.match_token(&[TokenType::KEYWORD(Keywords::WHILE)]) {
+        }else if self.match_token(&[TokenType::KEYWORD(Keywords::WHILE)]) {
             self.parse_while_statement()
-        } else if self.match_token(&[TokenType::KEYWORD(Keywords::FOR)]) {
+        }else if self.match_token(&[TokenType::KEYWORD(Keywords::FOR)]) {
             self.parse_for_statement()
-        } else {
+        }else if self.match_token(&[TokenType::KEYWORD(Keywords::BREAK)]){
+            self.consume_seperator();
+            Ok(ASTNode::Statement(Statement::Break))
+        }else if self.match_token(&[TokenType::KEYWORD(Keywords::CONTINUE)]){
+            self.consume_seperator();
+            Ok(ASTNode::Statement(Statement::Continue))
+        }else {
             self.parse_expression_statement()
         }
 
@@ -160,11 +171,45 @@ impl Parser {
 
     /// fonction pour parser les expressions
 
-
-
     pub fn parse_expression(&mut self,precedence:u8) -> Result<Expression, ParserError> {
         println!("Début du parsing de l'expression");
+ lucie_local
+        //verifier si c'est destructuration
+        if self.check(&[TokenType::DELIMITER(Delimiters::LSBRACKET)]){
+            return self.parse_destructuring_assignment();
+        }
+
+        //let mut left = self.parse_postfix_expression()?;
+        let mut left = self.parse_unary_expression()?;
+
+
+        if let Some(token) = self.current_token(){
+            match &token.token_type {
+                TokenType::OPERATOR(Operators::EQUAL) => {
+                    self.advance();
+                    let value = self.parse_expression(precedence)?;
+                    return Ok(Expression::Assignment(Assignment{
+                        target: Box::new(left),
+                        value: Box::new(value),
+                    }));
+                }
+                TokenType::OPERATOR(op) => {
+                    if let Some(compound_op) = self.get_compound_operator(op){
+                        self.advance();
+                        let value = self.parse_expression(precedence)?;
+                        return Ok(Expression::CompoundAssignment(CompoundAssignment{
+                            target: Box::new(left),
+                            operator: compound_op,
+                            value: Box::new(value),
+                        }));
+                    }
+                }
+                _ => {}
+            }
+        }
+
         let mut left = self.parse_postfix_expression()?;
+ main
 
 
         while let Some (operator) = self.peek_operator(){
@@ -207,6 +252,119 @@ impl Parser {
             if self.check(&[TokenType::DELIMITER(Delimiters::DOT)]){
                 self.advance();
                 let member_name = self.consume_identifier()?;
+ lucie_local
+
+                if self.check(&[TokenType::DELIMITER(Delimiters::LPAR)]){
+                    // Appel de méthode
+                    self.advance();
+                    let arguments = self.parse_arguments_list()?;
+                    self.consume(TokenType::DELIMITER(Delimiters::RPAR))?;
+                    println!("Arguments parsés : {:?}", arguments);
+                    expr = Expression::MethodCall(MethodCall{
+                        object: Box::new(expr),
+                        method: member_name,
+                        arguments,
+                    });
+                }else{
+                    // Acces à un membre
+                    println!("Nom du membre parsé : {}", member_name);
+                    expr = Expression::MemberAccess(MemberAccess{
+                        object: Box::new(expr),
+                        member: member_name,
+                    });
+                }
+            } else if self.check(&[TokenType::DELIMITER(Delimiters::LPAR)]) {
+                // Appel de Fonction
+                self.advance();
+                let arguments = self.parse_arguments_list()?;
+                self.consume(TokenType::DELIMITER(Delimiters::RPAR))?;
+                println!("Arguments parsés : {:?}", arguments);
+                expr = Expression::FunctionCall(FunctionCall{
+                    name: Box::new(expr),
+                    arguments,
+                });
+            } else if self.check(&[TokenType::DELIMITER(Delimiters::LSBRACKET)]) {
+                //Acces à un élément d'un tableau par indice
+                self.advance();
+                let index = self.parse_expression(0)?;
+                self.consume(TokenType::DELIMITER(Delimiters::RSBRACKET))?;
+                println!("Index parsé : {:?}", index);
+                expr = Expression::IndexAccess(IndexAccess{
+                    array: Box::new(expr),
+                    index: Box::new(index),
+                });
+
+            } else { break; }
+        }
+        Ok(expr)
+    }
+
+    fn parse_destructuring_assignment(&mut self) -> Result<Expression,ParserError>{
+        println!("Début du parsing de l'assignation destructuree[");
+        self.consume(TokenType::DELIMITER(Delimiters::LSBRACKET))?;
+        let mut targets = Vec::new();
+        loop {
+            let target = self.parse_expression(0)?;
+            targets.push(target);
+            if !self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]){
+                break;
+            }
+        }
+        self.consume(TokenType::DELIMITER(Delimiters::RSBRACKET))?;
+        self.consume(TokenType::OPERATOR(Operators::EQUAL))?;
+        let value = self.parse_expression(0)?;
+        println!("Fin du parsing de l'assignation destructuree OK!!!!");
+        Ok(Expression::DestructuringAssignment(DestructuringAssignment{
+            targets,
+            value: Box::new(value),
+        }))
+    }
+
+    fn parse_unary_expression(&mut self) -> Result<Expression, ParserError> {
+        println!("Début du parsing de l'expression unaire");
+        println!("Début du parsing de l'expression unaire, current_token = {:?}", self.current_token());
+        if let Some(token) = self.current_token(){
+            match &token.token_type{
+                TokenType::OPERATOR(Operators::MINUS) => {
+                    self.advance();
+                    let right = self.parse_unary_expression()?;
+                    return Ok(Expression::UnaryOperation(UnaryOperation{
+                        operator: UnaryOperator::Negative,
+                        operand: Box::new(right),
+                    }));
+                }
+                TokenType::OPERATOR(Operators::EXCLAMATION) => {
+                    self.advance();
+                    let right = self.parse_unary_expression()?;
+                    return Ok(Expression::UnaryOperation(UnaryOperation{
+                        operator: UnaryOperator::Not,
+                        operand: Box::new(right),
+                    }));
+                }
+                TokenType::OPERATOR(Operators::AMPER) => {
+                    self.advance();
+                    if self.check(&[TokenType::KEYWORD(Keywords::MUT)]){
+                        self.advance();
+                        let right = self.parse_unary_expression()?;
+                        return Ok(Expression::UnaryOperation(UnaryOperation{
+                            operator: UnaryOperator::ReferenceMutable,
+                            operand: Box::new(right),
+                        }));
+                    }else{
+                        let right = self.parse_unary_expression()?;
+                        return Ok(Expression::UnaryOperation(UnaryOperation{
+                            operator: UnaryOperator::Reference,
+                            operand: Box::new(right),
+                        }));
+                    }
+                }
+                _ => self.parse_postfix_expression()
+            }
+        }else { Err(ParserError::new(UnexpectedEndOfInput, self.current_position())) }
+
+    }
+
+
 
                 if self.check(&[TokenType::DELIMITER(Delimiters::LPAR)]){
                     // Appel de méthode
@@ -272,6 +430,7 @@ impl Parser {
     // }
 
     // parse_prefix()
+main
 
     fn parse_primary_expression(&mut self) -> Result<Expression, ParserError> {
         println!("Début du parsing de l'expression primaire, current_token = {:?}", self.current_token());
@@ -304,7 +463,6 @@ impl Parser {
                     Expression::Literal(Literal::Boolean(false))
                 }
 
-
                 TokenType::KEYWORD(Keywords::SELF) =>{
                     self.advance();
                     let name = "self".to_string();
@@ -312,22 +470,17 @@ impl Parser {
 
                 }
 
-
                 TokenType::IDENTIFIER { name } => {
                     let name = name.clone();
                     self.advance();
                     Expression::Identifier(name)
                 }
-
-
-                TokenType::OPERATOR(Operators::MINUS) => {
-                    self.advance();
-                    let right = self.parse_primary_expression()?;
-                    Expression::UnaryOperation(UnaryOperation {
-                        operator: UnaryOperator::Negative,
-                        operand: Box::new(right),
-                    })
+                TokenType::KEYWORD(Keywords::LAMBDA) => {
+                    // self.advance();
+                    self.parse_lambda_expression()?
                 }
+
+ lucie_local
 
                 TokenType::OPERATOR(Operators::EXCLAMATION) => {
                     self.advance();
@@ -364,6 +517,7 @@ impl Parser {
                 //     expr
                 // }
 
+ main
                 TokenType::DELIMITER(Delimiters::LPAR) => {
                     self.advance();
                     let expr = self.parse_expression(0)?;
@@ -396,6 +550,9 @@ impl Parser {
 
     }
 
+ lucie_local
+
+
     // fn parse_binary_expression(&mut self, min_precedence: u8) -> Result<Expression, ParserError> {
     //     println!("Début du parsing de l'expression binaire");
     //     let mut left = self.parse_unary_expression()?;
@@ -424,9 +581,95 @@ impl Parser {
     //     println!("Fin du parsing de l'expression binaire");
     //     Ok(left)
     // }
+ main
     fn parse_lambda_expression(&mut self) -> Result<Expression, ParserError> {
-        todo!()
+        println!("Début du parsing de l'expression lambda");
+        self.consume(TokenType::KEYWORD(Keywords::LAMBDA))?;
+
+ lucie_local
+        self.consume(TokenType::DELIMITER(Delimiters::LPAR))?;
+        let parameters = self.parse_parameter_list()?;
+        //let parameters = self.parse_function_parameters()?;
+        self.consume(TokenType::DELIMITER(Delimiters::RPAR))?;
+
+        let return_type = if self.match_token(&[TokenType::OPERATOR(Operators::RARROW)]) {
+            self.parse_type()?
+        } else {
+            Type::Infer
+        };
+
+        let body = if self.match_token(&[TokenType::OPERATOR(Operators::FATARROW)]) {
+            // Expression unique
+            let expr = self.parse_expression(0)?;
+            vec![ASTNode::Expression(expr)]
+        } else if self.check(&[TokenType::DELIMITER(Delimiters::LCURBRACE)]) {
+            // Bloc de code
+            //self.parse_block_expression()?
+            self.parse_body_block()?
+        } else {
+            return Err(ParserError::new(ExpectedArrowOrBlock, self.current_position()));
+        };
+
+
+
+        Ok(Expression::LambdaExpression(LambdaExpression{
+            parameters,
+            return_type: Some(return_type),
+            body,
+        }))
+
     }
+
+    /// fonction pour parser les parametres
+
+    fn parse_arguments_list(&mut self) -> Result<Vec<Expression>, ParserError> {
+        println!("Début du parsing de la liste d'arguments");
+        let mut arguments = Vec::new();
+        if self.check(&[TokenType::DELIMITER(Delimiters::RPAR)]){
+            return Ok(arguments);
+        }
+        loop {
+            let argument = self.parse_expression(0);
+            arguments.push(argument?);
+
+            if !self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]) {
+                break;
+            }
+        }
+        println!("Arguments liste parsés : {:?}", arguments);
+        Ok(arguments)
+
+    }
+
+    fn parse_parameter_list(&mut self) -> Result<Vec<Parameter>, ParserError> {
+        println!("Début du parsing de la liste des paramètres");
+        let mut parameters = Vec::new();
+
+        if self.check(&[TokenType::DELIMITER(Delimiters::RPAR)]) {
+            self.advance(); // Consomme ')'
+            return Ok(parameters); // Pas de paramètres
+        }
+
+        loop {
+            let param_name = self.consume_identifier()?;
+
+            // Vérifier s'il y a un type spécifié
+            let param_type = if self.match_token(&[TokenType::DELIMITER(Delimiters::COLON)]) {
+                Some(self.parse_type()?)
+            } else {
+                None
+            };
+
+            parameters.push(Parameter {
+                name: param_name,
+                parameter_type: param_type.unwrap_or(Type::Infer),
+            });
+
+            // Si le prochain token est une virgule, continuer
+            if self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]) {
+                continue;
+            } else if self.check(&[TokenType::DELIMITER(Delimiters::RPAR)]) {
+                //self.advance(); // Consomme ')'
 
     // fn parse_assignment(&mut self) -> Result<Expression, ParserError> {
     //     println!("Début du parsing de l'assignation");
@@ -579,12 +822,20 @@ impl Parser {
             arguments.push(argument?);
 
             if !self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]) {
+main
                 break;
+            } else {
+                return Err(ParserError::new(ExpectedCommaOrClosingParenthesis, self.current_position()));
             }
         }
+ lucie_local
+
+        Ok(parameters)
+
         println!("Arguments liste parsés : {:?}", arguments);
         Ok(arguments)
 
+ main
     }
 
     fn parse_function_parameters(&mut self) -> Result<Vec<Parameter>, ParserError> {
@@ -652,41 +903,33 @@ impl Parser {
         Ok(body)
     }
 
-    // fn parse_function_body(&mut self) -> Result<Vec<ASTNode>, ParserError> {
-    //     let mut body = Vec::new();
-    //
-    //     match self.syntax_mode {
-    //         SyntaxMode::Braces => {
-    //             self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
-    //             while !self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) {
-    //                 let statement = self.parse_statement()?;
-    //                 body.push(statement);
-    //             }
-    //             self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
-    //         }
-    //         SyntaxMode::Indentation => {
-    //             // Consommer le NEWLINE initial et l'INDENT
-    //             self.consume(TokenType::NEWLINE)?;
-    //             self.consume(TokenType::INDENT)?;
-    //
-    //             // Parser les statements jusqu'au DEDENT
-    //             while !self.check(&[TokenType::DEDENT, TokenType::EOF]) {
-    //                 let statement = self.parse_statement()?;
-    //                 body.push(statement);
-    //             }
-    //
-    //             // Consommer le DEDENT final s'il existe
-    //             if self.check(&[TokenType::DEDENT]) {
-    //                 self.consume(TokenType::DEDENT)?;
-    //             }
-    //         }
-    //     }
-    //
-    //     Ok(body)
-    // }
+    fn parse_body_block(&mut self) -> Result<Vec<ASTNode>,ParserError>{
+        println!("Début du parsing du corps");
+        self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
+        let mut statements = Vec::new();
+        while !self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) && !self.is_at_end() {
+            let stmt = self.parse_statement()?;
+            statements.push(stmt);
+        }
+        self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+        println!("Fin du parsing du corps OK!!!!!!!!!!!!");
+        Ok(statements)
+    }
 
+    fn parse_block_expression(&mut self) -> Result<Vec<ASTNode>,ParserError>{
+        println!("Debut du parsing de du bloc de L'expression LAMBDA");
+        self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
 
+        let mut body = Vec::new();
+        while !self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]){
+            let statement = self.parse_statement()?;
+            body.push(statement);
+        }
+        self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+        println!("Fin du parsing du bloc de l'expression LAMBDA OK!!!!!!!!!!!");
+        Ok(body)
 
+    }
 
 
     /// fonction pour parser les declarations
@@ -714,15 +957,6 @@ impl Parser {
             Err(ParserError::new(ExpectedDeclaration, self.current_position()))
         }
     }
-
-
-    // fn oo(&mut self) -> Result<ASTNode, ParserError> {
-    //     let a: bool;
-    //
-    //
-    //     todo!()
-    // }
-
 
 
     /// fonction pour parser les déclarations de variables
@@ -1063,14 +1297,266 @@ impl Parser {
 
     /// fonction pour le gestion de structure de controle
     fn parse_if_statement(&mut self) -> Result<ASTNode, ParserError> {
-        todo!()
+        println!("Début du parsing de l'instruction if");
+        let condition = self.parse_expression(0)?;
+        let then_block = self.parse_body_block()?;; // block_expression
+
+        let else_block = if self.check(&[TokenType::KEYWORD(Keywords::ELIF)]){
+            self.advance();
+            let elif_statement = self.parse_if_statement()?;
+            Some(vec![elif_statement])
+        }else if self.match_token(&[TokenType::KEYWORD(Keywords::ELSE)]){
+            Some(self.parse_body_block()?)
+        }else { None };
+
+        println!("Fin du parsing de l'instruction if");
+        Ok(ASTNode::Statement(Statement::IfStatement(IfStatement{
+            condition,
+            then_block,
+            else_block,
+        })))
+
     }
     fn parse_while_statement(&mut self) -> Result<ASTNode, ParserError> {
-        todo!()
+        println!("Début du parsing de l'instruction while");
+        let condition = self.parse_expression(0)?;
+        let body = self.parse_body_block()?;
+        println!("Fin du parsing de l'instruction while OK!!!!!!!!!!!!!!");
+        Ok(ASTNode::Statement(Statement::WhileStatement(WhileStatement{
+            condition,
+            body,
+        })))
+
     }
     fn parse_for_statement(&mut self) -> Result<ASTNode, ParserError> {
-        todo!()
+        println!("Début du parsing de l'instruction for");
+        let iterator = self.consume_identifier()?;
+        self.consume(TokenType::KEYWORD(Keywords::IN))?;
+        let iterable = self.parse_expression(0)?;
+        let body = self.parse_body_block()?;
+        println!("Fin du parsing de l'instruction for OK!!!!!!!!!!!!!!!");
+        Ok(ASTNode::Statement(Statement::ForStatement(ForStatement{
+            iterator,
+            iterable,
+            body
+        })))
+
     }
+
+    pub fn parse_match_statement(&mut self) -> Result<ASTNode, ParserError> {
+        println!("Début du parsing de l'instruction match");
+        self.consume(TokenType::KEYWORD(Keywords::MATCH))?;
+        let match_expr = self.parse_expression(0)?;
+
+        let mut arms = Vec::new();
+        if self.syntax_mode == SyntaxMode::Indentation {
+            self.consume(TokenType::DELIMITER(Delimiters::COLON))?;
+            self.consume(TokenType::NEWLINE)?;
+            self.consume(TokenType::INDENT)?;
+
+            // En mode indentation, on continue jusqu'au DEDENT
+            while !self.check(&[TokenType::DEDENT]) && !self.is_at_end() {
+                let arm = self.parse_match_arm()?;
+                arms.push(arm);
+            }
+
+            self.consume(TokenType::DEDENT)?;
+        } else {
+            self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
+
+            while !self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) && !self.is_at_end() {
+                let arm = self.parse_match_arm()?;
+                arms.push(arm);
+            }
+
+            self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+        }
+
+        println!("Fin du parsing de l'instruction match OK!!!!!!!!!!!!!!");
+        Ok(ASTNode::Statement(Statement::MatchStatement(MatchStatement{
+            expression: match_expr,
+            arms,
+        })))
+
+    }
+    fn is_end_of_match(&self) -> bool {
+        match self.syntax_mode {
+            SyntaxMode::Indentation => self.check(&[TokenType::DEDENT]),
+            SyntaxMode::Braces => self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]),
+        }
+    }
+
+    fn parse_indented_arm_body(&mut self) -> Result<Vec<ASTNode>, ParserError> {
+        // On vérifie si on utilise => ou : pour ce bras
+        let uses_arrow = self.check(&[TokenType::OPERATOR(Operators::FATARROW)]);
+
+        if uses_arrow {
+            // Style avec =>
+            self.consume(TokenType::OPERATOR(Operators::FATARROW))?;
+            let expr = self.parse_expression(0)?;
+            self.consume(TokenType::NEWLINE)?;
+            Ok(vec![ASTNode::Expression(expr)])
+        } else {
+            // Style avec :
+            self.consume(TokenType::DELIMITER(Delimiters::COLON))?;
+            self.consume(TokenType::NEWLINE)?;
+            self.consume(TokenType::INDENT)?;
+
+            let mut body = Vec::new();
+            while !self.check(&[TokenType::DEDENT]) && !self.is_at_end() {
+                let expr = self.parse_expression(0)?;
+                body.push(ASTNode::Expression(expr));
+                self.consume(TokenType::NEWLINE)?;
+            }
+
+            self.consume(TokenType::DEDENT)?;
+            Ok(body)
+        }
+    }
+
+
+    fn parse_braced_arm_body(&mut self) -> Result<Vec<ASTNode>, ParserError> {
+        self.consume(TokenType::OPERATOR(Operators::FATARROW))?;
+
+        let body = if self.check(&[TokenType::DELIMITER(Delimiters::LCURBRACE)]) {
+            // Corps avec bloc
+            self.parse_body_block()?
+        } else {
+            // Expression simple
+            let expr = self.parse_expression(0)?;
+            vec![ASTNode::Expression(expr)]
+        };
+
+        // Consomme la virgule si ce n'est pas le dernier bras
+        if !self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) {
+            self.consume(TokenType::DELIMITER(Delimiters::COMMA))?;
+        }
+        Ok(body)
+    }
+
+    fn parse_guard(&mut self) -> Result<Option<Box<Expression>>, ParserError> {
+        if self.match_token(&[TokenType::KEYWORD(Keywords::IF)]){
+            let condition = self.parse_expression(0)?;
+            Ok(Some(Box::new(condition)))
+        }else {
+            Ok(None)
+        }
+    }
+
+    fn parse_match_arm(&mut self) -> Result<MatchArm, ParserError> {
+        println!("Début du parsing du bras de match");
+        let pattern = self.parse_pattern_complex()?;
+
+        let guard = self.parse_guard()?;
+
+        let body= if self.syntax_mode == SyntaxMode::Indentation{
+            self.parse_indented_arm_body()?
+        }else {
+            self.parse_braced_arm_body()?
+        };
+        println!("Fin du parsing du bras de match OK!!!!!!!!!!!!!!!");
+        Ok(MatchArm{
+            pattern,
+            guard,
+            body,
+        })
+    }
+
+    fn parse_pattern_complex(&mut self) -> Result<Pattern, ParserError>{
+        if self.check(&[TokenType::DELIMITER(Delimiters::LPAR)]){
+            self.parse_tuple_pattern()
+        }else if self.check(&[TokenType::DELIMITER(Delimiters::LSBRACKET)]){
+            self.parse_array_pattern()
+        }else { self.parse_pattern() }
+
+    }
+
+    fn parse_tuple_pattern(&mut self) -> Result<Pattern, ParserError> {
+        self.consume(TokenType::DELIMITER(Delimiters::LPAR))?;
+        let mut patterns = Vec::new();
+        if !self.check(&[TokenType::DELIMITER(Delimiters::RPAR)]){
+            loop {
+                let pattern = self.parse_pattern_complex()?;
+                patterns.push(pattern);
+                if self.check(&[TokenType::DELIMITER(Delimiters::COMMA)]){
+                    self.consume(TokenType::DELIMITER(Delimiters::COMMA))?;
+                }else { break; }
+            }
+        }
+        self.consume(TokenType::DELIMITER(Delimiters::RPAR))?;
+        println!("Fin du parsing du tuple pattern OK!!!!!!!!!!!!!!!");
+        Ok(Pattern::Tuple(patterns))
+    }
+    fn parse_array_pattern(&mut self) -> Result<Pattern, ParserError> {
+        println!("Début du parsing du pattern de tableau Array");
+        self.consume(TokenType::DELIMITER(Delimiters::LSBRACKET))?;
+        let mut patterns = Vec::new();
+        if !self.check(&[TokenType::DELIMITER(Delimiters::RSBRACKET)]){
+            loop {
+                let pattern = self.parse_pattern_complex()?;
+                patterns.push(pattern);
+                if self.check(&[TokenType::DELIMITER(Delimiters::COMMA)]){
+                    self.consume(TokenType::DELIMITER(Delimiters::COMMA))?;
+                }else { break; }
+            }
+        }
+        self.consume(TokenType::DELIMITER(Delimiters::RSBRACKET))?;
+        println!("Fin du parsing du pattern de tableau Array OK!!!!!!!!!!!!!!!");
+        Ok(Pattern::Array(patterns))
+
+    }
+
+    fn parse_pattern(&mut self) -> Result<Pattern, ParserError> {
+        println!("Début du parsing du pattern");
+
+        if self.match_token(&[TokenType::OPERATOR(Operators::UNDERSCORE)]) {
+            // Pattern par défaut '_'
+            Ok(Pattern::Wildcard)
+        } else if let Some(token) = self.current_token() {
+            match &token.token_type {
+                TokenType::IDENTIFIER { name } => {
+                    if name == "_" {
+                        self.advance();
+                        Ok(Pattern::Wildcard)
+                    } else {
+                        let identifier = name.clone();
+                        self.advance();
+                        Ok(Pattern::Identifier(identifier))
+                    }
+                },
+                TokenType::INTEGER { value } => {
+                    let int_value = value.clone(); // Clonez la valeur ici
+                    self.advance(); // Consomme l'entier
+                    Ok(Pattern::Literal(Literal::Integer { value: int_value }))
+                },
+                TokenType::FLOAT { value } => {
+                    let float_value = *value;
+                    self.advance(); // Consomme le flottant
+                    Ok(Pattern::Literal(Literal::Float { value: float_value }))
+                },
+                TokenType::STRING { value, kind: _ } => {
+                    let string_value = value.clone();
+                    self.advance(); // Consomme la chaîne
+                    Ok(Pattern::Literal(Literal::String(string_value)))
+                }
+                TokenType::KEYWORD(Keywords::TRUE) => {
+                    self.advance(); // Consomme le mot-clé 'true'
+                    Ok(Pattern::Literal(Literal::Boolean(true)))
+                },
+                TokenType::KEYWORD(Keywords::FALSE) => {
+                    self.advance(); // Consomme le mot-clé 'false'
+                    Ok(Pattern::Literal(Literal::Boolean(false)))
+                },
+
+
+                _ => Err(ParserError::new(UnexpectedToken, self.current_position())),
+            }
+        } else {
+            Err(ParserError::new(UnexpectedEndOfInput, self.current_position()))
+        }
+    }
+
+
 
 
 
@@ -1084,8 +1570,8 @@ impl Parser {
             None
         };
         println!("Valeur de retour parsée : {:?}", value);
-
-        Ok(ASTNode::Statement(Statement::Return(ReturnStatement{
+        println!("Fin du parsing de l'instruction de retour OK!!!!!!!!!!!!!!");
+        Ok(ASTNode::Statement(Statement::ReturnStatement(ReturnStatement{
             value,
         })))
 
@@ -1129,10 +1615,25 @@ impl Parser {
             Operator::Addition | Operator::Substraction => 4,
             Operator::LessThan | Operator::GreaterThan | Operator::LesshanOrEqual | Operator::GreaterThanOrEqual => 3,
             Operator::Equal | Operator::NotEqual => 2,
-            Operator::And | Operator::Or => 1,
+            Operator::And => 1,
+            Operator::Or => 0,
             _ => 0,
         }
     }
+
+
+
+    fn get_compound_operator(&self,op:&Operators) -> Option<CompoundOperator>{
+        match op {
+            Operators::PLUSEQUAL => Some(CompoundOperator::AddAssign),
+            Operators::MINEQUAL => Some(CompoundOperator::SubAssign),
+            Operators::STAREQUAL => Some(CompoundOperator::MulAssign),
+            Operators::SLASHEQUAL => Some(CompoundOperator::DivAssign),
+            Operators::PERCENTEQUAL => Some(CompoundOperator::ModAssign),
+            _ => None,
+        }
+    }
+
 
     fn peek_operator(&self) -> Option<Operator> {
         let token = self.current_token()?;
@@ -1348,6 +1849,9 @@ impl Parser {
         true
     }
 
+
+
+
     // pub fn parse_declarations(&mut self) -> Result<Vec<ASTNode>, ParserError> {
     //     let mut declarations = Vec::new();
     //
@@ -1366,12 +1870,6 @@ impl Parser {
     //
     //     Ok(declarations)
     // }
-
-
-
-
-
-
 
 
 

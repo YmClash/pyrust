@@ -201,6 +201,11 @@ impl<'a> Lexer<'a> {
         operators.insert("/*".to_string(), Operators::SLASHSTAR);
         operators.insert("#".to_string(), Operators::DIESE);
         operators.insert("?".to_string(), Operators::INTERROGATION);
+
+        operators.insert("_".to_string(), Operators::UNDERSCORE);
+        operators.insert("=>".to_string(), Operators::FATARROW);
+
+
         return operators;
     }
 
@@ -454,7 +459,6 @@ impl<'a> Lexer<'a> {
 
         while let Some(&ch) = self.source.peek() {
             self.advance(); // Consomme le caractère actuel
-
             if is_escaped {
                 match ch {
                     'n' => value.push('\n'),

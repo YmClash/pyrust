@@ -15,6 +15,14 @@ pub enum ASTNode {
     Statement(Statement),
 
     Error(ParserError),
+    Body(Body),
+}
+
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct Body {
+    pub statements: Vec<ASTNode>,
 }
 
 #[allow(dead_code)]
@@ -114,6 +122,21 @@ pub enum UnaryOperator {
     LogicalNot,     // !
     Positive,       // +
     Negative,       // -
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub enum CompoundOperator{
+    AddAssign,      // +=
+    SubAssign,      // -=
+    MulAssign,      // *=
+    DivAssign,      // /=
+    ModAssign,      // %=
+    BitwiseAndAssign,   // &=
+    BitwiseOrAssign,    // |=
+    BitwiseXorAssign,   // ^=
+    LeftShiftAssign,    // <<=
+    RightShiftAssign,   // >>=
 }
 
 
@@ -308,19 +331,58 @@ pub enum Expression {
     BinaryOperation(BinaryOperation),
     UnaryOperation(UnaryOperation),
     FunctionCall(FunctionCall),
+ lucie_local
+    //ArrayAccess(ArrayAccess), // transfere dans IndexAccess
+
     MethodCall(MethodCall),
     ArrayAccess(ArrayAccess),
+ main
     MemberAccess(MemberAccess),
     LambdaExpression(LambdaExpression),
     MatchExpression(MatchExpression),
-    MatchArms(Box<MatchArms>),
+    MatchArm(Box<MatchArm>),
     TypeCast(TypeCast),
     Conditional(Conditional),
     Assignment(Assignment),
-    Borrow(Box<Expression>),
+    Borrow(Borrow),
     Statement(Box<Statement>),
+    MethodCall(MethodCall),
+    IndexAccess(IndexAccess), // Aka ArrayAccess
+    CompoundAssignment(CompoundAssignment),
+    DestructuringAssignment(DestructuringAssignment),
 
 }
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct MethodCall{
+    pub object: Box<Expression>,
+    pub method: String,
+    pub arguments: Vec<Expression>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct IndexAccess{
+    pub array: Box<Expression>,
+    pub index: Box<Expression>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct CompoundAssignment{
+    pub target: Box<Expression>,
+    pub operator: CompoundOperator,
+    pub value: Box<Expression>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct DestructuringAssignment{
+    pub targets: Vec<Expression>,
+    pub value: Box<Expression>,
+}
+
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum BorrowType {
@@ -339,8 +401,10 @@ pub struct Borrow {
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Assignment{
-    pub left: Box<Expression>,
-    pub right: Box<Expression>,
+    // pub left: Box<Expression>,
+    // pub right: Box<Expression>,
+    pub target: Box<Expression>,
+    pub value: Box<Expression>,
 }
 
 
@@ -427,23 +491,31 @@ pub struct Conditional {
 #[derive(Clone, Debug)]
 pub enum Statement {
     Expression(Expression),
-    Return(ReturnStatement),
-    Use(UseStatement),
-    Import(ImportStatement),
-    Raise(RaiseStatement),
-    Del(DelStatement),
-    If(IfStatement),
-    Elif(ElifStatement),
-    While(WhileStatement),
-    For(ForStatement),
+    ReturnStatement(ReturnStatement),
+    UseStatement(UseStatement),
+    ImportStatement(ImportStatement),
+    RaiseStatement(RaiseStatement),
+    DelStatement(DelStatement),
+    IfStatement(IfStatement),
+    //ElifStatement(ElifStatement),
+    WhileStatement(WhileStatement),
+    ForStatement(ForStatement),
     Break,
     Continue,
-    Try(TryStatement),
-    With(WithStatement),
-    Yield(YieldStatement),
+    TryStatement(TryStatement),
+    WithStatement(WithStatement),
+    YieldStatement(YieldStatement),
 
-    Declaration(Declaration),
+    DeclarationStatement(Declaration),
     Assignment(Expression, Expression),
+    MatchStatement(MatchStatement),
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Debug)]
+pub struct MatchStatement{
+    pub expression: Expression,
+    pub arms: Vec<MatchArm>,
 }
 
 #[allow(dead_code)]
@@ -456,29 +528,30 @@ pub struct ReturnStatement {
 #[derive(Clone, Debug)]
 pub struct IfStatement {
     pub condition: Expression,
-    pub block: Block,
-    pub elif_blocks: Vec<(Expression, Block)>,
-    pub else_block: Option<Block>,
+    pub then_block: Vec<ASTNode>,
+    pub else_block: Option<Vec<ASTNode>>,
 }
 
 #[allow(dead_code)]
-#[derive(Clone, Debug)]
-pub struct ElifStatement {
-    pub condition: Expression,
-    pub block: Block,
-}
+// #[derive(Clone, Debug)]
+// pub struct ElifStatement {
+//     pub condition: Expression,
+//     pub body: Body,
+// }
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct WhileStatement {
     pub condition: Expression,
-    pub block: Block,
+    pub body: Vec<ASTNode>,
+    //pub body: Body,
 }
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct ForStatement {
-    pub variable_iter: String,
+    pub iterator: String,
     pub iterable: Expression,
-    pub block: Block,
+    pub body: Vec<ASTNode>,
+    //pub body: Body,
 }
 
 #[allow(dead_code)]
@@ -506,7 +579,7 @@ pub struct DelStatement {
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct TryStatement {
-    pub block: Block,
+    pub body: Body,
     pub except: Vec<(Option<String>, Block)>,
     pub else_block: Option<Block>,
     pub finally_block: Option<Block>,
@@ -515,7 +588,7 @@ pub struct TryStatement {
 #[derive(Debug, Clone)]
 pub struct WithStatement {
     pub target: Expression,
-    pub block: Block,
+    pub body: Body,
 }
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -533,7 +606,7 @@ pub struct AssignmentStatement {
 #[derive(Debug, Clone)]
 pub struct Function {
     pub declaration: FunctionDeclaration,
-    pub block: Block,
+    pub body: Body,
 }
 
 #[allow(dead_code)]
@@ -545,22 +618,27 @@ pub struct Identifier {
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct LambdaExpression {
-    pub parameters: Vec<Parameters>,
-    pub block: Block,
+    pub parameters: Vec<Parameter>,
+    pub return_type: Option<Type>,
+    //pub body: Box<Expression>,
+    pub body: Vec<ASTNode>,
+    //pub body: Body,
 }
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct MatchExpression {
     pub expression: Box<Expression>,
-    pub arms: Vec<MatchArms>,
+    pub arms: Vec<MatchArm>,
 }
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
-pub struct MatchArms {
+pub struct MatchArm {
     pub pattern: Pattern,
-    pub expression: Box<Expression>,
+    pub guard: Option<Box<Expression>>,
+    //pub expression: Box<Expression>
+    pub body: Vec<ASTNode>,
 }
 
 #[allow(dead_code)]
@@ -570,6 +648,10 @@ pub enum Pattern {
     Identifier(String),
     Wildcard,
     EnumVariant(EnumVariant),
+    Range(Box<Pattern>,Box<Pattern>),
+    Tuple(Vec<Pattern>),
+    Array(Vec<Pattern>),
+    Constructor(String, Vec<Pattern>),
 }
 
 impl fmt::Display for ASTNode {
@@ -596,6 +678,9 @@ impl fmt::Display for ASTNode {
             // ASTNode::Literal(lit) => write!(f, "{}", lit),
             // ASTNode::Operator(op) => write!(f, "{}", op),
             ASTNode::Error(err) => write!(f, "{}", err),
+
+            ASTNode::Body(body) => write!(f, "{:?}", body),
+
         }
     }
 }
@@ -623,6 +708,8 @@ impl ASTNode{
     pub fn error(error: ParserError) -> Self{
         ASTNode::Error(error)
     }
+
+    pub fn body(body: Body) -> Self{ ASTNode::Body(body) }
 }
 
 // by YmC
@@ -635,22 +722,22 @@ impl ASTNode{
 
 
 
-impl Block {
-    pub fn is_indentation_mode(&self) -> bool{
-        matches!(self.syntax_mode, BlockSyntax::Indentation)
-    }
-    // pub fn validate(&self) -> Result<(),String>{
-    //     match self.syntax_mode {
-    //         BlockSyntax::Indentation if self.indent_level.is_none() => {
-    //             Err("Indentation level is missing".to_string())
-    //         }
-    //         BlockSyntax::Braces if self.braces.is_none() => {
-    //             Err("Braces are missing".to_string())
-    //         }
-    //         _ => Ok(()),
-    //     }
-    // }
-
-}
+// impl Block {
+//     pub fn is_indentation_mode(&self) -> bool{
+//         matches!(self.syntax_mode, BlockSyntax::Indentation)
+//     }
+//     // pub fn validate(&self) -> Result<(),String>{
+//     //     match self.syntax_mode {
+//     //         BlockSyntax::Indentation if self.indent_level.is_none() => {
+//     //             Err("Indentation level is missing".to_string())
+//     //         }
+//     //         BlockSyntax::Braces if self.braces.is_none() => {
+//     //             Err("Braces are missing".to_string())
+//     //         }
+//     //         _ => Ok(()),
+//     //     }
+//     // }
+//
+// }
 
 ////////////////////////////////////////////////////////////////
