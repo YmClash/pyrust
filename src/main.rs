@@ -138,7 +138,15 @@ fn main() {
     let code_test3 = r#"while x > 0 { print(x);}"#;
     let code_test4 = r#"for i in range(10) { print(i);}"#;
 
-    let code_test0 = r#"match x {1 => print("one"),2 => print("two"),_ => print("other")"#;
+    let code_test0 = r#"match x {1 => print("one"),2 => print("two"),_ => print("other")}"#;
+    let code_test1 = r#"match x {1 => print(1),2 => print(2),_ => print("other")}"#;
+    let code_test5 = r#"match x {n if n > 0 => print("positive"),n if n<0 =>{print("negative");print(n);},_ => print("zero")}"#;
+
+
+    let code_test6 = r#"match x:
+    1 => print("One")
+    2 => print("Two")
+    _ => print("Other")"#;
 
 
 
@@ -146,7 +154,8 @@ fn main() {
 
 
 
-    let mut lexer = Lexer::new(code_test0, SyntaxMode::Braces);
+
+    let mut lexer = Lexer::new(code_test5, SyntaxMode::Braces);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification

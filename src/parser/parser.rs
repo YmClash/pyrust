@@ -1095,7 +1095,15 @@ impl Parser {
         println!("Début du parsing de l'instruction match");
         self.consume(TokenType::KEYWORD(Keywords::MATCH))?;
         let match_expr = self.parse_expression(0)?;
-        self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
+
+        if self.syntax_mode == SyntaxMode::Indentation{
+            self.consume(TokenType::DELIMITER(Delimiters::COLON))?;
+            self.consume(TokenType::NEWLINE)?;
+            self.consume(TokenType::INDENT)?;
+        }else { self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?; }
+
+
+        //self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
 
         let mut arms = Vec::new();
 
@@ -1104,6 +1112,7 @@ impl Parser {
             arms.push(arm);
 
         }
+
         self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
         println!("Fin du parsing de l'instruction match OK!!!!!!!!!!!!!!");
 
@@ -1114,13 +1123,20 @@ impl Parser {
 
     }
 
+    fn parse_guard(&mut self) -> Result<Option<Box<Expression>>, ParserError> {
+        if self.match_token(&[TokenType::KEYWORD(Keywords::IF)]){
+            let condition = self.parse_expression(0)?;
+            Ok(Some(Box::new(condition)))
+        }else {
+            Ok(None)
+        }
+    }
+
     fn parse_match_arm(&mut self) -> Result<MatchArm, ParserError> {
         println!("Début du parsing du bras de match");
         let pattern = self.parse_pattern()?;
 
-        let guard = if self.match_token(&[TokenType::KEYWORD(Keywords::IF)]){
-            Some(Box::new(self.parse_expression(0)?))  // Wrapper dans Box
-        }else { None };
+        let guard = self.parse_guard()?;
 
         self.consume(TokenType::OPERATOR(Operators::FATARROW))?;
 
@@ -1128,9 +1144,14 @@ impl Parser {
             self.parse_body_block()?
         }else {
             let expr = self.parse_expression(0)?;
-            self.consume_seperator();
+            //self.consume_seperator();
             vec![ASTNode::Expression(expr)]
         };
+
+        if !self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]){
+            self.consume(TokenType::DELIMITER(Delimiters::COMMA))?;
+        }
+
         Ok(MatchArm{
             pattern,
             guard,
@@ -1145,22 +1166,50 @@ impl Parser {
         if self.match_token(&[TokenType::OPERATOR(Operators::UNDERSCORE)]) {
             // Pattern par défaut '_'
             Ok(Pattern::Wildcard)
-        }else if let Some(token) = self.current_token(){
+        } else if let Some(token) = self.current_token() {
             match &token.token_type {
-                TokenType::IDENTIFIER { name} =>{
-                    if name == "_"{
+                TokenType::IDENTIFIER { name } => {
+                    if name == "_" {
                         self.advance();
                         Ok(Pattern::Wildcard)
-                    }else {
+                    } else {
                         let identifier = name.clone();
                         self.advance();
                         Ok(Pattern::Identifier(identifier))
                     }
+                },
+                TokenType::INTEGER { value } => {
+                    let int_value = value.clone(); // Clonez la valeur ici
+                    self.advance(); // Consomme l'entier
+                    Ok(Pattern::Literal(Literal::Integer { value: int_value }))
+                },
+                TokenType::FLOAT { value } => {
+                    let float_value = *value;
+                    self.advance(); // Consomme le flottant
+                    Ok(Pattern::Literal(Literal::Float { value: float_value }))
+                },
+                TokenType::STRING { value, kind: _ } => {
+                    let string_value = value.clone();
+                    self.advance(); // Consomme la chaîne
+                    Ok(Pattern::Literal(Literal::String(string_value)))
                 }
-                _ => Err(ParserError::new(UnexpectedToken, self.current_position()))
+                TokenType::KEYWORD(Keywords::TRUE) => {
+                    self.advance(); // Consomme le mot-clé 'true'
+                    Ok(Pattern::Literal(Literal::Boolean(true)))
+                },
+                TokenType::KEYWORD(Keywords::FALSE) => {
+                    self.advance(); // Consomme le mot-clé 'false'
+                    Ok(Pattern::Literal(Literal::Boolean(false)))
+                },
+
+
+                _ => Err(ParserError::new(UnexpectedToken, self.current_position())),
             }
-        }else { Err(ParserError::new(UnexpectedEndOfInput, self.current_position())) }
+        } else {
+            Err(ParserError::new(UnexpectedEndOfInput, self.current_position()))
+        }
     }
+
 
 
 
