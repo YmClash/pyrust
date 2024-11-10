@@ -250,24 +250,3 @@ fn main() {
 
 }
 
-
-/*
-Braces mode
-fn add(x: int, y: int) -> int {
-    return x + y;
-}
-
-pub fn hello(name: str) {
-    print(name);
-}
-*/
-
-
-/*
-Indentation mode
-fn add(x: int, y: int) -> int
-    return x + y
-
-pub fn hello(name: str)
-    print(name)
-*/
