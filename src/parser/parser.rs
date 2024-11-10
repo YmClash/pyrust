@@ -403,13 +403,6 @@ impl Parser {
                     self.parse_lambda_expression()?
                 }
 
-                // TokenType::DELIMITER(Delimiters::LPAR) => {
-                //     self.advance(); // Consomme '('
-                //     let expr = self.parse_expression(0)?;
-                //     self.consume(TokenType::DELIMITER(Delimiters::RPAR))?; // Consomme ')'
-                //     expr
-                // }
-
                 TokenType::DELIMITER(Delimiters::LPAR) => {
                     self.advance();
                     let expr = self.parse_expression(0)?;
@@ -479,8 +472,6 @@ impl Parser {
         }))
 
     }
-
-
 
     /// fonction pour parser les parametres
 
@@ -634,42 +625,6 @@ impl Parser {
 
     }
 
-    // fn parse_function_body(&mut self) -> Result<Vec<ASTNode>, ParserError> {
-    //     let mut body = Vec::new();
-    //
-    //     match self.syntax_mode {
-    //         SyntaxMode::Braces => {
-    //             self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
-    //             while !self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) {
-    //                 let statement = self.parse_statement()?;
-    //                 body.push(statement);
-    //             }
-    //             self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
-    //         }
-    //         SyntaxMode::Indentation => {
-    //             // Consommer le NEWLINE initial et l'INDENT
-    //             self.consume(TokenType::NEWLINE)?;
-    //             self.consume(TokenType::INDENT)?;
-    //
-    //             // Parser les statements jusqu'au DEDENT
-    //             while !self.check(&[TokenType::DEDENT, TokenType::EOF]) {
-    //                 let statement = self.parse_statement()?;
-    //                 body.push(statement);
-    //             }
-    //
-    //             // Consommer le DEDENT final s'il existe
-    //             if self.check(&[TokenType::DEDENT]) {
-    //                 self.consume(TokenType::DEDENT)?;
-    //             }
-    //         }
-    //     }
-    //
-    //     Ok(body)
-    // }
-
-
-
-
 
     /// fonction pour parser les declarations
 
@@ -696,15 +651,6 @@ impl Parser {
             Err(ParserError::new(ExpectedDeclaration, self.current_position()))
         }
     }
-
-
-    // fn oo(&mut self) -> Result<ASTNode, ParserError> {
-    //     let a: bool;
-    //
-    //
-    //     todo!()
-    // }
-
 
 
     /// fonction pour parser les déclarations de variables
@@ -1096,31 +1042,90 @@ impl Parser {
         self.consume(TokenType::KEYWORD(Keywords::MATCH))?;
         let match_expr = self.parse_expression(0)?;
 
-        if self.syntax_mode == SyntaxMode::Indentation{
+        let mut arms = Vec::new();
+        if self.syntax_mode == SyntaxMode::Indentation {
             self.consume(TokenType::DELIMITER(Delimiters::COLON))?;
             self.consume(TokenType::NEWLINE)?;
             self.consume(TokenType::INDENT)?;
-        }else { self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?; }
 
+            // En mode indentation, on continue jusqu'au DEDENT
+            while !self.check(&[TokenType::DEDENT]) && !self.is_at_end() {
+                let arm = self.parse_match_arm()?;
+                arms.push(arm);
+            }
 
-        //self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
+            self.consume(TokenType::DEDENT)?;
+        } else {
+            self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
 
-        let mut arms = Vec::new();
+            while !self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) && !self.is_at_end() {
+                let arm = self.parse_match_arm()?;
+                arms.push(arm);
+            }
 
-        while !self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) && !self.is_at_end(){
-            let arm = self.parse_match_arm()?;
-            arms.push(arm);
-
+            self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
         }
 
-        self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
         println!("Fin du parsing de l'instruction match OK!!!!!!!!!!!!!!");
-
         Ok(ASTNode::Statement(Statement::MatchStatement(MatchStatement{
             expression: match_expr,
             arms,
         })))
 
+    }
+    fn is_end_of_match(&self) -> bool {
+        match self.syntax_mode {
+            SyntaxMode::Indentation => self.check(&[TokenType::DEDENT]),
+            SyntaxMode::Braces => self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]),
+        }
+    }
+
+    fn parse_indented_arm_body(&mut self) -> Result<Vec<ASTNode>, ParserError> {
+        // On vérifie si on utilise => ou : pour ce bras
+        let uses_arrow = self.check(&[TokenType::OPERATOR(Operators::FATARROW)]);
+
+        if uses_arrow {
+            // Style avec =>
+            self.consume(TokenType::OPERATOR(Operators::FATARROW))?;
+            let expr = self.parse_expression(0)?;
+            self.consume(TokenType::NEWLINE)?;
+            Ok(vec![ASTNode::Expression(expr)])
+        } else {
+            // Style avec :
+            self.consume(TokenType::DELIMITER(Delimiters::COLON))?;
+            self.consume(TokenType::NEWLINE)?;
+            self.consume(TokenType::INDENT)?;
+
+            let mut body = Vec::new();
+            while !self.check(&[TokenType::DEDENT]) && !self.is_at_end() {
+                let expr = self.parse_expression(0)?;
+                body.push(ASTNode::Expression(expr));
+                self.consume(TokenType::NEWLINE)?;
+            }
+
+            self.consume(TokenType::DEDENT)?;
+            Ok(body)
+        }
+    }
+
+
+    fn parse_braced_arm_body(&mut self) -> Result<Vec<ASTNode>, ParserError> {
+        self.consume(TokenType::OPERATOR(Operators::FATARROW))?;
+
+        let body = if self.check(&[TokenType::DELIMITER(Delimiters::LCURBRACE)]) {
+            // Corps avec bloc
+            self.parse_body_block()?
+        } else {
+            // Expression simple
+            let expr = self.parse_expression(0)?;
+            vec![ASTNode::Expression(expr)]
+        };
+
+        // Consomme la virgule si ce n'est pas le dernier bras
+        if !self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) {
+            self.consume(TokenType::DELIMITER(Delimiters::COMMA))?;
+        }
+        Ok(body)
     }
 
     fn parse_guard(&mut self) -> Result<Option<Box<Expression>>, ParserError> {
@@ -1134,29 +1139,64 @@ impl Parser {
 
     fn parse_match_arm(&mut self) -> Result<MatchArm, ParserError> {
         println!("Début du parsing du bras de match");
-        let pattern = self.parse_pattern()?;
+        let pattern = self.parse_pattern_complex()?;
 
         let guard = self.parse_guard()?;
 
-        self.consume(TokenType::OPERATOR(Operators::FATARROW))?;
-
-        let body = if self.check(&[TokenType::DELIMITER(Delimiters::LCURBRACE)]){
-            self.parse_body_block()?
+        let body= if self.syntax_mode == SyntaxMode::Indentation{
+            self.parse_indented_arm_body()?
         }else {
-            let expr = self.parse_expression(0)?;
-            //self.consume_seperator();
-            vec![ASTNode::Expression(expr)]
+            self.parse_braced_arm_body()?
         };
-
-        if !self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]){
-            self.consume(TokenType::DELIMITER(Delimiters::COMMA))?;
-        }
-
+        println!("Fin du parsing du bras de match OK!!!!!!!!!!!!!!!");
         Ok(MatchArm{
             pattern,
             guard,
             body,
         })
+    }
+
+    fn parse_pattern_complex(&mut self) -> Result<Pattern, ParserError>{
+        if self.check(&[TokenType::DELIMITER(Delimiters::LPAR)]){
+            self.parse_tuple_pattern()
+        }else if self.check(&[TokenType::DELIMITER(Delimiters::LSBRACKET)]){
+            self.parse_array_pattern()
+        }else { self.parse_pattern() }
+
+    }
+
+    fn parse_tuple_pattern(&mut self) -> Result<Pattern, ParserError> {
+        self.consume(TokenType::DELIMITER(Delimiters::LPAR))?;
+        let mut patterns = Vec::new();
+        if !self.check(&[TokenType::DELIMITER(Delimiters::RPAR)]){
+            loop {
+                let pattern = self.parse_pattern_complex()?;
+                patterns.push(pattern);
+                if self.check(&[TokenType::DELIMITER(Delimiters::COMMA)]){
+                    self.consume(TokenType::DELIMITER(Delimiters::COMMA))?;
+                }else { break; }
+            }
+        }
+        self.consume(TokenType::DELIMITER(Delimiters::RPAR))?;
+        println!("Fin du parsing du tuple pattern OK!!!!!!!!!!!!!!!");
+        Ok(Pattern::Tuple(patterns))
+    }
+    fn parse_array_pattern(&mut self) -> Result<Pattern, ParserError> {
+        println!("Début du parsing du pattern de tableau Array");
+        self.consume(TokenType::DELIMITER(Delimiters::LSBRACKET))?;
+        let mut patterns = Vec::new();
+        if !self.check(&[TokenType::DELIMITER(Delimiters::RSBRACKET)]){
+            loop {
+                let pattern = self.parse_pattern_complex()?;
+                patterns.push(pattern);
+                if self.check(&[TokenType::DELIMITER(Delimiters::COMMA)]){
+                    self.consume(TokenType::DELIMITER(Delimiters::COMMA))?;
+                }else { break; }
+            }
+        }
+        self.consume(TokenType::DELIMITER(Delimiters::RSBRACKET))?;
+        println!("Fin du parsing du pattern de tableau Array OK!!!!!!!!!!!!!!!");
+        Ok(Pattern::Array(patterns))
 
     }
 
@@ -1503,6 +1543,9 @@ impl Parser {
         true
     }
 
+
+
+
     // pub fn parse_declarations(&mut self) -> Result<Vec<ASTNode>, ParserError> {
     //     let mut declarations = Vec::new();
     //
@@ -1521,12 +1564,6 @@ impl Parser {
     //
     //     Ok(declarations)
     // }
-
-
-
-
-
-
 
 
 

@@ -146,7 +146,51 @@ fn main() {
     let code_test6 = r#"match x:
     1 => print("One")
     2 => print("Two")
-    _ => print("Other")"#;
+    _ => print("Other")
+"#;
+
+    let code_test7 = r#"match x :
+    n if n > 0:
+        print("positive")
+    n if n < 0:
+        print("negative")
+        print(n)
+    _:
+        print("zero")
+"#;
+
+    let code_test8 = r#"match x :
+    n if n > 0 =>print("positive")
+    n if n < 0 =>print("negative")
+    _ =>print("zero")
+"#;
+
+    let code_test9 = r#"match x :
+    n if n > 0 =>print("positive")
+    n if n < 0:
+        print("negative")
+        print(n)
+    _:
+        print("zero")
+"#;
+
+    let code_test10 = r#"match x :
+    (0, 0) => print("Origin")
+    (x, 0):
+        print("X-axis")
+        print(x)
+    (0, y) if y > 0 => print("Positive Y-axis")
+    (x, y) => print("MOMO")
+    _ => print("Other")
+"#;
+    let code_test11 = r#"match x :
+    [0, 0] => print("Origin")
+    [x, 0]:
+        print("X-axis")
+        print(x)
+    [0, y] if y > 0 => print("Positive Y-axis")
+    _ => print("Other")
+"#;
 
 
 
@@ -155,7 +199,10 @@ fn main() {
 
 
 
-    let mut lexer = Lexer::new(code_test5, SyntaxMode::Braces);
+
+
+
+    let mut lexer = Lexer::new(code_test10, SyntaxMode::Indentation);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
@@ -164,7 +211,7 @@ fn main() {
     }
     println!("\n");
 
-    let mut parser = Parser::new(tokens, SyntaxMode::Braces);
+    let mut parser = Parser::new(tokens, SyntaxMode::Indentation);
 
     // while !parser.is_at_end() {
     //     match parser.parse_declaration() {

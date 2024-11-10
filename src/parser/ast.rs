@@ -482,7 +482,7 @@ pub enum Statement {
     RaiseStatement(RaiseStatement),
     DelStatement(DelStatement),
     IfStatement(IfStatement),
-    ElifStatement(ElifStatement),
+    //ElifStatement(ElifStatement),
     WhileStatement(WhileStatement),
     ForStatement(ForStatement),
     Break,
@@ -518,11 +518,11 @@ pub struct IfStatement {
 }
 
 #[allow(dead_code)]
-#[derive(Clone, Debug)]
-pub struct ElifStatement {
-    pub condition: Expression,
-    pub body: Body,
-}
+// #[derive(Clone, Debug)]
+// pub struct ElifStatement {
+//     pub condition: Expression,
+//     pub body: Body,
+// }
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct WhileStatement {
@@ -635,6 +635,7 @@ pub enum Pattern {
     EnumVariant(EnumVariant),
     Range(Box<Pattern>,Box<Pattern>),
     Tuple(Vec<Pattern>),
+    Array(Vec<Pattern>),
     Constructor(String, Vec<Pattern>),
 }
 
