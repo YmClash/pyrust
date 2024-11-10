@@ -1,7 +1,12 @@
 #[allow(dead_code)]
 use crate::lexer::lex::{SyntaxMode, Token};
+lucie_local
 use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, Body, ClassDeclaration, CompoundAssignment, CompoundOperator, ConstDeclaration, Constructor, Declaration, DestructuringAssignment, EnumDeclaration, EnumVariant, Expression, Field, ForStatement, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, IfStatement, IndexAccess, LambdaExpression, Literal, MatchArm, MatchStatement, MemberAccess, MethodCall, Mutability, Operator, Parameter, Parameters, Pattern, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility, WhileStatement};
 use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget, ExpectedDeclaration, ExpectedArrowOrBlock, ExpectedCommaOrClosingParenthesis};
+
+use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, ClassDeclaration, ConstDeclaration, Constructor, Declaration, EnumDeclaration, EnumVariant, Expression, Field, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, Literal, MemberAccess, MethodCall, Mutability, Operator, Parameter, Parameters, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility};
+use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget, ExpectedDeclaration};
+main
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::tok::{Delimiters, Keywords, Operators, TokenType};
 
@@ -168,6 +173,7 @@ impl Parser {
 
     pub fn parse_expression(&mut self,precedence:u8) -> Result<Expression, ParserError> {
         println!("Début du parsing de l'expression");
+ lucie_local
         //verifier si c'est destructuration
         if self.check(&[TokenType::DELIMITER(Delimiters::LSBRACKET)]){
             return self.parse_destructuring_assignment();
@@ -201,6 +207,9 @@ impl Parser {
                 _ => {}
             }
         }
+
+        let mut left = self.parse_postfix_expression()?;
+ main
 
 
         while let Some (operator) = self.peek_operator(){
@@ -243,6 +252,7 @@ impl Parser {
             if self.check(&[TokenType::DELIMITER(Delimiters::DOT)]){
                 self.advance();
                 let member_name = self.consume_identifier()?;
+ lucie_local
 
                 if self.check(&[TokenType::DELIMITER(Delimiters::LPAR)]){
                     // Appel de méthode
@@ -355,6 +365,73 @@ impl Parser {
     }
 
 
+
+                if self.check(&[TokenType::DELIMITER(Delimiters::LPAR)]){
+                    // Appel de méthode
+                    self.advance();
+                    let arguments = self.parse_arguments_list()?;
+                    self.consume(TokenType::DELIMITER(Delimiters::RPAR))?;
+                    expr = Expression::MethodCall(MethodCall{
+                        object: Box::new(expr),
+                        method: member_name,
+                        arguments,
+                    });
+                }else{
+                    // Acces à un membre
+                    expr = Expression::MemberAccess(MemberAccess{
+                        object: Box::new(expr),
+                        member: member_name,
+                    });
+                }
+            } else if self.check(&[TokenType::DELIMITER(Delimiters::LPAR)]) {
+                // Appel de Fonction
+                self.advance();
+                let arguments = self.parse_arguments_list()?;
+                self.consume(TokenType::DELIMITER(Delimiters::RPAR))?;
+                expr = Expression::FunctionCall(FunctionCall{
+                    name: Box::new(expr),
+                    arguments,
+                });
+            }else { break; }
+        }
+        Ok(expr)
+    }
+
+
+    // fn parse_unary_expression(&mut self) -> Result<Expression, ParserError> {
+    //     println!("Début du parsing de l'expression unaire");
+    //     println!("Début du parsing de l'expression unaire, current_token = {:?}", self.current_token());
+    //
+    //
+    //     if self.match_token(&[
+    //         TokenType::OPERATOR(Operators::MINUS),
+    //         TokenType::OPERATOR(Operators::EXCLAMATION),
+    //         TokenType::OPERATOR(Operators::AMPER),
+    //     ]) {
+    //         let operator = match self.previous_token().unwrap().token_type {
+    //             TokenType::OPERATOR(Operators::MINUS) => UnaryOperator::Negative,
+    //             TokenType::OPERATOR(Operators::EXCLAMATION) => UnaryOperator::Not,
+    //             TokenType::OPERATOR(Operators::AMPER) => UnaryOperator::Reference,
+    //             _ => unreachable!(),
+    //         };
+    //
+    //         println!("Opérateur unaire parsé : {:?}", operator);
+    //
+    //         let right = self.parse_unary_expression()?;
+    //         return Ok(Expression::UnaryOperation(UnaryOperation {
+    //             operator,
+    //             operand: Box::new(right),
+    //         }));
+    //     }
+    //     println!("Aucun opérateur unaire trouvé, passage à l'expression pos");
+    //     self.parse_primary_expression()
+    //     //self.parse_postfix()
+    //
+    // }
+
+    // parse_prefix()
+main
+
     fn parse_primary_expression(&mut self) -> Result<Expression, ParserError> {
         println!("Début du parsing de l'expression primaire, current_token = {:?}", self.current_token());
         if let Some(token) = self.current_token() {
@@ -403,6 +480,44 @@ impl Parser {
                     self.parse_lambda_expression()?
                 }
 
+ lucie_local
+
+                TokenType::OPERATOR(Operators::EXCLAMATION) => {
+                    self.advance();
+                    let right = self.parse_primary_expression()?;
+                    Expression::UnaryOperation(UnaryOperation {
+                        operator: UnaryOperator::Not,
+                        operand: Box::new(right),
+                    })
+                }
+
+                TokenType::OPERATOR(Operators::AMPER) => {
+                    self.advance();
+                    if self.check(&[TokenType::KEYWORD(Keywords::MUT)]){
+                        self.advance();
+                        let right = self.parse_primary_expression()?;
+                        Expression::UnaryOperation(UnaryOperation{
+                            operator: UnaryOperator::ReferenceMutable,
+                            operand: Box::new(right),
+                        })
+                    }else{
+                        let right = self.parse_primary_expression()?;
+                        Expression::UnaryOperation(UnaryOperation{
+                            operator: UnaryOperator::Reference,
+                            operand: Box::new(right),
+                        })
+                    }
+
+                }
+
+                // TokenType::DELIMITER(Delimiters::LPAR) => {
+                //     self.advance(); // Consomme '('
+                //     let expr = self.parse_expression(0)?;
+                //     self.consume(TokenType::DELIMITER(Delimiters::RPAR))?; // Consomme ')'
+                //     expr
+                // }
+
+ main
                 TokenType::DELIMITER(Delimiters::LPAR) => {
                     self.advance();
                     let expr = self.parse_expression(0)?;
@@ -435,11 +550,43 @@ impl Parser {
 
     }
 
+ lucie_local
 
+
+    // fn parse_binary_expression(&mut self, min_precedence: u8) -> Result<Expression, ParserError> {
+    //     println!("Début du parsing de l'expression binaire");
+    //     let mut left = self.parse_unary_expression()?;
+    //     loop {
+    //         println!("Current position: {}", self.current);
+    //         let op = match self.peek_operator() {
+    //             Some(op) => op,
+    //             None => {
+    //                 println!("No operator found, breaking loop");
+    //                 break;
+    //             }
+    //         };
+    //         let precedence = self.get_operator_precedence(&op);
+    //         println!("Operator found: {:?} with precedence {}", op, precedence);
+    //         if precedence < min_precedence {
+    //             break;
+    //         }
+    //         self.advance(); // Consomme l'opérateur
+    //         let right = self.parse_binary_expression(precedence )?;
+    //         left = Expression::BinaryOperation(BinaryOperation {
+    //             left: Box::new(left),
+    //             operator: op,
+    //             right: Box::new(right),
+    //         });
+    //     }
+    //     println!("Fin du parsing de l'expression binaire");
+    //     Ok(left)
+    // }
+ main
     fn parse_lambda_expression(&mut self) -> Result<Expression, ParserError> {
         println!("Début du parsing de l'expression lambda");
         self.consume(TokenType::KEYWORD(Keywords::LAMBDA))?;
 
+ lucie_local
         self.consume(TokenType::DELIMITER(Delimiters::LPAR))?;
         let parameters = self.parse_parameter_list()?;
         //let parameters = self.parse_function_parameters()?;
@@ -523,13 +670,172 @@ impl Parser {
                 continue;
             } else if self.check(&[TokenType::DELIMITER(Delimiters::RPAR)]) {
                 //self.advance(); // Consomme ')'
+
+    // fn parse_assignment(&mut self) -> Result<Expression, ParserError> {
+    //     println!("Début du parsing de l'assignation");
+    //     let expression = self.parse_equality()?;
+    //
+    //     if self.match_token(&[TokenType::OPERATOR(Operators::EQUAL)]) {
+    //         let value = self.parse_assignment()?;
+    //         match expression {
+    //             Expression::Identifier(name) => Ok(Expression::Assignment(Assignment {
+    //                 left: Box::new(Expression::Identifier(name)),
+    //                 right: Box::new(value),
+    //             })),
+    //             Expression::MemberAccess(member_access) => Ok(Expression::Assignment(Assignment {
+    //                 left: Box::new(Expression::MemberAccess(member_access)),
+    //                 right: Box::new(value),
+    //             })),
+    //             _ => Err(ParserError::new(
+    //                 InvalidAssignmentTarget,
+    //                 self.current_position(),
+    //             )),
+    //         }
+    //     } else {
+    //         Ok(expression)
+    //     }
+    // }
+
+    // fn parse_equality(&mut self) -> Result<Expression,ParserError>{
+    //     println!("Début du parsing de l'égalité");
+    //     let mut expression = self.parse_comparison()?;
+    //     while self.match_token(&[
+    //         TokenType::OPERATOR(Operators::EQEQUAL),
+    //         TokenType::OPERATOR(Operators::NOTEQUAL)]){
+    //         let operator = match self.previous_token().unwrap().token_type {
+    //             TokenType::OPERATOR(Operators::EQEQUAL) => Operator::Equal,
+    //             TokenType::OPERATOR(Operators::NOTEQUAL) => Operator::NotEqual,
+    //             _ => unreachable!(),
+    //         };
+    //         let right = self.parse_comparison()?;
+    //         expression = Expression::BinaryOperation(BinaryOperation {
+    //             left: Box::new(expression),
+    //             operator,
+    //             right: Box::new(right),
+    //         });
+    //     }
+    //     Ok(expression)
+    // }
+    // fn parse_comparison(&mut self) -> Result<Expression,ParserError>{
+    //     let mut expression = self.parse_term()?;
+    //
+    //     while self.match_token(&[
+    //         TokenType::OPERATOR(Operators::LESS),
+    //         TokenType::OPERATOR(Operators::GREATER),
+    //         TokenType::OPERATOR(Operators::LESSEQUAL),
+    //         TokenType::OPERATOR(Operators::GREATEREQUAL),
+    //     ]) {
+    //         let operator = match self.previous_token().unwrap().token_type {
+    //             TokenType::OPERATOR(Operators::LESS) => Operator::LessThan,
+    //             TokenType::OPERATOR(Operators::GREATER) => Operator::GreaterThan,
+    //             TokenType::OPERATOR(Operators::LESSEQUAL) => Operator::LesshanOrEqual,
+    //             TokenType::OPERATOR(Operators::GREATEREQUAL) => Operator::GreaterThanOrEqual,
+    //             _ => unreachable!(),
+    //         };
+    //         let right = self.parse_term()?;
+    //         expression = Expression::BinaryOperation(BinaryOperation {
+    //             left: Box::new(expression),
+    //             operator,
+    //             right: Box::new(right),
+    //         })
+    //     }
+    //     Ok(expression)
+    //
+    // }
+    // fn parse_term(&mut self) -> Result<Expression,ParserError>{
+    //     let mut expression = self.parse_factor()?;
+    //     while self.match_token(&[
+    //         TokenType::OPERATOR(Operators::PLUS),
+    //         TokenType::OPERATOR(Operators::MINUS),
+    //     ]) {
+    //         let operator = match self.previous_token().unwrap().token_type {
+    //             TokenType::OPERATOR(Operators::PLUS) => Operator::Addition,
+    //             TokenType::OPERATOR(Operators::MINUS) => Operator::Substraction,
+    //             _ => unreachable!(),
+    //         };
+    //         let right = self.parse_factor()?;
+    //         expression = Expression::BinaryOperation(BinaryOperation{
+    //             left: Box::new(expression),
+    //             operator,
+    //             right: Box::new(right),
+    //         })
+    //
+    //     }
+    //     Ok(expression)
+    // }
+    // fn parse_factor(&mut self) -> Result<Expression,ParserError>{
+    //     let mut expression = self.parse_unary_expression()?;
+    //     while self.match_token(&[
+    //         TokenType::OPERATOR(Operators::STAR),
+    //         TokenType::OPERATOR(Operators::SLASH),
+    //     ]) {
+    //         let operator = match self.previous_token().unwrap().token_type {
+    //             TokenType::OPERATOR(Operators::STAR) => Operator::Multiplication,
+    //             TokenType::OPERATOR(Operators::SLASH) => Operator::Division,
+    //             _ => unreachable!(),
+    //         };
+    //         let right = self.parse_unary_expression()?;
+    //         expression = Expression::BinaryOperation(BinaryOperation{
+    //             left: Box::new(expression),
+    //             operator,
+    //             right: Box::new(right),
+    //         })
+    //
+    //     }
+    //     Ok(expression)
+    // }
+
+    // fn parse_postfix(&mut self) -> Result<Expression,ParserError>{
+    //     let mut expression = self.parse_primary_expression()?;
+    //     loop {
+    //         if self.match_token(&[TokenType::DELIMITER(Delimiters::DOT)]){
+    //             let member_name = self.consume_identifier()?;
+    //             expression = Expression::MemberAccess(MemberAccess{
+    //                 object: Box::new(expression),
+    //                 member: member_name,
+    //             });
+    //             } else if self.match_token(&[TokenType::DELIMITER(Delimiters::LPAR)]) {
+    //                 // Consomme '('
+    //                 let arguments = self.parse_arguments_list()?;
+    //                 expression = Expression::FunctionCall(FunctionCall {
+    //                     name: Box::new(expression),
+    //                     arguments: arguments,
+    //                 });
+    //                 self.consume(TokenType::DELIMITER(Delimiters::RPAR))?; // Consomme ')'
+    //             } else {
+    //             break;
+    //         }
+    //     }
+    //     Ok(expression)
+    // }
+
+    /// fonction pour parser les parametres
+
+    fn parse_arguments_list(&mut self) -> Result<Vec<Expression>, ParserError> {
+        println!("Début du parsing de la liste d'arguments");
+        let mut arguments = Vec::new();
+        if self.check(&[TokenType::DELIMITER(Delimiters::RPAR)]){
+            return Ok(arguments);
+        }
+        loop {
+            let argument = self.parse_expression(0);
+            arguments.push(argument?);
+
+            if !self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]) {
+main
                 break;
             } else {
                 return Err(ParserError::new(ExpectedCommaOrClosingParenthesis, self.current_position()));
             }
         }
+ lucie_local
 
         Ok(parameters)
+
+        println!("Arguments liste parsés : {:?}", arguments);
+        Ok(arguments)
+
+ main
     }
 
     fn parse_function_parameters(&mut self) -> Result<Vec<Parameter>, ParserError> {

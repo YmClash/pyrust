@@ -331,7 +331,12 @@ pub enum Expression {
     BinaryOperation(BinaryOperation),
     UnaryOperation(UnaryOperation),
     FunctionCall(FunctionCall),
+ lucie_local
     //ArrayAccess(ArrayAccess), // transfere dans IndexAccess
+
+    MethodCall(MethodCall),
+    ArrayAccess(ArrayAccess),
+ main
     MemberAccess(MemberAccess),
     LambdaExpression(LambdaExpression),
     MatchExpression(MatchExpression),
@@ -443,6 +448,16 @@ pub struct FunctionCall {
     pub name: Box<Expression>,
     pub arguments: Vec<Expression>,
 }
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct MethodCall {
+    pub object: Box<Expression>,
+    pub method: String,
+    pub arguments: Vec<Expression>,
+}
+
+
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct ArrayAccess {

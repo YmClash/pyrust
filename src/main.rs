@@ -28,7 +28,10 @@ fn main() {
 
     let code_source = r#"let x = 5;const v = 100;"#;
 
+
     let code_binary = "array[0][1]";
+
+    let code_binary = "&mut 5 ";
 
 
     let code_number = "a && b || c";
@@ -74,6 +77,7 @@ fn main() {
 
     let code_func_call_braces = "let sum:int = add(5, 10);";
     let code_func_call_indent = "let sum:int = add(5, 10)";
+
 
     let code_func_call_braces2 = "print(numb);";
     let code_func_call_indent2 = "print(numb)";
@@ -138,6 +142,17 @@ fn main() {
     let code_test3 = r#"while x > 0 { print(x);}"#;
     let code_test4 = r#"for i in range(10) { print(i);}"#;
 
+
+    let code_func_call_braces2 = "print(numb);";
+    let code_func_call_indent2 = "print(numb)";
+
+    let code_func_call_methode_braces = "let x = chat.danse(x,y);";
+    let code_func_call_methode_indent = "let x = chat.danse(x,y)";
+
+    let code_func_call_methode_braces2 = "chat.danse(x,y);";
+    let code_func_call_methode_indent2 = "chat.danse(x,y)";
+
+
     let code_test0 = r#"match x {1 => print("one"),2 => print("two"),_ => print("other")}"#;
     let code_test1 = r#"match x {1 => print(1),2 => print(2),_ => print("other")}"#;
     let code_test5 = r#"match x {n if n > 0 => print("positive"),n if n<0 =>{print("negative");print(n);},_ => print("zero")}"#;
@@ -148,6 +163,7 @@ fn main() {
     2 => print("Two")
     _ => print("Other")
 "#;
+
 
     let code_test7 = r#"match x :
     n if n > 0:
@@ -203,6 +219,11 @@ fn main() {
 
 
     let mut lexer = Lexer::new(code_test10, SyntaxMode::Indentation);
+
+
+
+    let mut lexer = Lexer::new(code_func_call_methode_indent, SyntaxMode::Indentation);
+
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
@@ -240,6 +261,35 @@ fn main() {
             println!("Erreur lors du parsing : {}", e);
         }
     }
+
+    while !parser.is_at_end() {
+        match parser.parse_declaration() {
+            Ok(ast) => {
+                println!("AST généré pour la déclaration :");
+                println!("{:#?}", ast);
+            }
+            Err(e) => {
+                println!("Erreur lors du parsing : {}", e);
+                break;
+            }
+        }
+    }
+
+    println!("Parsing terminé\n");
+    println!("Sinon, Parsing des Expressions\n");
+
+
+    //
+    // match parser.parse_expression_statement() {
+    //     Ok(ast) => {
+    //         println!("AST généré pour l'expression :");
+    //         println!("{:#?}", ast);
+    //     }
+    //     Err(e) => {
+    //         println!("Erreur lors du parsing : {}", e);
+    //     }
+    // }
+
 
     println!("\n");
     println!("=========OK==========\n");
