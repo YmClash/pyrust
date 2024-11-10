@@ -17,7 +17,7 @@ PyRust est un langage de programmation expérimental qui combine des éléments 
 ## Introduction
 
 
-Ce projet est un hobby et vise à explorer les concepts de conception de langages de programmation en utilisant Rust comme compilateur.
+Ce projet est un hobby et vise à explorer les concepts de conception de langages de programmation en utilisant Rust comme compilateur et Back-end.
 
 PyRust est conçu pour être un langage de programmation simple et expressif, inspiré par la syntaxe de Python et la performance de Rust. 
 
