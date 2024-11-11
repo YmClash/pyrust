@@ -202,7 +202,7 @@ fn main() {
 
 
 
-    let mut lexer = Lexer::new(code_test10, SyntaxMode::Indentation);
+    let mut lexer = Lexer::new(code_test11, SyntaxMode::Indentation);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
