@@ -1,3 +1,5 @@
+Je vais mettre à jour la roadmap en fonction de nos avancées récentes et ajouter les éléments manquants :
+
 # Feuille de route pour l'implémentation du parser PyRust
 
 ## 1. Expressions
@@ -6,8 +8,12 @@
 - [x] Expressions binaires avec précédence
 - [x] Appels de fonction
 - [x] Accès aux membres (dot notation)
-- [ ] Expressions lambda // a moitie Implementer
+- [x] Expressions lambda basiques
+- [ ] Expressions lambda avancées (captures, closures)
 - [ ] Expressions de cast de type
+- [ ] Expressions d'indexation
+- [ ] Expressions de slice
+- [ ] Expressions de range
 
 ## 2. Déclarations
 - [x] Déclarations de variables
@@ -17,6 +23,9 @@
 - [x] Déclarations d'énumérations
 - [ ] Déclarations de traits
 - [ ] Déclarations de classes
+- [ ] Implémentations (impl)
+- [ ] Déclarations de modules
+- [ ] Déclarations d'interfaces
 
 ## 3. Statements
 - [x] Blocs de code
@@ -29,87 +38,115 @@
 - [ ] Gestion des emprunts (borrow, mut)
 - [ ] Gestion des clôtures (closures)
 - [ ] Gestion des modules et imports
-- [x] Statements match pattern
-- 
+- [x] Statements match pattern basiques
+- [x] Match pattern avec guards
+- [x] Match pattern avec tuples
+- [x] Match pattern avec arrays
+- [ ] Match pattern avec rest (...)
+- [ ] Match pattern avec range
+- [ ] Match pattern avec OR
+- [ ] Match pattern avec structs
+- [ ] Break et continue avec labels
 
 ## 4. Types
 - [x] Types primitifs (int, float, bool, str, char)
-- [ ] Types composés (arrays, tuples)
+- [x] Types composés basiques (arrays, tuples)
+- [ ] Types composés avancés (slices, références)
 - [ ] Types génériques
 - [ ] Types de fonction
+- [ ] Traits bounds
+- [ ] Lifetimes
+- [ ] Types algébriques (sum types)
+- [ ] Types dépendants
 
 ## 5. Gestion des modes syntaxiques
-- [ ] Mode accolades
-- [ ] Mode indentation
-- [ ] Basculement entre les modes
+- [x] Mode accolades basique
+- [x] Mode indentation basique
+- [x] Basculement entre les modes pour patterns
+- [ ] Support complet des block expressions
+- [ ] Gestion avancée des INDENT/DEDENT
+- [ ] Gestion des commentaires multilignes
+- [ ] Gestion des docstrings
 
 ## 6. Gestion des erreurs
 - [x] Erreurs de base
+- [x] Positions des erreurs
 - [ ] Messages d'erreur plus détaillés
+- [ ] Suggestions de correction
 - [ ] Récupération d'erreurs pour continuer le parsing
+- [ ] Stack trace des erreurs
+- [ ] Gestion des erreurs dans les macros
 
 ## 7. Tests
-- [ ] Tests unitaires pour chaque composant
-- [ ] Tests d'intégration pour des programmes complets
+- [x] Tests basiques des expressions
+- [x] Tests des patterns
+- [ ] Tests unitaires complets
+- [ ] Tests d'intégration
 - [ ] Tests de performance
+- [ ] Tests de régression
+- [ ] Benchmarks
+- [ ] Tests de fuzzing
 
 ## 8. Optimisations
 - [ ] Optimisation du parsing des expressions
 - [ ] Mise en cache des résultats intermédiaires
+- [ ] Réduction de l'allocation mémoire
+- [ ] Parallélisation du parsing
+- [ ] Optimisation des structures de données
+- [ ] Lazy parsing
+- [ ] Incremental parsing
 
 ## 9. Fonctionnalités avancées
 - [ ] Support des annotations
-- [ ] Macros
+- [ ] Macros procédurales
+- [ ] Macros déclaratives
 - [ ] Gestion des modules et imports
+- [ ] Async/await
+- [ ] Générateurs
+- [ ] Métaprogrammation
+- [ ] Support des attributs
+- [ ] Plugins du parser
 
 ## 10. Documentation
 - [ ] Documentation du code
 - [ ] Guide d'utilisation du parser
 - [ ] Exemples de programmes PyRust
+- [ ] Documentation API
+- [ ] Guide de contribution
+- [ ] Guide de débogage
+- [ ] Documentation des patterns de conception utilisés
+- [ ] Guide de performance
 
-## Étapes de mise en œuvre :
+## Étapes de mise en œuvre actualisées :
 
-1. Compléter le parsing des expressions
-    - Implémenter les appels de fonction
-    - Ajouter le support des expressions lambda
-    - Gérer les casts de type
+1. Pattern Matching Avancé
+   - Implémenter le pattern rest
+   - Ajouter les patterns range
+   - Supporter les patterns OR
+   - Intégrer le pattern matching pour les structs
 
-2. Finaliser les déclarations
-    - Compléter parse_function_declaration
-    - Implémenter parse_struct_declaration
-    - Ajouter le support pour les énumérations, traits et classes
+2. Système de Types
+   - Compléter les types génériques
+   - Ajouter les traits bounds
+   - Implémenter les lifetimes
+   - Gérer les types algébriques
 
-3. Implémenter les statements de contrôle
-    - Ajouter le support pour if-else, while, et for
-    - Gérer les blocs de code dans les deux modes syntaxiques
+3. Gestion des Modules
+   - Parser les déclarations de modules
+   - Gérer les imports/exports
+   - Implémenter la visibilité
+   - Supporter les chemins qualifiés
 
-4. Étendre le système de types
-    - Ajouter le support pour les types composés
-    - Implémenter la gestion des types génériques
+4. Optimisation et Tests
+   - Ajouter les benchmarks
+   - Optimiser les performances
+   - Étendre la couverture des tests
+   - Implémenter le fuzzing
 
-5. Améliorer la gestion des erreurs
-    - Ajouter plus de contexte aux messages d'erreur
-    - Implémenter la récupération d'erreurs pour un parsing plus robuste
+5. Documentation et Outillage
+   - Compléter la documentation API
+   - Créer des guides utilisateur
+   - Améliorer les messages d'erreur
+   - Développer les outils de débogage
 
-6. Étoffer la suite de tests
-    - Créer des tests unitaires pour chaque composant du parser
-    - Ajouter des tests d'intégration pour des programmes PyRust complets
-
-7. Optimiser les performances
-    - Profiler le parser pour identifier les goulots d'étranglement
-    - Optimiser les parties critiques du code
-
-8. Ajouter des fonctionnalités avancées
-    - Implémenter le support des annotations
-    - Ajouter la gestion des macros
-    - Gérer les imports et les modules
-
-9. Documenter le projet
-    - Ajouter des commentaires de documentation à chaque fonction
-    - Créer un guide d'utilisation du parser
-    - Fournir des exemples de programmes PyRust parsés
-
-10. Révision et refactoring
-    - Revoir le code pour assurer la cohérence
-    - Refactoriser les parties complexes pour améliorer la lisibilité
-    - Préparer le parser pour l'intégration avec les autres composants du compilateur
+Voulez-vous qu'on détaille davantage certaines sections ou qu'on établisse des priorités particulières ?
