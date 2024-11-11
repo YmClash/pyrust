@@ -58,6 +58,7 @@ pub enum ParserErrorType {
     MultipleConstructors,
     UnexpectedParameterName,
     MismatchedParametersAndAttributes,
+    MultipleRestPatterns
 
 
 
@@ -150,6 +151,7 @@ impl Display for ParserErrorType {
 
             ParserErrorType::MultipleConstructors => write!(f, "MultipleConstructors"),
             ParserErrorType::MismatchedParametersAndAttributes => write!(f, "MismatchedParametersAndAttributes"),
+            ParserErrorType::MultipleRestPatterns => write!(f, "MultipleRestPatterns"),
 
 
             ParserErrorType::InvalidFunctionDeclaration => write!(f, "InvalidFunctionDeclaration"),
@@ -205,6 +207,10 @@ impl ParserError {
 
             ParserErrorType::MultipleConstructors => "Multiple constructors".to_string(),
             ParserErrorType::MismatchedParametersAndAttributes => "Mismatched parameters and attributes".to_string(),
+            ParserErrorType::MultipleRestPatterns => "Multiple rest patterns".to_string(),
+
+
+
 
 
 

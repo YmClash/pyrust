@@ -633,11 +633,32 @@ pub enum Pattern {
     Identifier(String),
     Wildcard,
     EnumVariant(EnumVariant),
-    Range(Box<Pattern>,Box<Pattern>),
     Tuple(Vec<Pattern>),
     Array(Vec<Pattern>),
     Constructor(String, Vec<Pattern>),
+    Rest,
+    TupleRest(Vec<Pattern>),
+    ArrayRest(ArrayRest),
+    RangePattern(RangePattern),
 }
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct RangePattern {
+    pub start: Option<Box<Expression>>,
+    pub end: Option<Box<Expression>>,
+    pub inclusive: bool,
+
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct  ArrayRest {
+    pub before: Vec<Pattern>,
+    pub after: Vec<Pattern>,
+}
+
+
 
 impl fmt::Display for ASTNode {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {

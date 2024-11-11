@@ -1,7 +1,7 @@
 #[allow(dead_code)]
 use crate::lexer::lex::{SyntaxMode, Token};
-use crate::parser::ast::{Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, Body, ClassDeclaration, CompoundAssignment, CompoundOperator, ConstDeclaration, Constructor, Declaration, DestructuringAssignment, EnumDeclaration, EnumVariant, Expression, Field, ForStatement, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, IfStatement, IndexAccess, LambdaExpression, Literal, MatchArm, MatchStatement, MemberAccess, MethodCall, Mutability, Operator, Parameter, Parameters, Pattern, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility, WhileStatement};
-use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget, ExpectedDeclaration, ExpectedArrowOrBlock, ExpectedCommaOrClosingParenthesis};
+use crate::parser::ast::{ArrayRest, Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, Body, ClassDeclaration, CompoundAssignment, CompoundOperator, ConstDeclaration, Constructor, Declaration, DestructuringAssignment, EnumDeclaration, EnumVariant, Expression, Field, ForStatement, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, IfStatement, IndexAccess, LambdaExpression, Literal, MatchArm, MatchStatement, MemberAccess, MethodCall, Mutability, Operator, Parameter, Parameters, Pattern, RangePattern, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility, WhileStatement};
+use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget, ExpectedDeclaration, ExpectedArrowOrBlock, ExpectedCommaOrClosingParenthesis, MultipleRestPatterns};
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::tok::{Delimiters, Keywords, Operators, TokenType};
 
@@ -1157,7 +1157,11 @@ impl Parser {
     }
 
     fn parse_pattern_complex(&mut self) -> Result<Pattern, ParserError>{
-        if self.check(&[TokenType::DELIMITER(Delimiters::LPAR)]){
+        if self.check(&[TokenType::DELIMITER(Delimiters::DOT)]){
+            self.consume(TokenType::DELIMITER(Delimiters::DOT))?;
+            self.consume(TokenType::DELIMITER(Delimiters::DOT))?;
+            Ok(Pattern::Rest)
+        }else if self.check(&[TokenType::DELIMITER(Delimiters::LPAR)]){
             self.parse_tuple_pattern()
         }else if self.check(&[TokenType::DELIMITER(Delimiters::LSBRACKET)]){
             self.parse_array_pattern()
@@ -1181,6 +1185,36 @@ impl Parser {
         println!("Fin du parsing du tuple pattern OK!!!!!!!!!!!!!!!");
         Ok(Pattern::Tuple(patterns))
     }
+
+    //feature pour plus tard
+    fn parse_tuple_rest_pattern(&mut self) -> Result<Pattern, ParserError> {
+        self.consume(TokenType::DELIMITER(Delimiters::LPAR))?;
+        let mut patterns = Vec::new();
+        let mut has_rest = false;
+
+        while !self.check(&[TokenType::DELIMITER(Delimiters::RPAR)]) {
+            if self.check(&[TokenType::DELIMITER(Delimiters::DOT)]) {
+                if has_rest {
+                    return Err(ParserError::new(MultipleRestPatterns, self.current_position()));
+                }
+                self.consume(TokenType::DELIMITER(Delimiters::DOT))?;
+                self.consume(TokenType::DELIMITER(Delimiters::DOT))?;
+                has_rest = true;
+            } else {
+                patterns.push(self.parse_pattern()?);
+            }
+
+            if self.check(&[TokenType::DELIMITER(Delimiters::COMMA)]) {
+                self.consume(TokenType::DELIMITER(Delimiters::COMMA))?;
+            } else {
+                break;
+            }
+        }
+
+        self.consume(TokenType::DELIMITER(Delimiters::RPAR))?;
+        Ok(Pattern::TupleRest(patterns))
+    }
+
     fn parse_array_pattern(&mut self) -> Result<Pattern, ParserError> {
         println!("Début du parsing du pattern de tableau Array");
         self.consume(TokenType::DELIMITER(Delimiters::LSBRACKET))?;
@@ -1200,8 +1234,77 @@ impl Parser {
 
     }
 
+    //feature pour plus tard
+    fn parse_array_rest_pattern(&mut self) -> Result<Pattern, ParserError> {
+        self.consume(TokenType::DELIMITER(Delimiters::LSBRACKET))?;
+        let mut before = Vec::new();
+        let mut after = Vec::new();
+        let mut has_rest = false;
+
+        while !self.check(&[TokenType::DELIMITER(Delimiters::RSBRACKET)]) {
+            if self.check(&[TokenType::DELIMITER(Delimiters::DOT)]) {
+                if has_rest {
+                    return Err(ParserError::new(MultipleRestPatterns, self.current_position()));
+                }
+                self.consume(TokenType::DELIMITER(Delimiters::DOT))?;
+                self.consume(TokenType::DELIMITER(Delimiters::DOT))?;
+                has_rest = true;
+            } else {
+                let pattern = self.parse_pattern()?;
+                if has_rest {
+                    after.push(pattern);
+                } else {
+                    before.push(pattern);
+                }
+            }
+
+            if self.check(&[TokenType::DELIMITER(Delimiters::COMMA)]) {
+                self.consume(TokenType::DELIMITER(Delimiters::COMMA))?;
+            } else {
+                break;
+            }
+        }
+
+        self.consume(TokenType::DELIMITER(Delimiters::RSBRACKET))?;
+        Ok(Pattern::ArrayRest(ArrayRest{
+            before,
+            after,
+        }))
+    }
+
+    fn parse_range_pattern(&mut self) -> Result<Pattern, ParserError> {
+        let start = if !self.check(&[TokenType::DELIMITER(Delimiters::DOT)]) {
+            Some(Box::new(self.parse_expression(0)?))
+        } else {
+            None
+        };
+
+        // Consomme le premier point
+        self.consume(TokenType::DELIMITER(Delimiters::DOT))?;
+        self.consume(TokenType::DELIMITER(Delimiters::DOT))?;
+
+        // L'expression finale si elle existe
+        let end = if !self.check(&[TokenType::OPERATOR(Operators::FATARROW)]) &&
+            !self.check(&[TokenType::DELIMITER(Delimiters::COMMA)]) {
+            Some(Box::new(self.parse_expression(0)?))
+        } else {
+            None
+        };
+
+        Ok(Pattern::RangePattern(RangePattern{
+            start,
+            end,
+            inclusive: false  // Par défaut, on utilise la range exclusive
+        }))
+    }
+
+    fn is_start_of_range(&self) -> bool {
+    todo!()
+    }
+
     fn parse_pattern(&mut self) -> Result<Pattern, ParserError> {
         println!("Début du parsing du pattern");
+
 
         if self.match_token(&[TokenType::OPERATOR(Operators::UNDERSCORE)]) {
             // Pattern par défaut '_'
