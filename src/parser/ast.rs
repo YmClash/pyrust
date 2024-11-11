@@ -485,6 +485,7 @@ pub enum Statement {
     //ElifStatement(ElifStatement),
     WhileStatement(WhileStatement),
     ForStatement(ForStatement),
+    LoopStatement(LoopStatement),
     Break,
     Continue,
     TryStatement(TryStatement),
@@ -535,6 +536,13 @@ pub struct WhileStatement {
 pub struct ForStatement {
     pub iterator: String,
     pub iterable: Expression,
+    pub body: Vec<ASTNode>,
+    //pub body: Body,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct LoopStatement {
     pub body: Vec<ASTNode>,
     //pub body: Body,
 }

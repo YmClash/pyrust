@@ -194,6 +194,14 @@ fn main() {
 
     let code_test12 = r#"match x :1..5 => println!("entre 1 et 4"),10.. => println!("10 ou plus"),..10 => println!("moins de 10"),}"#;
 
+    let code_test13 = r#"match x :
+    n if n > 0 => print("positive")
+    (x, y) => print("tuple simple")
+    [1, 2] => print("array simple")
+    _ => print("default")
+"#;
+
+    let code_test14 = r#"match x {n if n > 0 => print("positive"),(x, y) => print("tuple simple"),[1, 2] => print("array simple"),_ => print("default")}"#;
 
 
 
@@ -204,7 +212,8 @@ fn main() {
 
 
 
-    let mut lexer = Lexer::new(code_test11, SyntaxMode::Indentation);
+
+    let mut lexer = Lexer::new(code_test14, SyntaxMode::Braces);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
@@ -213,7 +222,7 @@ fn main() {
     }
     println!("\n");
 
-    let mut parser = Parser::new(tokens, SyntaxMode::Indentation);
+    let mut parser = Parser::new(tokens, SyntaxMode::Braces);
 
     // while !parser.is_at_end() {
     //     match parser.parse_declaration() {

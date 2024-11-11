@@ -1,6 +1,6 @@
 #[allow(dead_code)]
 use crate::lexer::lex::{SyntaxMode, Token};
-use crate::parser::ast::{ArrayRest, Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, Body, ClassDeclaration, CompoundAssignment, CompoundOperator, ConstDeclaration, Constructor, Declaration, DestructuringAssignment, EnumDeclaration, EnumVariant, Expression, Field, ForStatement, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, IfStatement, IndexAccess, LambdaExpression, Literal, MatchArm, MatchStatement, MemberAccess, MethodCall, Mutability, Operator, Parameter, Parameters, Pattern, RangePattern, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility, WhileStatement};
+use crate::parser::ast::{ArrayRest, Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, Body, ClassDeclaration, CompoundAssignment, CompoundOperator, ConstDeclaration, Constructor, Declaration, DestructuringAssignment, EnumDeclaration, EnumVariant, Expression, Field, ForStatement, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, IfStatement, IndexAccess, LambdaExpression, Literal, LoopStatement, MatchArm, MatchStatement, MemberAccess, MethodCall, Mutability, Operator, Parameter, Parameters, Pattern, RangePattern, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility, WhileStatement};
 use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget, ExpectedDeclaration, ExpectedArrowOrBlock, ExpectedCommaOrClosingParenthesis, MultipleRestPatterns};
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::tok::{Delimiters, Keywords, Operators, TokenType};
@@ -1022,6 +1022,22 @@ impl Parser {
         })))
 
     }
+
+    fn parse_loop_statement(&mut self) -> Result<ASTNode, ParserError> {
+        println!("Début du parsing de l'instruction loop");
+        self.consume(TokenType::KEYWORD(Keywords::LOOP))?;
+        let body = if self.syntax_mode == SyntaxMode::Indentation {
+            self.parse_indented_block()?
+        } else {
+            self.parse_braced_block()?
+        };
+        println!("Fin du parsing de l'instruction loop OK!!!!!!!!!!!!!!");
+        Ok(ASTNode::Statement(Statement::LoopStatement(LoopStatement{
+            body,
+        })))
+    }
+
+
     fn parse_for_statement(&mut self) -> Result<ASTNode, ParserError> {
         println!("Début du parsing de l'instruction for");
         let iterator = self.consume_identifier()?;
