@@ -46,7 +46,7 @@ Je vais mettre à jour la roadmap en fonction de nos avancées récentes et ajou
 - [ ] Match pattern avec range
 - [ ] Match pattern avec OR
 - [ ] Match pattern avec structs
-- [ ] Break et continue avec labels
+- [x] Break et continue avec labels
 
 ## 4. Types
 - [x] Types primitifs (int, float, bool, str, char)
