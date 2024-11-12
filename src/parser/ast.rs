@@ -486,8 +486,12 @@ pub enum Statement {
     WhileStatement(WhileStatement),
     ForStatement(ForStatement),
     LoopStatement(LoopStatement),
+    BreakStatement(BreakStatement),
+    ContinueStatement(ContinueStatement),
+
     Break,
     Continue,
+
     TryStatement(TryStatement),
     WithStatement(WithStatement),
     YieldStatement(YieldStatement),
@@ -542,7 +546,21 @@ pub struct ForStatement {
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
+pub struct BreakStatement {
+    pub label: Option<String>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct ContinueStatement {
+    pub label: Option<String>,
+}
+
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
 pub struct LoopStatement {
+    pub label: Option<String>,
     pub body: Vec<ASTNode>,
     //pub body: Body,
 }

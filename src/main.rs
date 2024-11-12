@@ -213,9 +213,13 @@ else:
     print("Nothing")
 "#;
 
-    let code_test17 = r#"loop:
+    let code_test17 = r#"counter:loop:
     print("infini")
+    x += 1
+    if x > 10:
+        break
 "#;
+    let code_test18 = r#"counter: loop {print("infini");x += 1;if x > 10 {break;}}"#;
 
 
 
@@ -225,7 +229,8 @@ else:
 
 
 
-    let mut lexer = Lexer::new(code_test16, SyntaxMode::Indentation);
+
+    let mut lexer = Lexer::new(code_test18, SyntaxMode::Braces);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
@@ -234,7 +239,7 @@ else:
     }
     println!("\n");
 
-    let mut parser = Parser::new(tokens, SyntaxMode::Indentation);
+    let mut parser = Parser::new(tokens, SyntaxMode::Braces);
 
     // while !parser.is_at_end() {
     //     match parser.parse_declaration() {

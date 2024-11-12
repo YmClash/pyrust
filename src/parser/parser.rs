@@ -1,6 +1,6 @@
 #[allow(dead_code)]
 use crate::lexer::lex::{SyntaxMode, Token};
-use crate::parser::ast::{ArrayRest, Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, Body, ClassDeclaration, CompoundAssignment, CompoundOperator, ConstDeclaration, Constructor, Declaration, DestructuringAssignment, EnumDeclaration, EnumVariant, Expression, Field, ForStatement, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, IfStatement, IndexAccess, LambdaExpression, Literal, LoopStatement, MatchArm, MatchStatement, MemberAccess, MethodCall, Mutability, Operator, Parameter, Parameters, Pattern, RangePattern, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility, WhileStatement};
+use crate::parser::ast::{ArrayRest, Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, Body, BreakStatement, ClassDeclaration, CompoundAssignment, CompoundOperator, ConstDeclaration, Constructor, ContinueStatement, Declaration, DestructuringAssignment, EnumDeclaration, EnumVariant, Expression, Field, ForStatement, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, IfStatement, IndexAccess, LambdaExpression, Literal, LoopStatement, MatchArm, MatchStatement, MemberAccess, MethodCall, Mutability, Operator, Parameter, Parameters, Pattern, RangePattern, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility, WhileStatement};
 use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget, ExpectedDeclaration, ExpectedArrowOrBlock, ExpectedCommaOrClosingParenthesis, MultipleRestPatterns};
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::tok::{Delimiters, Keywords, Operators, TokenType};
@@ -100,71 +100,14 @@ impl Parser {
         }
         self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
 
+        // Ok(ASTNode::Block(Block{
+        //     statements,
+        //     syntax_mode:BlockSyntax::Indentation,
+        //     }))
+
         Ok(statements)
     }
 
-    // fn parse_indented_block(&mut self) -> Result<ASTNode, ParserError> {
-    //     println!("Parsing indented block");
-    //     self.consume(TokenType::NEWLINE)?;
-    //     self.consume(TokenType::INDENT)?;
-    //
-    //     let mut statements = Vec::new();
-    //     let initial_indent = self.current_indent_level();
-    //
-    //     while !self.is_at_end() && self.current_indent_level() >= initial_indent {
-    //         if self.match_token(&[TokenType::DEDENT]) {
-    //             break;
-    //         }
-    //
-    //         let stmt = self.parse_statement()?;
-    //         statements.push(stmt);
-    //
-    //         // Consommer les newlines après chaque instruction
-    //         while self.match_token(&[TokenType::NEWLINE]) {
-    //             //self.advance();
-    //         }
-    //     }
-    //
-    //     self.consume(TokenType::DEDENT)?;
-    //     Ok(ASTNode::Block(Block{
-    //         statements,
-    //         syntax_mode:BlockSyntax::Indentation,
-    //     }))
-    // }
-
-    // fn parse_braced_block(&mut self) -> Result<ASTNode, ParserError> {
-    //     println!("Parsing braced block");
-    //     self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
-    //
-    //     let mut statements = Vec::new();
-    //
-    //     while !self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) {
-    //         if self.is_at_end() {
-    //             return Err(ParserError::new(UnexpectedEndOfInput, self.current_position()));
-    //         }
-    //
-    //         let stmt = self.parse_statement()?;
-    //         statements.push(stmt);
-    //
-    //         // Consommer le point-virgule si présent
-    //         if self.match_token(&[TokenType::DELIMITER(Delimiters::SEMICOLON)]) {
-    //             //self.advance();
-    //         }
-    //
-    //         // Consommer les newlines
-    //         while self.match_token(&[TokenType::NEWLINE]) {
-    //             //self.advance();
-    //         }
-    //     }
-    //
-    //     self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
-    //
-    //     Ok(ASTNode::Block(Block{
-    //         statements,
-    //         syntax_mode:BlockSyntax::Braces,
-    //     }))
-    //
-    // }
 
     fn begin_block(&mut self) {
         // self.indent_level.push(self.current_token().unwrap().indent);
@@ -176,9 +119,66 @@ impl Parser {
         todo!()
     }
 
+    // fn parse_labeled_statement(&mut self) -> Result<Option<ASTNode>, ParserError> {
+    //     if let Some(label_name) = self.check_for_label()? {
+    //         // Après avoir consommé le label, on vérifie quelle instruction suit
+    //         if self.check(&[TokenType::KEYWORD(Keywords::LOOP)]) {
+    //             return self.parse_loop_statement().map(Some);
+    //         } else {
+    //             // Vous pouvez étendre ici pour d'autres instructions qui peuvent être labellisées
+    //             return Err(ParserError::new(UnexpectedToken, self.current_position()));
+    //         }
+    //     }
+    //
+    //     // Pas de label, retourner None
+    //     Ok(None)
+    // }
+
+    // fn parse_labeled_statement(&mut self) -> Result<ASTNode, ParserError> {
+    //     if let Some(current) = self.peek_token() {
+    //         if let Some(next) = self.peek_next_token() {
+    //             if matches!(current.token_type, TokenType::IDENTIFIER { .. }) &&
+    //                 matches!(next.token_type, TokenType::DELIMITER(Delimiters::COLON)) {
+    //                 // Si le token suivant est 'loop', c'est un label de boucle
+    //                 if let Some(third) = self.tokens.get(self.current + 2) {
+    //                     if matches!(third.token_type, TokenType::KEYWORD(Keywords::LOOP)) {
+    //                         return self.parse_loop_statement();
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+    //
+    //
+    // }
+
 
 
     pub fn parse_statement(&mut self) -> Result<ASTNode, ParserError> {
+
+        /// Cas particulier : pour la gestion de label dans les statements
+        /// l'utilisation de label est optionnelle et est de souhaite restreinte a etre utilise
+        /// que pour les boucles LOOP
+        if let Some(current) = self.peek_token() {
+            if let Some(next) = self.peek_next_token() {
+                if matches!(current.token_type, TokenType::IDENTIFIER { .. }) &&
+                    matches!(next.token_type, TokenType::DELIMITER(Delimiters::COLON)) {
+                    // Si le token suivant est 'loop', c'est un label de boucle
+                    if let Some(third) = self.tokens.get(self.current + 2) {
+                        if matches!(third.token_type, TokenType::KEYWORD(Keywords::LOOP)) {
+                            return self.parse_loop_statement();
+                        }
+                    }
+                }
+            }
+        }
+
+        // if let Some(stmt) = self.parse_labeled_statement()? {
+        //     return Ok(stmt);
+        // }
+
+
+
         if self.check(&[TokenType::KEYWORD(Keywords::LOOP)]){
             self.parse_loop_statement()
         }else if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]) {
@@ -194,9 +194,12 @@ impl Parser {
         }else if self.match_token(&[TokenType::KEYWORD(Keywords::BREAK)]){
             self.consume_seperator();
             Ok(ASTNode::Statement(Statement::Break))
+            //self.parse_break_statement()
+
         }else if self.match_token(&[TokenType::KEYWORD(Keywords::CONTINUE)]){
             self.consume_seperator();
             Ok(ASTNode::Statement(Statement::Continue))
+            //self.parse_continue_statement()
         }else {
             self.parse_expression_statement()
         }
@@ -497,7 +500,8 @@ impl Parser {
         } else if self.check(&[TokenType::DELIMITER(Delimiters::LCURBRACE)]) {
             // Bloc de code
             //self.parse_block_expression()?
-            self.parse_body_block()?
+            //self.parse_body_block()?
+            self.parse_block()?
         } else {
             return Err(ParserError::new(ExpectedArrowOrBlock, self.current_position()));
         };
@@ -1066,13 +1070,17 @@ impl Parser {
 
     fn parse_loop_statement(&mut self) -> Result<ASTNode, ParserError> {
         println!("Début du parsing de l'instruction loop");
+
+        // ajoute de label optional pour la boucle pour
+        let label = self.check_for_label()?;
+
         self.consume(TokenType::KEYWORD(Keywords::LOOP))?;
         let body = self.parse_block()?;
         println!("Fin du parsing de l'instruction loop OK!!!!!!!!!!!!!!");
         Ok(ASTNode::Statement(Statement::LoopStatement(LoopStatement{
+            label,
             body,
         })))
-
     }
 
 
@@ -1090,6 +1098,30 @@ impl Parser {
         })))
 
     }
+
+
+    fn parse_break_statement(&mut self) -> Result<ASTNode, ParserError> {
+        println!("Début du parsing de l'instruction break");
+        self.consume(TokenType::KEYWORD(Keywords::BREAK))?;
+        let label = self.check_for_label()?;
+        self.consume_seperator();
+        println!("Fin du parsing de l'instruction break OK!!!!!!!!!!!!!!!");
+        Ok(ASTNode::Statement(Statement::BreakStatement(BreakStatement{
+            label
+        })))
+    }
+
+    fn parse_continue_statement(&mut self) -> Result<ASTNode, ParserError> {
+        println!("Début du parsing de l'instruction continue");
+        self.consume(TokenType::KEYWORD(Keywords::CONTINUE))?;
+        let label = self.check_for_label()?;
+        self.consume_seperator();
+        println!("Fin du parsing de l'instruction continue OK!!!!!!!!!!!!!!!");
+        Ok(ASTNode::Statement(Statement::ContinueStatement(ContinueStatement{
+            label
+        })))
+    }
+
 
     pub fn parse_match_statement(&mut self) -> Result<ASTNode, ParserError> {
         println!("Début du parsing de l'instruction match");
@@ -1138,7 +1170,8 @@ impl Parser {
         matches!(node,
             ASTNode::Statement(Statement::IfStatement(_)) |
             ASTNode::Statement(Statement::LoopStatement(_)) |
-            ASTNode::Statement(Statement::WhileStatement(_))
+            ASTNode::Statement(Statement::WhileStatement(_))|
+            ASTNode::Expression(Expression::LambdaExpression(_))
         )
     }
 
@@ -1179,6 +1212,7 @@ impl Parser {
         let body = if self.check(&[TokenType::DELIMITER(Delimiters::LCURBRACE)]) {
             // Corps avec bloc
             self.parse_body_block()?
+            //self.parse_block()? a test  plus tard
         } else {
             // Expression simple
             let expr = self.parse_expression(0)?;
@@ -1540,7 +1574,8 @@ impl Parser {
         self.tokens.get(self.current)
     }
     fn peek_next_token(&self) -> Option<&Token>{
-        todo!()
+        self.tokens.get(self.current + 1)
+
     }
 
     fn previous_token(&self) -> Option<&Token> {
@@ -1709,6 +1744,33 @@ impl Parser {
         }
         true
     }
+
+    fn check_for_label(&mut self) -> Result<Option<String>, ParserError> {
+        // Vérifie si le token actuel est un identifiant
+        if let Some(current) = self.peek_token() {
+            if let Some(next) = self.peek_next_token() {
+                // Vérifie si c'est un label (identifiant suivi de ':')
+                match (&current.token_type, &next.token_type) {
+                    (
+                        TokenType::IDENTIFIER { name },
+                        TokenType::DELIMITER(Delimiters::COLON)
+                    ) => {
+                        // Clone le nom avant d'avancer
+                        let label_name = name.clone();
+
+                        // Consomme l'identifiant et le ':'
+                        self.advance(); // Consomme l'identifiant
+                        self.advance(); // Consomme le ':'
+
+                        return Ok(Some(label_name));
+                    }
+                    _ => return Ok(None)
+                }
+            }
+        }
+        Ok(None)
+    }
+
 
 
 
