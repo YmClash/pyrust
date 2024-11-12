@@ -48,7 +48,7 @@ impl Parser {
         self.syntax_mode
     }
 
-    fn parse_block(&mut self) -> Result<ASTNode, ParserError> {
+    fn parse_block(&mut self) -> Result<Vec<ASTNode>, ParserError> {
         match self.syntax_mode{
             SyntaxMode::Indentation => self.parse_indented_block(),
             SyntaxMode::Braces => self.parse_braced_block(),
@@ -66,68 +66,105 @@ impl Parser {
         *self.indent_level.last().unwrap_or(&0)
     }
 
-    fn parse_indented_block(&mut self) -> Result<ASTNode, ParserError> {
+    fn parse_indented_block(&mut self) -> Result<Vec<ASTNode>, ParserError> {
         println!("Parsing indented block");
+        self.consume(TokenType::DELIMITER(Delimiters::COLON))?;
         self.consume(TokenType::NEWLINE)?;
         self.consume(TokenType::INDENT)?;
 
         let mut statements = Vec::new();
-        let initial_indent = self.current_indent_level();
-
-        while !self.is_at_end() && self.current_indent_level() >= initial_indent {
-            if self.match_token(&[TokenType::DEDENT]) {
-                break;
-            }
-
+        while !self.check(&[TokenType::DEDENT, TokenType::EOF]) {
             let stmt = self.parse_statement()?;
+            //self.consume(TokenType::NEWLINE)?;
             statements.push(stmt);
-
-            // Consommer les newlines après chaque instruction
-            while self.match_token(&[TokenType::NEWLINE]) {
-                //self.advance();
-            }
         }
-
         self.consume(TokenType::DEDENT)?;
-        Ok(ASTNode::Block(Block{
-            statements,
-            syntax_mode:BlockSyntax::Indentation,
-        }))
+
+        Ok(statements)
     }
 
-    fn parse_braced_block(&mut self) -> Result<ASTNode, ParserError> {
+    fn parse_braced_block(&mut self) -> Result<Vec<ASTNode>, ParserError> {
         println!("Parsing braced block");
         self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
-
         let mut statements = Vec::new();
 
-        while !self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) {
-            if self.is_at_end() {
-                return Err(ParserError::new(UnexpectedEndOfInput, self.current_position()));
-            }
-
+        while !self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE), TokenType::EOF]) {
             let stmt = self.parse_statement()?;
+
+            // if !self.is_block_expression(&stmt) && !self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) {
+            //     self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON))?;
+            // }
+            //self.consume(TokenType::DELIMITER(Delimiters::SEMICOLON))?;
+
             statements.push(stmt);
-
-            // Consommer le point-virgule si présent
-            if self.match_token(&[TokenType::DELIMITER(Delimiters::SEMICOLON)]) {
-                //self.advance();
-            }
-
-            // Consommer les newlines
-            while self.match_token(&[TokenType::NEWLINE]) {
-                //self.advance();
-            }
         }
-
         self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
 
-        Ok(ASTNode::Block(Block{
-            statements,
-            syntax_mode:BlockSyntax::Braces,
-        }))
-
+        Ok(statements)
     }
+
+    // fn parse_indented_block(&mut self) -> Result<ASTNode, ParserError> {
+    //     println!("Parsing indented block");
+    //     self.consume(TokenType::NEWLINE)?;
+    //     self.consume(TokenType::INDENT)?;
+    //
+    //     let mut statements = Vec::new();
+    //     let initial_indent = self.current_indent_level();
+    //
+    //     while !self.is_at_end() && self.current_indent_level() >= initial_indent {
+    //         if self.match_token(&[TokenType::DEDENT]) {
+    //             break;
+    //         }
+    //
+    //         let stmt = self.parse_statement()?;
+    //         statements.push(stmt);
+    //
+    //         // Consommer les newlines après chaque instruction
+    //         while self.match_token(&[TokenType::NEWLINE]) {
+    //             //self.advance();
+    //         }
+    //     }
+    //
+    //     self.consume(TokenType::DEDENT)?;
+    //     Ok(ASTNode::Block(Block{
+    //         statements,
+    //         syntax_mode:BlockSyntax::Indentation,
+    //     }))
+    // }
+
+    // fn parse_braced_block(&mut self) -> Result<ASTNode, ParserError> {
+    //     println!("Parsing braced block");
+    //     self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
+    //
+    //     let mut statements = Vec::new();
+    //
+    //     while !self.match_token(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]) {
+    //         if self.is_at_end() {
+    //             return Err(ParserError::new(UnexpectedEndOfInput, self.current_position()));
+    //         }
+    //
+    //         let stmt = self.parse_statement()?;
+    //         statements.push(stmt);
+    //
+    //         // Consommer le point-virgule si présent
+    //         if self.match_token(&[TokenType::DELIMITER(Delimiters::SEMICOLON)]) {
+    //             //self.advance();
+    //         }
+    //
+    //         // Consommer les newlines
+    //         while self.match_token(&[TokenType::NEWLINE]) {
+    //             //self.advance();
+    //         }
+    //     }
+    //
+    //     self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+    //
+    //     Ok(ASTNode::Block(Block{
+    //         statements,
+    //         syntax_mode:BlockSyntax::Braces,
+    //     }))
+    //
+    // }
 
     fn begin_block(&mut self) {
         // self.indent_level.push(self.current_token().unwrap().indent);
@@ -142,7 +179,9 @@ impl Parser {
 
 
     pub fn parse_statement(&mut self) -> Result<ASTNode, ParserError> {
-        if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]) {
+        if self.check(&[TokenType::KEYWORD(Keywords::LOOP)]){
+            self.parse_loop_statement()
+        }else if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]) {
             self.parse_return_statement()
         }else if self.check(&[TokenType::KEYWORD(Keywords::LET)]){
             self.parse_variable_declaration()
@@ -993,14 +1032,16 @@ impl Parser {
     fn parse_if_statement(&mut self) -> Result<ASTNode, ParserError> {
         println!("Début du parsing de l'instruction if");
         let condition = self.parse_expression(0)?;
-        let then_block = self.parse_body_block()?;; // block_expression
+        //let then_block = self.parse_body_block()?;; // block_expression
+        let then_block = self.parse_block()?;
 
         let else_block = if self.check(&[TokenType::KEYWORD(Keywords::ELIF)]){
             self.advance();
             let elif_statement = self.parse_if_statement()?;
             Some(vec![elif_statement])
         }else if self.match_token(&[TokenType::KEYWORD(Keywords::ELSE)]){
-            Some(self.parse_body_block()?)
+            //Some(self.parse_body_block()?)
+            Some(self.parse_block()?)
         }else { None };
 
         println!("Fin du parsing de l'instruction if");
@@ -1026,15 +1067,12 @@ impl Parser {
     fn parse_loop_statement(&mut self) -> Result<ASTNode, ParserError> {
         println!("Début du parsing de l'instruction loop");
         self.consume(TokenType::KEYWORD(Keywords::LOOP))?;
-        let body = if self.syntax_mode == SyntaxMode::Indentation {
-            self.parse_indented_block()?
-        } else {
-            self.parse_braced_block()?
-        };
+        let body = self.parse_block()?;
         println!("Fin du parsing de l'instruction loop OK!!!!!!!!!!!!!!");
         Ok(ASTNode::Statement(Statement::LoopStatement(LoopStatement{
             body,
         })))
+
     }
 
 
@@ -1095,6 +1133,16 @@ impl Parser {
             SyntaxMode::Braces => self.check(&[TokenType::DELIMITER(Delimiters::RCURBRACE)]),
         }
     }
+
+    fn is_block_expression(&self,node: &ASTNode) -> bool {
+        matches!(node,
+            ASTNode::Statement(Statement::IfStatement(_)) |
+            ASTNode::Statement(Statement::LoopStatement(_)) |
+            ASTNode::Statement(Statement::WhileStatement(_))
+        )
+    }
+
+
 
     fn parse_indented_arm_body(&mut self) -> Result<Vec<ASTNode>, ParserError> {
         // On vérifie si on utilise => ou : pour ce bras

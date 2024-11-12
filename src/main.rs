@@ -204,6 +204,18 @@ fn main() {
     let code_test14 = r#"match x {n if n > 0 => print("positive"),(x, y) => print("tuple simple"),[1, 2] => print("array simple"),_ => print("default")}"#;
 
 
+    let code_test15 = r#"if x > 0 {print("hello");}else{print("Nothing");};"#;
+    let code_test16 = r#"if x > 0 :
+    print("hello")
+elif x < 0:
+    print("negative")
+else:
+    print("Nothing")
+"#;
+
+    let code_test17 = r#"loop:
+    print("infini")
+"#;
 
 
 
@@ -213,7 +225,7 @@ fn main() {
 
 
 
-    let mut lexer = Lexer::new(code_test14, SyntaxMode::Braces);
+    let mut lexer = Lexer::new(code_test16, SyntaxMode::Indentation);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification
@@ -222,7 +234,7 @@ fn main() {
     }
     println!("\n");
 
-    let mut parser = Parser::new(tokens, SyntaxMode::Braces);
+    let mut parser = Parser::new(tokens, SyntaxMode::Indentation);
 
     // while !parser.is_at_end() {
     //     match parser.parse_declaration() {
@@ -242,7 +254,7 @@ fn main() {
 
 
 
-    match parser.parse_match_statement() {
+    match parser.parse_statement() {
         Ok(ast) => {
             println!("AST généré pour l'expression :");
             println!("{:#?}", ast);
