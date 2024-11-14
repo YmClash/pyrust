@@ -159,23 +159,23 @@ impl Parser {
         /// Cas particulier : pour la gestion de label dans les statements
         /// l'utilisation de label est optionnelle et est de souhaite restreinte a etre utilise
         /// que pour les boucles LOOP
-        if let Some(current) = self.peek_token() {
-            if let Some(next) = self.peek_next_token() {
-                if matches!(current.token_type, TokenType::IDENTIFIER { .. }) &&
-                    matches!(next.token_type, TokenType::DELIMITER(Delimiters::COLON)) {
-                    // Si le token suivant est 'loop', c'est un label de boucle
-                    if let Some(third) = self.tokens.get(self.current + 2) {
-                        if matches!(third.token_type, TokenType::KEYWORD(Keywords::LOOP)) {
-                            return self.parse_loop_statement();
-                        }
-                    }
-                }
-            }
-        }
-
-        // if let Some(stmt) = self.parse_labeled_statement()? {
-        //     return Ok(stmt);
+        // if let Some(current) = self.peek_token() {
+        //     if let Some(next) = self.peek_next_token() {
+        //         if matches!(current.token_type, TokenType::IDENTIFIER { .. }) &&
+        //             matches!(next.token_type, TokenType::DELIMITER(Delimiters::COLON)) {
+        //             // Si le token suivant est 'loop', c'est un label de boucle
+        //             if let Some(third) = self.tokens.get(self.current + 2) {
+        //                 if matches!(third.token_type, TokenType::KEYWORD(Keywords::LOOP)) {
+        //                     return self.parse_loop_statement();
+        //                 }
+        //             }
+        //         }
+        //     }
         // }
+
+        if let Some(stmt) = self.parse_labeled_statement()? {
+            return Ok(stmt);
+        }
 
 
 
