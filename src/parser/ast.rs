@@ -331,12 +331,7 @@ pub enum Expression {
     BinaryOperation(BinaryOperation),
     UnaryOperation(UnaryOperation),
     FunctionCall(FunctionCall),
- lucie_local
     //ArrayAccess(ArrayAccess), // transfere dans IndexAccess
-
-    MethodCall(MethodCall),
-    ArrayAccess(ArrayAccess),
- main
     MemberAccess(MemberAccess),
     LambdaExpression(LambdaExpression),
     MatchExpression(MatchExpression),
@@ -448,16 +443,6 @@ pub struct FunctionCall {
     pub name: Box<Expression>,
     pub arguments: Vec<Expression>,
 }
-
-#[allow(dead_code)]
-#[derive(Debug, Clone)]
-pub struct MethodCall {
-    pub object: Box<Expression>,
-    pub method: String,
-    pub arguments: Vec<Expression>,
-}
-
-
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct ArrayAccess {
@@ -500,8 +485,13 @@ pub enum Statement {
     //ElifStatement(ElifStatement),
     WhileStatement(WhileStatement),
     ForStatement(ForStatement),
+    LoopStatement(LoopStatement),
+    BreakStatement(BreakStatement),
+    ContinueStatement(ContinueStatement),
+
     Break,
     Continue,
+
     TryStatement(TryStatement),
     WithStatement(WithStatement),
     YieldStatement(YieldStatement),
@@ -550,6 +540,27 @@ pub struct WhileStatement {
 pub struct ForStatement {
     pub iterator: String,
     pub iterable: Expression,
+    pub body: Vec<ASTNode>,
+    //pub body: Body,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct BreakStatement {
+    pub label: Option<String>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct ContinueStatement {
+    pub label: Option<String>,
+}
+
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct LoopStatement {
+    pub label: Option<String>,
     pub body: Vec<ASTNode>,
     //pub body: Body,
 }
@@ -648,11 +659,32 @@ pub enum Pattern {
     Identifier(String),
     Wildcard,
     EnumVariant(EnumVariant),
-    Range(Box<Pattern>,Box<Pattern>),
     Tuple(Vec<Pattern>),
     Array(Vec<Pattern>),
     Constructor(String, Vec<Pattern>),
+    Rest,
+    TupleRest(Vec<Pattern>),
+    ArrayRest(ArrayRest),
+    RangePattern(RangePattern),
 }
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct RangePattern {
+    pub start: Option<Box<Expression>>,
+    pub end: Option<Box<Expression>>,
+    pub inclusive: bool,
+
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct  ArrayRest {
+    pub before: Vec<Pattern>,
+    pub after: Vec<Pattern>,
+}
+
+
 
 impl fmt::Display for ASTNode {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
