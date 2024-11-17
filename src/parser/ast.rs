@@ -477,8 +477,13 @@ pub struct Conditional {
 pub enum Statement {
     Expression(Expression),
     ReturnStatement(ReturnStatement),
+
     UseStatement(UseStatement),
     ImportStatement(ImportStatement),
+
+    ModuleImportStatement(ModuleImportStatement),
+
+
     RaiseStatement(RaiseStatement),
     DelStatement(DelStatement),
     IfStatement(IfStatement),
@@ -499,6 +504,39 @@ pub enum Statement {
     DeclarationStatement(Declaration),
     Assignment(Expression, Expression),
     MatchStatement(MatchStatement),
+}
+
+
+#[allow(dead_code)]
+#[derive(Clone, Debug)]
+pub struct ModuleImportStatement{
+    pub kind: ImportKind,
+    pub path: ModulePath,
+    pub items: Option<Vec<ImportItem>>,
+    pub relative_level: usize,
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Debug)]
+pub enum ImportKind{
+    Use,
+    Import,
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Debug)]
+pub struct ModulePath{
+    //pub segments: Vec<String>,
+    pub path: Vec<String>,
+    pub alias: Option<String>,
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Debug)]
+pub struct ImportItem{
+    pub name: String,
+    pub alias: Option<String>,
+    pub sub_path: Option<Vec<String>>
 }
 
 #[allow(dead_code)]

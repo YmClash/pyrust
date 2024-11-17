@@ -1,6 +1,8 @@
 #[allow(dead_code)]
 use crate::lexer::lex::{SyntaxMode, Token};
-use crate::parser::ast::{ArrayRest, Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, Body, BreakStatement, ClassDeclaration, CompoundAssignment, CompoundOperator, ConstDeclaration, Constructor, ContinueStatement, Declaration, DestructuringAssignment, EnumDeclaration, EnumVariant, Expression, Field, ForStatement, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, IfStatement, IndexAccess, LambdaExpression, Literal, LoopStatement, MatchArm, MatchStatement, MemberAccess, MethodCall, Mutability, Operator, Parameter, Parameters, Pattern, RangePattern, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility, WhileStatement};
+
+use crate::parser::ast::{ArrayRest, Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, Body, BreakStatement, ClassDeclaration, CompoundAssignment, CompoundOperator, ConstDeclaration, Constructor, ContinueStatement, Declaration, DestructuringAssignment, EnumDeclaration, EnumVariant, Expression, Field, ForStatement, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, IfStatement, ImportItem, ImportKind, IndexAccess, LambdaExpression, Literal, LoopStatement, MatchArm, MatchStatement, MemberAccess, MethodCall, ModuleImportStatement, Mutability, Operator, Parameter, Parameters, Pattern, RangePattern, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility, WhileStatement};
+
 use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget, ExpectedDeclaration, ExpectedArrowOrBlock, ExpectedCommaOrClosingParenthesis, MultipleRestPatterns};
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::tok::{Delimiters, Keywords, Operators, TokenType};
@@ -1398,6 +1400,7 @@ impl Parser {
 
     fn is_start_of_range(&self) -> bool {
         todo!()
+
     }
 
     fn parse_pattern(&mut self) -> Result<Pattern, ParserError> {
@@ -1487,6 +1490,69 @@ impl Parser {
         }
 
     }
+
+    fn parse_module_import(&mut self) -> Result<Statement,ParserError>{
+        let kind = match self.current_token()?.token_type{
+            TokenType::KEYWORD(Keywords::USE) => ImportKind::Use,
+            TokenType::KEYWORD(Keywords::IMPORT) => ImportKind::Import,
+            _ => return Err(ParserError::new(UnexpectedToken, self.current_position())),
+        };
+        self.advance();
+
+        if self.check(&[TokenType::KEYWORD(Keywords::FROM)]){
+            return self.parse_from_import(kind)
+        }
+
+        let path = self.parse_module_path()?;
+        let separator = self.consume_seperator();
+
+        Ok(Statement::ModuleImportStatement(ModuleImportStatement{
+            kind,
+            path,
+            items: None,
+            relative_level:0,
+        }))
+
+    }
+
+    fn parse_from_import(&mut self, kind: ImportKind) -> Result<Statement, ParserError>{
+        self.consume(TokenType::KEYWORD(Keywords::FROM))?;
+        let relative_level = self.parse_count_dots()?;
+        let base_path = self.parse_module_path()?;
+
+        match self.current_token()?.token_type {
+            TokenType::KEYWORD(Keywords::USE) | TokenType::KEYWORD(Keywords::IMPORT) => {
+                self.advance();
+                let items = self.parse_import_items()?;
+                let separator = self.consume_separator()?;
+
+                Ok(Statement::ModuleImportStatement(ModuleImportStatement {
+                    kind,
+                    path: base_path,
+                    items: Some(items),
+                    relative_level,
+                }))
+            },
+            _ => Err(ParserError::ExpectedUseOrImport),
+        }
+
+    }
+
+    fn parse_import_items(&mut self) -> Result<Vec<ImportItem>, ParserError> {
+        match self.syntax_mode {
+            SyntaxMode::Braces => {self.parse_braced_import_items()}
+            SyntaxMode::Indentation=> {self.parse_indented_import_items()}
+        }
+    }
+
+
+
+
+
+
+
+
+
 
     // fn parse_annotation(&mut self) -> Result<Attribute, ParserError> {
     //     todo!()
