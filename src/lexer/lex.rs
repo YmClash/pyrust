@@ -294,6 +294,8 @@ impl<'a> Lexer<'a> {
 
         // Vérifier le prochain caractère
         match self.peek_char() {
+            Some(ch) if self.delimiters.contains_key(&ch.to_string()) => Some(self.lex_delimiter()),
+            Some(ch) if !ch.is_alphanumeric() => self.lex_operator(),
             Some('\n') => {
                 self.advance(); // Consomme le '\n'
                 self.at_line_start = true;
@@ -532,13 +534,54 @@ impl<'a> Lexer<'a> {
 
     /// Methode pour les differents types de token de Type Delimiter
     fn lex_delimiter(&mut self) -> TokenType {
-        let ch = self.advance();
-        if let Some(delimiter) = self.delimiters.get(&ch.to_string()) {
-            self.current_token_text = ch.to_string();
-            TokenType::DELIMITER(delimiter.clone())
-        } else {
-            TokenType::UNKNOWN
+        self.current_token_text.clear();
+        let mut delimiter_candidate = String::new();
+
+        // Clone l'itérateur pour regarder en avant sans consommer
+        let mut source_iter = self.source.clone();
+        let mut chars_consumed = 0;
+
+        // On définit la longueur maximale des délimiteurs (par exemple, 3 pour '...')
+        let max_delimiter_length = 3;
+
+        // Essayer de former des délimiteurs en regardant jusqu'à max_delimiter_length caractères
+        for _ in 0..max_delimiter_length {
+            if let Some(ch) = source_iter.next() {
+                delimiter_candidate.push(ch);
+                chars_consumed += 1;
+
+                if let Some(delimiter) = self.delimiters.get(&delimiter_candidate) {
+                    // Trouvé un délimiteur correspondant
+                    // Clonez le délimiteur ici
+                    let delimiter = delimiter.clone();
+
+                    // Consommez les caractères
+                    for _ in 0..chars_consumed {
+                        self.advance();
+                    }
+                    self.current_token_text = delimiter_candidate.clone();
+                    return TokenType::DELIMITER(delimiter);
+                }
+            } else {
+                break; // Fin de l'entrée
+            }
         }
+
+        // Si aucun délimiteur n'a été trouvé, consommer un caractère comme inconnu
+        let ch = self.advance();
+        self.current_token_text.push(ch);
+        TokenType::UNKNOWN
+
+
+
+
+        // let ch = self.advance();
+        // if let Some(delimiter) = self.delimiters.get(&ch.to_string()) {
+        //     self.current_token_text = ch.to_string();
+        //     TokenType::DELIMITER(delimiter.clone())
+        // } else {
+        //     TokenType::UNKNOWN
+        // }
     }
 
     /// Methode pour les differents types de token de Type Comment # ou // ou /* */

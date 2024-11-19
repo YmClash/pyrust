@@ -53,6 +53,10 @@ pub enum ParserErrorType {
     UnexpectedIndentation,
     UnexpectedEndOfInput,
 
+    ExpectedUseOrImport,
+    ExpectedAlias,
+
+
     ExpectedParameterName,
     ExpectedSelfParameter,
     MultipleConstructors,
@@ -148,6 +152,9 @@ impl Display for ParserErrorType {
 
             ParserErrorType::ExpectedCommaOrClosingParenthesis => write!(f, "ExpectedCommaOrClosingParenthesis"),
 
+            ParserErrorType::ExpectedUseOrImport => write!(f, "ExpectedUseOrImport"),
+            ParserErrorType::ExpectedAlias => write!(f, "ExpectedAlias"),
+
 
             ParserErrorType::MultipleConstructors => write!(f, "MultipleConstructors"),
             ParserErrorType::MismatchedParametersAndAttributes => write!(f, "MismatchedParametersAndAttributes"),
@@ -196,6 +203,9 @@ impl ParserError {
             ParserErrorType::ExpectedStructField => "Expected struct field".to_string(),
 
             ParserErrorType::ExpectedCommaOrClosingParenthesis => "Expected comma or closing parenthesis".to_string(),
+
+            ParserErrorType::ExpectedUseOrImport => "Expected use or import".to_string(),
+            ParserErrorType::ExpectedAlias => "Expected alias after 'as '".to_string(),
 
 
             ParserErrorType::ExpectedDeclaration => "Expected declaration".to_string(),

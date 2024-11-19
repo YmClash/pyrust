@@ -1,9 +1,9 @@
 #[allow(dead_code)]
 use crate::lexer::lex::{SyntaxMode, Token};
 
-use crate::parser::ast::{ArrayRest, Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, Body, BreakStatement, ClassDeclaration, CompoundAssignment, CompoundOperator, ConstDeclaration, Constructor, ContinueStatement, Declaration, DestructuringAssignment, EnumDeclaration, EnumVariant, Expression, Field, ForStatement, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, IfStatement, ImportItem, ImportKind, IndexAccess, LambdaExpression, Literal, LoopStatement, MatchArm, MatchStatement, MemberAccess, MethodCall, ModuleImportStatement, Mutability, Operator, Parameter, Parameters, Pattern, RangePattern, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility, WhileStatement};
+use crate::parser::ast::{ArrayRest, Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, Body, BreakStatement, ClassDeclaration, CompoundAssignment, CompoundOperator, ConstDeclaration, Constructor, ContinueStatement, Declaration, DestructuringAssignment, EnumDeclaration, EnumVariant, Expression, Field, ForStatement, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, IfStatement, ImportItem, ImportKeyword, IndexAccess, LambdaExpression, Literal, LoopStatement, MatchArm, MatchStatement, MemberAccess, MethodCall, ModuleImportStatement, Mutability, Operator, Parameter, Parameters, Pattern, RangePattern, ReturnStatement, SpecificImportStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility, WhileStatement};
 
-use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget, ExpectedDeclaration, ExpectedArrowOrBlock, ExpectedCommaOrClosingParenthesis, MultipleRestPatterns};
+use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget, ExpectedDeclaration, ExpectedArrowOrBlock, ExpectedCommaOrClosingParenthesis, MultipleRestPatterns, ExpectedUseOrImport, ExpectedAlias};
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::tok::{Delimiters, Keywords, Operators, TokenType};
 
@@ -183,6 +183,8 @@ impl Parser {
 
         if self.check(&[TokenType::KEYWORD(Keywords::LOOP)]){
             self.parse_loop_statement()
+        }else if self.match_token(&[TokenType::KEYWORD(Keywords::IMPORT),TokenType::KEYWORD(Keywords::USE)]){
+            self.parse_module_import_statement()
         }else if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]) {
             self.parse_return_statement()
         }else if self.check(&[TokenType::KEYWORD(Keywords::LET)]){
@@ -1491,66 +1493,264 @@ impl Parser {
 
     }
 
-    fn parse_module_import(&mut self) -> Result<Statement,ParserError>{
-        let kind = match self.current_token()?.token_type{
-            TokenType::KEYWORD(Keywords::USE) => ImportKind::Use,
-            TokenType::KEYWORD(Keywords::IMPORT) => ImportKind::Import,
-            _ => return Err(ParserError::new(UnexpectedToken, self.current_position())),
+    fn parse_module_import_statement(&mut self) -> Result<ASTNode, ParserError> {
+        println!("Début du parsing de l'instruction d'import de module Import/Use");
+
+        let keyword_token = self.previous_token();
+        let keyword = match keyword_token.unwrap().token_type {
+            TokenType::KEYWORD(Keywords::USE) => ImportKeyword::Use,
+            TokenType::KEYWORD(Keywords::IMPORT) => ImportKeyword::Import,
+            _ => return Err(ParserError::new(ExpectedUseOrImport, self.current_position())),
         };
-        self.advance();
 
-        if self.check(&[TokenType::KEYWORD(Keywords::FROM)]){
-            return self.parse_from_import(kind)
+        // parse le chemin du module path
+        let module_path = self.parse_module_path()?;
+
+        if self.match_token(&[TokenType::DELIMITER(Delimiters::DOUBLECOLON)]){
+            self.parse_specific_import(keyword, module_path)
+        }else {
+            let alias = if self.match_token(&[TokenType::KEYWORD(Keywords::AS)]) {
+                let name = self.consume_identifier()?;
+                Some(name)
+            } else {
+                None
+            };
+
+            self.consume_seperator();
+            println!("Fin du parsing de l'instruction d'import de module Import/Use OK!!!!!!!!!!!!!!");
+            Ok(ASTNode::Statement(Statement::ModuleImportStatement(ModuleImportStatement{
+                keyword,
+                module_path,
+                alias,
+            })))
         }
 
-        let path = self.parse_module_path()?;
-        let separator = self.consume_seperator();
-
-        Ok(Statement::ModuleImportStatement(ModuleImportStatement{
-            kind,
-            path,
-            items: None,
-            relative_level:0,
-        }))
 
     }
 
-    fn parse_from_import(&mut self, kind: ImportKind) -> Result<Statement, ParserError>{
-        self.consume(TokenType::KEYWORD(Keywords::FROM))?;
-        let relative_level = self.parse_count_dots()?;
-        let base_path = self.parse_module_path()?;
 
-        match self.current_token()?.token_type {
-            TokenType::KEYWORD(Keywords::USE) | TokenType::KEYWORD(Keywords::IMPORT) => {
-                self.advance();
-                let items = self.parse_import_items()?;
-                let separator = self.consume_separator()?;
+    fn parse_module_path(&mut self) -> Result<Vec<String>, ParserError> {
+        let mut path = Vec::new();
+        loop {
 
-                Ok(Statement::ModuleImportStatement(ModuleImportStatement {
-                    kind,
-                    path: base_path,
-                    items: Some(items),
-                    relative_level,
-                }))
-            },
-            _ => Err(ParserError::ExpectedUseOrImport),
+            let name = self.consume_identifier()?;
+            path.push(name);
+
+            if self.match_token(&[TokenType::DELIMITER(Delimiters::DOT)]) {
+                continue;
+            } else {
+                break;
+            }
         }
+        Ok(path)
+    }
+
+    fn parse_specific_import(&mut self, keyword: ImportKeyword, module_path: Vec<String>) -> Result<ASTNode, ParserError>{
+        self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
+
+        // parser la liste des element importés
+        let mut import_list = Vec::new();
+        loop {
+            let name = self.consume_identifier()?;
+
+            let alias = if self.match_token(&[TokenType::KEYWORD(Keywords::AS)]) {
+                let alias = self.consume_identifier()?;
+                Some(alias)
+            } else {
+                None
+            };
+            import_list.push((name, alias));
+
+            // verifier si la liste continue ou pas
+            if self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]) {
+                continue;
+            } else {
+                break;
+            }
+        }
+
+        self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+        self.consume_seperator();
+
+        println!("Fin du parsing de L'importation Specifique OK!!!!!!!!!!!!!!");
+        Ok(ASTNode::Statement(Statement::SpecificImportStatement(SpecificImportStatement{
+            keyword,
+            module_path,
+            alias: None,
+            imports: import_list,
+        })))
 
     }
 
-    fn parse_import_items(&mut self) -> Result<Vec<ImportItem>, ParserError> {
-        match self.syntax_mode {
-            SyntaxMode::Braces => {self.parse_braced_import_items()}
-            SyntaxMode::Indentation=> {self.parse_indented_import_items()}
-        }
-    }
 
 
+////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////ADVANCED IMPORTS//////////////////////////////////////////
+    // fn parse_from_import(&mut self, kind: ImportKind) -> Result<Statement, ParserError> {
+    //     self.consume(TokenType::KEYWORD(Keywords::FROM))?;
+    //     let relative_level = self.count_dots()?;
+    //     let base_path = self.parse_module_path()?;
+    //
+    //     match self.current_token() {
+    //         Some(token) => match token.token_type {
+    //             TokenType::KEYWORD(Keywords::USE) | TokenType::KEYWORD(Keywords::IMPORT) => {
+    //                 self.advance();
+    //                 let items = self.parse_import_items()?;
+    //                 self.consume_separator()?;
+    //
+    //                 Ok(Statement::ModuleImportStatement(ModuleImportStatement {
+    //                     kind,
+    //                     path: base_path,
+    //                     items: Some(items),
+    //                     relative_level,
+    //                 }))
+    //             },
+    //             _ => Err(ParserError::ExpectedUseOrImport),
+    //         },
+    //         None => Err(ParserError::UnexpectedEOF),
+    //     }
+    // }
 
+    // fn parse_import_items(&mut self) -> Result<Vec<ImportItem>, ParserError> {
+    //     match self.syntax_mode {
+    //         SyntaxMode::Braces => {self.parse_braced_import_items()}
+    //         SyntaxMode::Indentation=> {self.parse_indented_import_items()}
+    //     }
+    // }
+    //
+    // fn count_dots(&mut self) -> Result<usize, ParserError> {
+    //     let mut dot_count = 0;
+    //     while let Some(token) = self.peek_token() {
+    //         match token.token_type {
+    //             TokenType::DELIMITER(Delimiters::DOT) => {
+    //                 dot_count += 1;
+    //                 self.advance();
+    //             },
+    //             _ => break,
+    //         }
+    //     }
+    //     Ok(dot_count)
+    // }
+    //
+    // fn parse_braced_import_items(&mut self) -> Result<Vec<ImportItem>, ParserError> {
+    //     let mut items = Vec::new();
+    //
+    //     // Consomme l'accolade ouvrante
+    //     self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
+    //
+    //     loop {
+    //         match self.current_token() {
+    //             Some(token) => {
+    //                 match &token.token_type {
+    //                     TokenType::DELIMITER(Delimiters::RCURBRACE) => {
+    //                         self.advance();
+    //                         break;
+    //                     },
+    //                     TokenType::IDENTIFIER { name } => {
+    //                         let item = self.parse_single_import_item()?;
+    //                         items.push(item);
+    //
+    //                         // Vérifie la virgule ou l'accolade fermante
+    //                         match self.current_token() {
+    //                             Some(token) => match token.token_type {
+    //                                 TokenType::DELIMITER(Delimiters::COMMA) => {
+    //                                     self.advance();
+    //                                     continue;
+    //                                 },
+    //                                 TokenType::DELIMITER(Delimiters::RCURBRACE) => continue,
+    //                                 _ => return Err(ParserError::ExpectedCommaOrBrace),
+    //                             },
+    //                             None => return Err(ParserError::UnexpectedEOF),
+    //                         }
+    //                     },
+    //                     _ => return Err(ParserError::ExpectedIdentifier),
+    //                 }
+    //             },
+    //             None => return Err(ParserError::UnexpectedEOF),
+    //         }
+    //     }
+    //
+    //     Ok(items)
+    // }
+    //
+    // fn parse_indented_import_items(&mut self) -> Result<Vec<ImportItem>, ParserError> {
+    //     let mut items = Vec::new();
+    //
+    //     // Consomme le deux-points et le saut de ligne
+    //     self.consume(TokenType::DELIMITER(Delimiters::COLON))?;
+    //     self.consume(TokenType::NEWLINE)?;
+    //
+    //     // Consomme l'indentation
+    //     self.consume(TokenType::INDENT)?;
+    //
+    //     while let Some(token) = self.current_token() {
+    //         match token.token_type {
+    //             TokenType::DEDENT => {
+    //                 self.advance();
+    //                 break;
+    //             },
+    //             TokenType::IDENTIFIER { .. } => {
+    //                 let item = self.parse_single_import_item()?;
+    //                 items.push(item);
+    //                 self.consume_separator()?;
+    //             },
+    //             _ => return Err(ParserError::ExpectedIdentifier),
+    //         }
+    //     }
+    //
+    //     Ok(items)
+    // }
+    //
+    // fn parse_single_import_item(&mut self) -> Result<ImportItem, ParserError> {
+    //     let name = match self.current_token() {
+    //         Some(token) => match &token.token_type {
+    //             TokenType::IDENTIFIER { name } => name.clone(),
+    //             _ => return Err(ParserError::ExpectedIdentifier),
+    //         },
+    //         None => return Err(ParserError::UnexpectedEOF),
+    //     };
+    //     self.advance();
+    //
+    //     // Vérifie s'il y a un alias (as keyword)
+    //     let alias = if self.check(&[TokenType::KEYWORD(Keywords::AS)]) {
+    //         self.advance();
+    //         match self.current_token() {
+    //             Some(token) => match &token.token_type {
+    //                 TokenType::IDENTIFIER { name } => {
+    //                     self.advance();
+    //                     Some(name.clone())
+    //                 },
+    //                 _ => return Err(ParserError::ExpectedIdentifier),
+    //             },
+    //             None => return Err(ParserError::UnexpectedEOF),
+    //         }
+    //     } else {
+    //         None
+    //     };
+    //
+    //     let mut sub_path = Vec::new();
+    //     while self.check(&[TokenType::DELIMITER(Delimiters::DOT)]) {
+    //         self.advance();
+    //         match self.current_token() {
+    //             Some(token) => match &token.token_type {
+    //                 TokenType::IDENTIFIER { name } => {
+    //                     sub_path.push(name.clone());
+    //                     self.advance();
+    //                 },
+    //                 _ => return Err(ParserError::ExpectedIdentifier),
+    //             },
+    //             None => return Err(ParserError::UnexpectedEOF),
+    //         }
+    //     }
+    //
+    //     Ok(ImportItem {
+    //         name,
+    //         alias,
+    //         sub_path: if sub_path.is_empty() { None } else { Some(sub_path) },
+    //     })
+    // }
 
-
-
-
+///////////////////////////////////////////////////////////////////////////////
 
 
 
