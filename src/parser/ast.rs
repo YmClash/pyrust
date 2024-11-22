@@ -4,6 +4,7 @@ use crate::SyntaxMode;
 use num_bigint::BigInt;
 use std::fmt;
 use std::fmt::Formatter;
+use crate::tok::TokenType;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -107,6 +108,8 @@ pub enum Operator {
     Or, // ||
     LesshanOrEqual, // <=
     GreaterThanOrEqual, // >=
+    Range, // ..
+    RangeInclusive, // ..=
 }
 
 #[derive(Debug, Clone)]
@@ -345,6 +348,8 @@ pub enum Expression {
     IndexAccess(IndexAccess), // Aka ArrayAccess
     CompoundAssignment(CompoundAssignment),
     DestructuringAssignment(DestructuringAssignment),
+
+    RangeExpression(RangeExpression),
 
 }
 
@@ -694,6 +699,26 @@ pub struct MatchExpression {
     pub expression: Box<Expression>,
     pub arms: Vec<MatchArm>,
 }
+
+// #[allow(dead_code)]
+// #[derive(Debug, Clone)]
+// pub struct RangeExpression {
+//     pub start: Box<Expression>,
+//     pub end: Box<Expression>,
+//     pub inclusive: bool,
+// }
+//
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct RangeExpression {
+    pub left: Option<Box<Expression>>,
+    pub operator: Operator,
+    pub right: Option<Box<Expression>>,
+}
+
+
+
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]

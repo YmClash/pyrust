@@ -221,7 +221,7 @@ else:
 "#;
     let code_test18 = r#"counter: loop {print("infini");x += 1;if x > 10 {break;}}"#;
 
-    let code_test19 = r#"::;..,.:...::...:::"#;
+    let code_test19 = r#"1..10 "#;
     let code_test20 = r#"use std.io::{Read as R, Write as W}"#;
 
 
@@ -233,7 +233,7 @@ else:
 
 
 
-    let mut lexer = Lexer::new(code_test20, SyntaxMode::Indentation);
+    let mut lexer = Lexer::new(code_test19, SyntaxMode::Indentation);
     let tokens = lexer.tokenize();
 
     // Affichage des tokens pour vérification

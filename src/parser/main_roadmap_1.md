@@ -12,7 +12,7 @@
    - [ ] Support des closures
    - [ ] Paramètres par défaut
 - [ ] Expressions d'accès
-   - [ ] Indexation
+   - [x] Indexation
    - [ ] Slicing
    - [ ] Range
 - [ ] Cast de type
@@ -23,10 +23,10 @@
 - [x] Fonctions
 - [x] Structures
 - [x] Énumérations
-- [ ] Système de modules
-   - [ ] Déclaration de modules
-   - [ ] Imports/Exports
-   - [ ] Visibilité publique/privée
+- [x] Système de modules
+   - [x] Déclaration de modules
+   - [x] Imports/Exports
+   - [ ] Visibilité publique/privée // pas besoin car lorsqu'on importe un module, on a accès à tout
 - [ ] Orienté objet
    - [ ] Classes
    - [ ] Traits

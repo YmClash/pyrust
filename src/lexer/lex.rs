@@ -205,6 +205,9 @@ impl<'a> Lexer<'a> {
         operators.insert("_".to_string(), Operators::UNDERSCORE);
         operators.insert("=>".to_string(), Operators::FATARROW);
 
+        operators.insert("..".to_string(), Operators::DOTDOT);
+        operators.insert("..=".to_string(), Operators::DOTDOTEQUAL);
+
 
         return operators;
     }
@@ -222,9 +225,10 @@ impl<'a> Lexer<'a> {
         delimiters.insert(":".to_string(), Delimiters::COLON);
         delimiters.insert(",".to_string(), Delimiters::COMMA);
         delimiters.insert(".".to_string(), Delimiters::DOT);
-        delimiters.insert("..".to_string(), Delimiters::DOTDOT);
         delimiters.insert("...".to_string(), Delimiters::ELLIPSIS);
         delimiters.insert("::".to_string(), Delimiters::DOUBLECOLON);
+        // delimiters.insert("..=".to_string(), Delimiters::DOTDOTEQUAL);
+        // delimiters.insert("..".to_string(), Delimiters::DOTDOT);
 
         return delimiters;
     }
@@ -505,14 +509,30 @@ impl<'a> Lexer<'a> {
         // Regardez les deux prochains caractères pour vérifier les opérateurs composés
         let first_char = self.advance();
         self.current_token_text.push(first_char);
-        let mut op = self.current_token_text.clone();
+        //let mut op = self.current_token_text.clone();
 
         if let Some(&next_char) = self.source.peek() {
+            let mut op = self.current_token_text.clone();
             op.push(next_char);
             if self.operators.contains_key(&op) {
                 self.advance();
                 self.current_token_text.push(next_char);
                 return Some(TokenType::OPERATOR(self.operators[&op].clone()));
+            }
+            if op == ".." {
+                self.advance();
+                self.current_token_text.push(next_char);
+
+                if let Some(&third_char) = self.source.peek(){
+                    if third_char == '='{
+                        self.advance();
+                        op.push(third_char);
+                        self.current_token_text = op;
+                        return Some(TokenType::OPERATOR(Operators::DOTDOTEQUAL));
+
+                    }
+                }
+                return Some(TokenType::OPERATOR(Operators::DOTDOT));
             }
         }
 
@@ -536,8 +556,8 @@ impl<'a> Lexer<'a> {
 
         self.current_token_text.clear();
 
-        let first_chart = self.advance();
-        self.current_token_text.push(first_chart);
+        let first_char = self.advance();
+        self.current_token_text.push(first_char);
 
         if let Some(&next_char) = self.source.peek(){
             let mut combined = self.current_token_text.clone();
@@ -549,19 +569,38 @@ impl<'a> Lexer<'a> {
                 self.current_token_text = combined;
                 return TokenType::DELIMITER(Delimiters::DOUBLECOLON);
             }
-            if first_chart == '.' && next_char == '.'{
-                self.advance();
+            if first_char == '.' && next_char == '.' {
+                self.advance(); // Consomme le deuxième '.'
+                let mut combined = "..".to_string();
                 if let Some(&third_char) = self.source.peek(){
                     if third_char == '.'{
                         self.advance();
-                        self.current_token_text = "...".to_string();
+                        combined.push('.');
+                        self.current_token_text = combined;
                         return TokenType::DELIMITER(Delimiters::ELLIPSIS);
                     }
+
                 }
-                self.current_token_text = "..".to_string();
-                return TokenType::DELIMITER(Delimiters::DOTDOT);
-                //return TokenType::DELIMITER(Delimiters::DOT);
+                // self.current_token_text = combined;
+                // return TokenType::DELIMITER(Delimiters::DOTDOT);
             }
+
+
+
+
+            // if first_char == '.' && next_char == '.'{
+            //     self.advance();
+            //     if let Some(&third_char) = self.source.peek(){
+            //         if third_char == '.'{
+            //             self.advance();
+            //             self.current_token_text = "...".to_string();
+            //             return TokenType::DELIMITER(Delimiters::ELLIPSIS);
+            //         }
+            //     }
+            //     self.current_token_text = "..".to_string();
+            //     return TokenType::DELIMITER(Delimiters::DOTDOT);
+            //     //return TokenType::DELIMITER(Delimiters::DOT);
+            // }
 
         }
         if let Some(delimiter) = self.delimiters.get(&self.current_token_text) {

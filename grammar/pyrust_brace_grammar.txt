@@ -17,6 +17,16 @@ module_path ::= IDENTIFIER ('.' IDENTIFIER)*
 import_stmt ::= ('use' | 'import') module_path '::' '{' import_list '}' ('as' alias)? separator
 import_list ::= IDENTIFIER (',' IDENTIFIER)*
 
+range_expression ::= expression '..' expression
+                   | expression '..=' expression
+                   | '..' expression
+                   | expression '..'
+                   | '..' // plage ouverte
+
+
+
+/////////////
+
 
 
 
