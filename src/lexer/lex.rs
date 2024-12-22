@@ -227,6 +227,8 @@ impl<'a> Lexer<'a> {
         delimiters.insert(".".to_string(), Delimiters::DOT);
         delimiters.insert("...".to_string(), Delimiters::ELLIPSIS);
         delimiters.insert("::".to_string(), Delimiters::DOUBLECOLON);
+
+
         // delimiters.insert("..=".to_string(), Delimiters::DOTDOTEQUAL);
         // delimiters.insert("..".to_string(), Delimiters::DOTDOT);
 
@@ -258,6 +260,12 @@ impl<'a> Lexer<'a> {
     #[allow(dead_code)]
     fn peek_next_char(&mut self) -> Option<char> {
         self.source.clone().nth(1)
+    }
+
+    fn peek_next(&mut self) -> Option<char> {
+     let mut iter = self.source.clone();
+        iter.next();
+        iter.peek().copied()
     }
 
     /// C'est L'une de 2 methode principal avec fonction tokenize() pour obtenir le token
@@ -341,7 +349,7 @@ impl<'a> Lexer<'a> {
         self.current_token_text.clear();
 
         if self.peek_char() == Some('0') {
-            if let Some(next_char) = self.peek_next_char() {
+            if let Some(next_char) = self.peek_next() {
                 if next_char == 'x' || next_char == 'X' {
                     let ch1 = self.advance(); // '0'
                     let ch2 = self.advance(); // 'x' ou 'X'
@@ -354,6 +362,39 @@ impl<'a> Lexer<'a> {
 
         let mut number = String::new();
         let mut dot_count = 0;
+
+        // while let Some(&ch) = self.source.peek() {
+        //     if ch.is_digit(10) {
+        //         let digit = self.advance();
+        //         number.push(digit);
+        //         self.current_token_text.push(digit);
+        //     } else if ch == '.' {
+        //         // Vérifier si le '.' est suivi d'un chiffre pour un nombre flottant
+        //         if dot_count == 0 {
+        //             if let Some(next_ch) = self.peek_next_char() {
+        //                 if next_ch.is_digit(10) {
+        //                     let dot = self.advance();
+        //                     number.push(dot);
+        //                     self.current_token_text.push(dot);
+        //                     dot_count += 1;
+        //                 } else {
+        //                     // Le '.' n'est pas suivi d'un chiffre, il pourrait faire partie d'un opérateur
+        //                     break;
+        //                 }
+        //             } else {
+        //                 // Fin de l'entrée après '.', ce qui est une erreur pour un float
+        //                 break;
+        //             }
+        //         } else {
+        //             // Deuxième point trouvé, c'est une erreur pour un float
+        //             break;
+        //         }
+        //     } else {
+        //         break;
+        //     }
+        // }
+
+
 
         while let Some(&ch) = self.source.peek() {
             if ch.is_digit(10) {
@@ -502,37 +543,20 @@ impl<'a> Lexer<'a> {
         self.create_error(LexerErrorType::UnterminatedString)
     }
 
-    /// Methode pour les differents types de token de Type Operator
     fn lex_operator(&mut self) -> Option<TokenType> {
         self.current_token_text.clear();
 
         // Regardez les deux prochains caractères pour vérifier les opérateurs composés
         let first_char = self.advance();
         self.current_token_text.push(first_char);
-        //let mut op = self.current_token_text.clone();
+        let mut op = self.current_token_text.clone();
 
         if let Some(&next_char) = self.source.peek() {
-            let mut op = self.current_token_text.clone();
             op.push(next_char);
             if self.operators.contains_key(&op) {
                 self.advance();
                 self.current_token_text.push(next_char);
                 return Some(TokenType::OPERATOR(self.operators[&op].clone()));
-            }
-            if op == ".." {
-                self.advance();
-                self.current_token_text.push(next_char);
-
-                if let Some(&third_char) = self.source.peek(){
-                    if third_char == '='{
-                        self.advance();
-                        op.push(third_char);
-                        self.current_token_text = op;
-                        return Some(TokenType::OPERATOR(Operators::DOTDOTEQUAL));
-
-                    }
-                }
-                return Some(TokenType::OPERATOR(Operators::DOTDOT));
             }
         }
 
@@ -550,6 +574,95 @@ impl<'a> Lexer<'a> {
             },
         )))
     }
+
+
+    /// Methode pour les differents types de token de Type Operator
+    // fn lex_operator(&mut self) -> Option<TokenType> {
+    //     self.current_token_text.clear();
+    //
+    //     // Regardez les deux prochains caractères pour vérifier les opérateurs composés
+    //     let first_char = self.advance();
+    //     self.current_token_text.push(first_char);
+    //     let mut op = self.current_token_text.clone();
+    //
+    //     // Traitement spécial pour les opérateurs de range
+    //     if first_char == '.' {
+    //         if let Some(&next_char) = self.source.peek() {
+    //             if next_char == '.' {
+    //                 // Consomme le deuxième '.'
+    //                 self.advance();
+    //                 self.current_token_text.push(next_char);
+    //
+    //                 // Regarde si le prochain caractère est '='
+    //                 if let Some(&third_char) = self.source.peek() {
+    //                     if third_char == '=' {
+    //                         self.advance();
+    //                         self.current_token_text.push(third_char);
+    //                         return Some(TokenType::OPERATOR(Operators::DOTDOTEQUAL));
+    //                     }
+    //                 }
+    //                 return Some(TokenType::OPERATOR(Operators::DOTDOT));
+    //             } else {
+    //                 // Si c'est juste un point simple
+    //                 return Some(TokenType::DELIMITER(Delimiters::DOT));
+    //             }
+    //         }
+    //         // Si c'est juste un point simple sans suite
+    //         return Some(TokenType::DELIMITER(Delimiters::DOT));
+    //     }
+    //
+    //     // Gestion des autres opérateurs composés
+    //     if let Some(&next_char) = self.source.peek() {
+    //         let mut combined = self.current_token_text.clone();
+    //         combined.push(next_char);
+    //
+    //         if self.operators.contains_key(&combined) {
+    //             self.advance();
+    //             self.current_token_text = combined;
+    //             return Some(TokenType::OPERATOR(self.operators[&self.current_token_text].clone()));
+    //         }
+    //     }
+    //
+    //
+    //     // if let Some(&next_char) = self.source.peek() {
+    //     //     let mut op = self.current_token_text.clone();
+    //     //     op.push(next_char);
+    //     //     if self.operators.contains_key(&op) {
+    //     //         self.advance();
+    //     //         self.current_token_text.push(next_char);
+    //     //         return Some(TokenType::OPERATOR(self.operators[&op].clone()));
+    //     //     }
+    //     //     if op == ".." {
+    //     //         self.advance();
+    //     //         self.current_token_text.push(next_char);
+    //     //
+    //     //         if let Some(&third_char) = self.source.peek(){
+    //     //             if third_char == '='{
+    //     //                 self.advance();
+    //     //                 op.push(third_char);
+    //     //                 self.current_token_text = op;
+    //     //                 return Some(TokenType::OPERATOR(Operators::DOTDOTEQUAL));
+    //     //
+    //     //             }
+    //     //         }
+    //     //         return Some(TokenType::OPERATOR(Operators::DOTDOT));
+    //     //     }
+    //     // }
+    //
+    //     // Si ce n'est pas un opérateur composé, vérifiez l'opérateur simple
+    //     if let Some(operator) = self.operators.get(&self.current_token_text) {
+    //         return Some(TokenType::OPERATOR(operator.clone()));
+    //     }
+    //
+    //     // Si l'opérateur n'est pas reconnu, retournez une erreur
+    //     Some(TokenType::ERROR(LexerError::invalid_token(
+    //         &self.current_token_text,
+    //         Position {
+    //             line: self.current_line,
+    //             column: self.current_column,
+    //         },
+    //     )))
+    // }
 
     /// Methode pour les differents types de token de Type Delimiter
     fn lex_delimiter(&mut self) -> TokenType {
@@ -569,22 +682,45 @@ impl<'a> Lexer<'a> {
                 self.current_token_text = combined;
                 return TokenType::DELIMITER(Delimiters::DOUBLECOLON);
             }
-            if first_char == '.' && next_char == '.' {
-                self.advance(); // Consomme le deuxième '.'
-                let mut combined = "..".to_string();
-                if let Some(&third_char) = self.source.peek(){
-                    if third_char == '.'{
+            // if first_char == '.' && next_char == '.' {
+            //     self.advance(); // Consomme le deuxième '.'
+            //     let mut combined = "..".to_string();
+            //     if let Some(&third_char) = self.source.peek(){
+            //         if third_char == '.'{
+            //             self.advance();
+            //             combined.push('.');
+            //             self.current_token_text = combined;
+            //             return TokenType::DELIMITER(Delimiters::ELLIPSIS);
+            //         }
+            //
+            //     }
+            //     // self.current_token_text = combined;
+            //     // return TokenType::DELIMITER(Delimiters::DOTDOT);
+            // }
+
+            if first_char == '.' {
+                if let Some(&next_char) = self.source.peek(){
+                    if next_char == '.'{
                         self.advance();
-                        combined.push('.');
-                        self.current_token_text = combined;
-                        return TokenType::DELIMITER(Delimiters::ELLIPSIS);
+                        self.current_token_text.push(next_char);
+
+                        if let Some(&third_char) = self.source.peek(){
+                            if third_char == '.'{
+                                self.advance();
+                                self.current_token_text.push(third_char);
+                                return TokenType::DELIMITER(Delimiters::ELLIPSIS);
+                            }else if third_char == '=' {
+                                self.advance();
+                                self.current_token_text.push(third_char);
+                                return TokenType::OPERATOR(Operators::DOTDOTEQUAL);
+                            }
+                        }
+                        return TokenType::OPERATOR(Operators::DOTDOT);
+                    }else {
+                        return TokenType::DELIMITER(Delimiters::DOT);
                     }
-
                 }
-                // self.current_token_text = combined;
-                // return TokenType::DELIMITER(Delimiters::DOTDOT);
             }
-
 
 
 
@@ -785,6 +921,16 @@ impl<'a> Lexer<'a> {
         self.at_line_start = true;
         TokenType::NEWLINE
     }
+
+    fn is_operator_start(&self,ch:char) ->bool{
+        match ch {
+            '+' | '-' | '*' | '/' | '%' | '=' | '!' | '<' | '>' | '&' | '|' | '^' | '~' | '@' | ':' | '?' |'.'=> true,
+            _ => false,
+        }
+
+    }
+
+
 }
 
 //by YmC
