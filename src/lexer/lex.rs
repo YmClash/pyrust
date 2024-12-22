@@ -363,67 +363,67 @@ impl<'a> Lexer<'a> {
         let mut number = String::new();
         let mut dot_count = 0;
 
-        // while let Some(&ch) = self.source.peek() {
-        //     if ch.is_digit(10) {
-        //         let digit = self.advance();
-        //         number.push(digit);
-        //         self.current_token_text.push(digit);
-        //     } else if ch == '.' {
-        //         // Vérifier si le '.' est suivi d'un chiffre pour un nombre flottant
-        //         if dot_count == 0 {
-        //             if let Some(next_ch) = self.peek_next_char() {
-        //                 if next_ch.is_digit(10) {
-        //                     let dot = self.advance();
-        //                     number.push(dot);
-        //                     self.current_token_text.push(dot);
-        //                     dot_count += 1;
-        //                 } else {
-        //                     // Le '.' n'est pas suivi d'un chiffre, il pourrait faire partie d'un opérateur
-        //                     break;
-        //                 }
-        //             } else {
-        //                 // Fin de l'entrée après '.', ce qui est une erreur pour un float
-        //                 break;
-        //             }
-        //         } else {
-        //             // Deuxième point trouvé, c'est une erreur pour un float
-        //             break;
-        //         }
-        //     } else {
-        //         break;
-        //     }
-        // }
-
-
-
         while let Some(&ch) = self.source.peek() {
             if ch.is_digit(10) {
                 let digit = self.advance();
                 number.push(digit);
                 self.current_token_text.push(digit);
             } else if ch == '.' {
+                // Vérifier si le '.' est suivi d'un chiffre pour un nombre flottant
                 if dot_count == 0 {
-                    let dot = self.advance();
-                    number.push(dot);
-                    self.current_token_text.push(dot);
-                    dot_count += 1;
-                } else {
-                    // Deuxième point trouvé, c'est une erreur
-                    while let Some(&next_ch) = self.source.peek() {
-                        if next_ch.is_digit(10) || next_ch == '.' {
-                            let ch = self.advance();
-                            number.push(ch);
-                            self.current_token_text.push(ch);
+                    if let Some(next_ch) = self.peek_next_char() {
+                        if next_ch.is_digit(10) {
+                            let dot = self.advance();
+                            number.push(dot);
+                            self.current_token_text.push(dot);
+                            dot_count += 1;
                         } else {
+                            // Le '.' n'est pas suivi d'un chiffre, il pourrait faire partie d'un opérateur
                             break;
                         }
+                    } else {
+                        // Fin de l'entrée après '.', ce qui est une erreur pour un float
+                        break;
                     }
-                    return self.create_error(LexerErrorType::InvalidFloat(number));
+                } else {
+                    // Deuxième point trouvé, c'est une erreur pour un float
+                    break;
                 }
             } else {
                 break;
             }
         }
+
+
+
+        // while let Some(&ch) = self.source.peek() {
+        //     if ch.is_digit(10) {
+        //         let digit = self.advance();
+        //         number.push(digit);
+        //         self.current_token_text.push(digit);
+        //     } else if ch == '.' {
+        //         if dot_count == 0 {
+        //             let dot = self.advance();
+        //             number.push(dot);
+        //             self.current_token_text.push(dot);
+        //             dot_count += 1;
+        //         } else {
+        //             // Deuxième point trouvé, c'est une erreur
+        //             while let Some(&next_ch) = self.source.peek() {
+        //                 if next_ch.is_digit(10) || next_ch == '.' {
+        //                     let ch = self.advance();
+        //                     number.push(ch);
+        //                     self.current_token_text.push(ch);
+        //                 } else {
+        //                     break;
+        //                 }
+        //             }
+        //
+        //         }
+        //     } else {
+        //         break;
+        //     }
+        // }
 
         if number.is_empty() {
             return self.create_error(LexerErrorType::InvalidInteger(number));
