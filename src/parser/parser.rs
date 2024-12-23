@@ -1441,7 +1441,7 @@ impl Parser {
             None
         };
 
-        // Consomme le premier point
+        // Consomme le premier point ; Update avec nouveau  Token DOT
         self.consume(TokenType::DELIMITER(Delimiters::DOT))?;
         self.consume(TokenType::DELIMITER(Delimiters::DOT))?;
 

@@ -110,6 +110,7 @@ pub enum Operator {
     GreaterThanOrEqual, // >=
     Range, // ..
     RangeInclusive, // ..=
+
 }
 
 #[derive(Debug, Clone)]
