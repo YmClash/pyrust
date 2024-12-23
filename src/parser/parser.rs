@@ -1,9 +1,9 @@
 #[allow(dead_code)]
 use crate::lexer::lex::{SyntaxMode, Token};
 
-use crate::parser::ast::{ArrayRest, Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, Body, BreakStatement, ClassDeclaration, CompoundAssignment, CompoundOperator, ConstDeclaration, Constructor, ContinueStatement, Declaration, DestructuringAssignment, EnumDeclaration, EnumVariant, Expression, Field, ForStatement, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, IfStatement, ImportItem, ImportKind, IndexAccess, LambdaExpression, Literal, LoopStatement, MatchArm, MatchStatement, MemberAccess, MethodCall, ModuleImportStatement, Mutability, Operator, Parameter, Parameters, Pattern, RangePattern, ReturnStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility, WhileStatement};
+use crate::parser::ast::{ArrayRest, Assignment, ASTNode, Attribute, BinaryOperation, Block, BlockSyntax, Body, BreakStatement, ClassDeclaration, CompoundAssignment, CompoundOperator, ConstDeclaration, Constructor, ContinueStatement, Declaration, DestructuringAssignment, EnumDeclaration, EnumVariant, Expression, Field, ForStatement, Function, FunctionCall, FunctionDeclaration, FunctionSignature, Identifier, IfStatement, ImportItem, ImportKeyword, IndexAccess, LambdaExpression, Literal, LoopStatement, MatchArm, MatchStatement, MemberAccess, MethodCall, ModuleImportStatement, Mutability, Operator, Parameter, Parameters, Pattern, RangeExpression, RangePattern, ReturnStatement, SpecificImportStatement, Statement, StructDeclaration, TraitDeclaration, Type, TypeCast, UnaryOperation, UnaryOperator, VariableDeclaration, Visibility, WhileStatement};
 
-use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget, ExpectedDeclaration, ExpectedArrowOrBlock, ExpectedCommaOrClosingParenthesis, MultipleRestPatterns};
+use crate::parser::parser_error::ParserErrorType::{ExpectColon, ExpectFunctionName, ExpectIdentifier, ExpectOperatorEqual, ExpectParameterName, ExpectValue, ExpectVariableName, ExpectedCloseParenthesis, ExpectedOpenParenthesis, ExpectedTypeAnnotation, InvalidFunctionDeclaration, InvalidTypeAnnotation, InvalidVariableDeclaration, UnexpectedEOF, UnexpectedEndOfInput, UnexpectedIndentation, UnexpectedToken, ExpectedParameterName, InvalidAssignmentTarget, ExpectedDeclaration, ExpectedArrowOrBlock, ExpectedCommaOrClosingParenthesis, MultipleRestPatterns, ExpectedUseOrImport, ExpectedAlias, ExpectedRangeOperator};
 use crate::parser::parser_error::{ParserError, ParserErrorType, Position};
 use crate::tok::{Delimiters, Keywords, Operators, TokenType};
 
@@ -183,6 +183,8 @@ impl Parser {
 
         if self.check(&[TokenType::KEYWORD(Keywords::LOOP)]){
             self.parse_loop_statement()
+        }else if self.match_token(&[TokenType::KEYWORD(Keywords::IMPORT),TokenType::KEYWORD(Keywords::USE)]){
+            self.parse_module_import_statement()
         }else if self.match_token(&[TokenType::KEYWORD(Keywords::RETURN)]) {
             self.parse_return_statement()
         }else if self.check(&[TokenType::KEYWORD(Keywords::LET)]){
@@ -254,12 +256,34 @@ impl Parser {
             }
 
             self.advance();
-            let right = self.parse_expression(precedence)?;
-            left = Expression::BinaryOperation(BinaryOperation{
-                left: Box::new(left),
-                operator,
-                right: Box::new(right),
-            });
+            let right = self.parse_expression(precedence +1)?;
+
+
+            if let Operator::Range|Operator::RangeInclusive = operator{
+                left = Expression::RangeExpression(RangeExpression{
+                    left: Some(Box::new(left)),
+                    operator,
+                    right: Some(Box::new(right)),
+                });
+            }else {
+                left = Expression::BinaryOperation(BinaryOperation{
+                    left: Box::new(left),
+                    operator,
+                    right: Box::new(right),
+                });
+            }
+
+
+
+
+
+
+
+            // left = Expression::BinaryOperation(BinaryOperation{
+            //     left: Box::new(left),
+            //     operator,
+            //     right: Box::new(right),
+            // });
 
         }
 
@@ -517,6 +541,44 @@ impl Parser {
         }))
 
     }
+
+
+    // fn parse_range_expression(&mut self) -> Result<Expression, ParserError> {
+    //     println!("Début du parsing de l'expression de Range");
+    //     let left = if !self.match_token(&[
+    //         TokenType::OPERATOR(Operators::DOTDOT),
+    //         TokenType::OPERATOR(Operators::DOTDOTEQUAL),
+    //     ]) {
+    //         Some(Box::new(self.parse_term()?))
+    //     } else {
+    //         None
+    //     };
+    //
+    //     // Vérifie et consomme l'opérateur de plage
+    //     let operator = if self.match_token(&[
+    //         TokenType::OPERATOR(Operators::DOTDOT),
+    //         TokenType::OPERATOR(Operators::DOTDOTEQUAL),
+    //     ]) {
+    //         let token = self.advance_token(); // Consomme le token
+    //         token.token_type
+    //     } else {
+    //         return Err(ParserError::new(ExpectedRangeOperator, self.current_position()));
+    //     };
+    //
+    //     // Parse l'expression de droite si elle existe
+    //     let right = if !self.check(TokenType::DELIMITER(Delimiters::SEMICOLON)) && !self.check(TokenType::EOF) {
+    //         Some(Box::new(self.parse_term()?))
+    //     } else {
+    //         None
+    //     };
+    //
+    //     Ok(Expression::RangeExpression(RangeExpression {
+    //         left,
+    //         operator,
+    //         right,
+    //     }))
+    // }
+
 
     /// fonction pour parser les parametres
 
@@ -1379,7 +1441,7 @@ impl Parser {
             None
         };
 
-        // Consomme le premier point
+        // Consomme le premier point ; Update avec nouveau  Token DOT
         self.consume(TokenType::DELIMITER(Delimiters::DOT))?;
         self.consume(TokenType::DELIMITER(Delimiters::DOT))?;
 
@@ -1491,64 +1553,94 @@ impl Parser {
 
     }
 
-    fn parse_module_import(&mut self) -> Result<Statement,ParserError>{
-        let kind = match self.current_token()?.token_type{
-            TokenType::KEYWORD(Keywords::USE) => ImportKind::Use,
-            TokenType::KEYWORD(Keywords::IMPORT) => ImportKind::Import,
-            _ => return Err(ParserError::new(UnexpectedToken, self.current_position())),
+    fn parse_module_import_statement(&mut self) -> Result<ASTNode, ParserError> {
+        println!("Début du parsing de l'instruction d'import de module Import/Use");
+
+        let keyword_token = self.previous_token();
+        let keyword = match keyword_token.unwrap().token_type {
+            TokenType::KEYWORD(Keywords::USE) => ImportKeyword::Use,
+            TokenType::KEYWORD(Keywords::IMPORT) => ImportKeyword::Import,
+            _ => return Err(ParserError::new(ExpectedUseOrImport, self.current_position())),
         };
-        self.advance();
 
-        if self.check(&[TokenType::KEYWORD(Keywords::FROM)]){
-            return self.parse_from_import(kind)
+        // parse le chemin du module path
+        let module_path = self.parse_module_path()?;
+
+        if self.match_token(&[TokenType::DELIMITER(Delimiters::DOUBLECOLON)]){
+            self.parse_specific_import(keyword, module_path)
+        }else {
+            let alias = if self.match_token(&[TokenType::KEYWORD(Keywords::AS)]) {
+                let name = self.consume_identifier()?;
+                Some(name)
+            } else {
+                None
+            };
+
+            self.consume_seperator();
+            println!("Fin du parsing de l'instruction d'import de module Import/Use OK!!!!!!!!!!!!!!");
+            Ok(ASTNode::Statement(Statement::ModuleImportStatement(ModuleImportStatement{
+                keyword,
+                module_path,
+                alias,
+            })))
         }
 
-        let path = self.parse_module_path()?;
-        let separator = self.consume_seperator();
-
-        Ok(Statement::ModuleImportStatement(ModuleImportStatement{
-            kind,
-            path,
-            items: None,
-            relative_level:0,
-        }))
 
     }
 
-    fn parse_from_import(&mut self, kind: ImportKind) -> Result<Statement, ParserError>{
-        self.consume(TokenType::KEYWORD(Keywords::FROM))?;
-        let relative_level = self.parse_count_dots()?;
-        let base_path = self.parse_module_path()?;
 
-        match self.current_token()?.token_type {
-            TokenType::KEYWORD(Keywords::USE) | TokenType::KEYWORD(Keywords::IMPORT) => {
-                self.advance();
-                let items = self.parse_import_items()?;
-                let separator = self.consume_separator()?;
+    fn parse_module_path(&mut self) -> Result<Vec<String>, ParserError> {
+        let mut path = Vec::new();
+        loop {
 
-                Ok(Statement::ModuleImportStatement(ModuleImportStatement {
-                    kind,
-                    path: base_path,
-                    items: Some(items),
-                    relative_level,
-                }))
-            },
-            _ => Err(ParserError::ExpectedUseOrImport),
+            let name = self.consume_identifier()?;
+            path.push(name);
+
+            if self.match_token(&[TokenType::DELIMITER(Delimiters::DOT)]) {
+                continue;
+            } else {
+                break;
+            }
         }
-
+        Ok(path)
     }
 
-    fn parse_import_items(&mut self) -> Result<Vec<ImportItem>, ParserError> {
-        match self.syntax_mode {
-            SyntaxMode::Braces => {self.parse_braced_import_items()}
-            SyntaxMode::Indentation=> {self.parse_indented_import_items()}
+    fn parse_specific_import(&mut self, keyword: ImportKeyword, module_path: Vec<String>) -> Result<ASTNode, ParserError>{
+        self.consume(TokenType::DELIMITER(Delimiters::LCURBRACE))?;
+
+        // parser la liste des element importés
+        let mut import_list = Vec::new();
+        loop {
+            let name = self.consume_identifier()?;
+
+            let alias = if self.match_token(&[TokenType::KEYWORD(Keywords::AS)]) {
+                let alias = self.consume_identifier()?;
+                Some(alias)
+            } else {
+                None
+            };
+            import_list.push((name, alias));
+
+            // verifier si la liste continue ou pas
+            if self.match_token(&[TokenType::DELIMITER(Delimiters::COMMA)]) {
+                continue;
+            } else {
+                break;
+            }
         }
+
+        self.consume(TokenType::DELIMITER(Delimiters::RCURBRACE))?;
+        self.consume_seperator();
+
+        println!("Fin du parsing de L'importation Specifique OK!!!!!!!!!!!!!!");
+        Ok(ASTNode::Statement(Statement::SpecificImportStatement(SpecificImportStatement{
+            keyword,
+            module_path,
+            alias: None,
+            imports: import_list,
+        })))
+
     }
-
-
-
-
-
 
 
 
@@ -1575,6 +1667,7 @@ impl Parser {
             Operator::Multiplication | Operator::Division | Operator::Modulo => 5,
             Operator::Addition | Operator::Substraction => 4,
             Operator::LessThan | Operator::GreaterThan | Operator::LesshanOrEqual | Operator::GreaterThanOrEqual => 3,
+            Operator::Range | Operator::RangeInclusive => 3,
             Operator::Equal | Operator::NotEqual => 2,
             Operator::And => 1,
             Operator::Or => 0,
@@ -1615,6 +1708,8 @@ impl Parser {
                     Operators::NOTEQUAL => Some(Operator::NotEqual),
                     Operators::AND => Some(Operator::And),
                     Operators::OR => Some(Operator::Or),
+                    Operators::DOTDOT => Some(Operator::Range),
+                    Operators::DOTDOTEQUAL => Some(Operator::RangeInclusive),
                     _ => None,
                 }
             }

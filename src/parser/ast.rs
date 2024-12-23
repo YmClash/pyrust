@@ -4,6 +4,7 @@ use crate::SyntaxMode;
 use num_bigint::BigInt;
 use std::fmt;
 use std::fmt::Formatter;
+use crate::tok::TokenType;
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
@@ -107,6 +108,9 @@ pub enum Operator {
     Or, // ||
     LesshanOrEqual, // <=
     GreaterThanOrEqual, // >=
+    Range, // ..
+    RangeInclusive, // ..=
+
 }
 
 #[derive(Debug, Clone)]
@@ -346,6 +350,8 @@ pub enum Expression {
     CompoundAssignment(CompoundAssignment),
     DestructuringAssignment(DestructuringAssignment),
 
+    RangeExpression(RangeExpression),
+
 }
 
 #[allow(dead_code)]
@@ -482,6 +488,7 @@ pub enum Statement {
     ImportStatement(ImportStatement),
 
     ModuleImportStatement(ModuleImportStatement),
+    SpecificImportStatement(SpecificImportStatement),
 
 
     RaiseStatement(RaiseStatement),
@@ -510,15 +517,26 @@ pub enum Statement {
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct ModuleImportStatement{
-    pub kind: ImportKind,
-    pub path: ModulePath,
-    pub items: Option<Vec<ImportItem>>,
-    pub relative_level: usize,
+    pub keyword: ImportKeyword,
+    //pub module_path: ModulePath,
+    pub module_path: Vec<String>,
+    pub alias: Option<String>,
+    // pub items: Option<Vec<ImportItem>>,
+    // pub relative_level: usize,
 }
 
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
-pub enum ImportKind{
+pub struct SpecificImportStatement{
+    pub keyword: ImportKeyword,
+    pub module_path: Vec<String>,
+    pub alias: Option<String>,
+    pub imports : Vec<(String,Option<String>)>
+}
+
+#[allow(dead_code)]
+#[derive(Clone, Debug)]
+pub enum ImportKeyword{
     Use,
     Import,
 }
@@ -566,6 +584,8 @@ pub struct IfStatement {
 //     pub condition: Expression,
 //     pub body: Body,
 // }
+
+
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub struct WhileStatement {
@@ -606,13 +626,13 @@ pub struct LoopStatement {
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct UseStatement {
-    pub module: String,
+    pub module:String,
     pub alias: Option<String>,
 }
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct ImportStatement {
-    pub module: String,
+    pub module_path: String,
     pub alias: Option<String>,
 }
 #[allow(dead_code)]
@@ -680,6 +700,26 @@ pub struct MatchExpression {
     pub expression: Box<Expression>,
     pub arms: Vec<MatchArm>,
 }
+
+// #[allow(dead_code)]
+// #[derive(Debug, Clone)]
+// pub struct RangeExpression {
+//     pub start: Box<Expression>,
+//     pub end: Box<Expression>,
+//     pub inclusive: bool,
+// }
+//
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct RangeExpression {
+    pub left: Option<Box<Expression>>,
+    pub operator: Operator,
+    pub right: Option<Box<Expression>>,
+}
+
+
+
 
 #[allow(dead_code)]
 #[derive(Debug, Clone)]

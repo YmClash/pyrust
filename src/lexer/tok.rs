@@ -64,7 +64,7 @@ pub enum Operators {
     AT,               // '@' AROBASE / AT
     ATEQUAL,          // '@=' AROBASE EGAL / AT EQUAL
     RARROW,           // '->' FLECHE DROITE / RIGHT ARROW
-    //    ELLIPSIS, // '...' POINTS DE SUSPENSION / ELLIPSIS
+    //   ELLIPSIS, // '...' POINTS DE SUSPENSION / ELLIPSIS
     COLONEQUAL,    // ':=' DEUX POINT EGAL / COLON EQUAL
     STARSLASH,     // '*/' ETOILE SLASH / STAR SLASH
     SLASHSTAR,     // '/*' SLASH ETOILE / SLASH STAR
@@ -72,6 +72,9 @@ pub enum Operators {
     EXCLAMATION,   // '!' POINT D'EXCLAMATION / EXCLAMATION POINT
     INTERROGATION, // '?'
     UNDERSCORE,    // '_'
+
+    DOTDOT,      // '..' DEUX POINTS / DOUBLE DOT  // Range Operator
+    DOTDOTEQUAL, // '..=' DEUX POINTS EGAL / DOUBLE DOT EQUAL RangeInclusive Operator
 }
 
 #[allow(dead_code)]
@@ -151,6 +154,9 @@ pub enum Delimiters {
     RCURBRACE,   // '}' ACCOLADE DROITE / RIGHT CURLY BRACKET
     ELLIPSIS,    // '...' POINTS DE SUSPENSION / ELLIPSIS
     DOUBLECOLON, // '::' DEUX POINTS / DOUBLE COLON
+    //
+    // DOTDOTEQUAL, // '..=' DEUX POINTS EGAL / DOUBLE DOT EQUAL
+    // DOTDOT,      // '..' DEUX POINTS / DOUBLE DOT
 }
 
 #[allow(dead_code)]
